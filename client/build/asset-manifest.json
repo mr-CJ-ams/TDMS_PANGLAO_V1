@@ -1,0 +1,14 @@
+{
+  "files": {
+    "main.css": "/static/css/main.49faa5e3.css",
+    "main.js": "/static/js/main.b39ea520.js",
+    "static/media/1738398998646-Tourism_logo.png": "/static/media/1738398998646-Tourism_logo.5bf61d0da60cf121406e.png",
+    "index.html": "/index.html",
+    "main.49faa5e3.css.map": "/static/css/main.49faa5e3.css.map",
+    "main.b39ea520.js.map": "/static/js/main.b39ea520.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.49faa5e3.css",
+    "static/js/main.b39ea520.js"
+  ]
+}
