@@ -25,7 +25,7 @@ const MonthYearSelector = ({ selectedMonth, selectedYear, onMonthChange, onYearC
             value={selectedYear}
             onChange={onYearChange}
           >
-            {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i).map((year) => (
+            {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + i).map((year) => (
               <option key={year} value={year}>
                 {year}
               </option>

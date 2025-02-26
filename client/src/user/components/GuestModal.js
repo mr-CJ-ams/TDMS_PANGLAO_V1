@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import nationalities from "./Nationality";
 
 const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData }) => {
   const [lengthOfStay, setLengthOfStay] = useState(initialData?.lengthOfStay?.toString() || "");
@@ -135,16 +136,11 @@ const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData
                         handleUpdateGuest(index, "nationality", e.target.value)
                       }
                     >
-                      <option>Philippines</option>
-                      <option>United States</option>
-                      <option>Japan</option>
-                      <option>South Korea</option>
-                      <option>China</option>
-                      <option>Australia</option>
-                      <option>Canada</option>
-                      <option>Germany</option>
-                      <option>United Kingdom</option>
-                      <option>France</option>
+                      {nationalities.map((nationality) => (
+                        <option key={nationality} value={nationality}>
+                          {nationality}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>

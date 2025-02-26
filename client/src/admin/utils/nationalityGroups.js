@@ -1,0 +1,65 @@
+// src/utils/NationalityGroups.js
+
+const nationalityGroups = {
+    PHILIPPINES: ["Philippines"],
+    ASEAN: [
+      "Brunei",
+      "Cambodia",
+      "Indonesia",
+      "Laos",
+      "Malaysia",
+      "Myanmar",
+      "Singapore",
+      "Thailand",
+      "Vietnam",
+    ],
+    EAST_ASIA: ["China", "Hong Kong", "Japan", "South Korea", "Taiwan"],
+    SOUTH_ASIA: ["Bangladesh", "India", "Iran", "Nepal", "Pakistan", "Sri Lanka"],
+    MIDDLE_EAST: [
+      "Bahrain",
+      "Egypt",
+      "Israel",
+      "Jordan",
+      "Kuwait",
+      "Saudi Arabia",
+      "United Arab Emirates",
+    ],
+    NORTH_AMERICA: ["Canada", "Mexico", "USA"],
+    SOUTH_AMERICA: ["Argentina", "Brazil", "Colombia", "Peru", "Venezuela"],
+    WESTERN_EUROPE: [
+      "Austria",
+      "Belgium",
+      "France",
+      "Germany",
+      "Luxembourg",
+      "Netherlands",
+      "Switzerland",
+    ],
+    NORTHERN_EUROPE: [
+      "Denmark",
+      "Finland",
+      "Ireland",
+      "Norway",
+      "Sweden",
+      "United Kingdom",
+    ],
+    SOUTHERN_EUROPE: [
+      "Greece",
+      "Italy",
+      "Portugal",
+      "Spain",
+      "Serbia and Montenegro",
+    ],
+    EASTERN_EUROPE: ["Poland", "Russia", "Commonwealth of Independent States"],
+    AUSTRALASIA_PACIFIC: [
+      "Australia",
+      "Guam",
+      "Nauru",
+      "New Zealand",
+      "Papua New Guinea",
+    ],
+    AFRICA: ["Nigeria", "South Africa"],
+    OTHERS: ["Other"],
+  };
+  
+  export default nationalityGroups;

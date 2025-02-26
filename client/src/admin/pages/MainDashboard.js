@@ -4,6 +4,13 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import axios from "axios";
 import * as XLSX from "xlsx"; // For Excel file generation
 import { saveAs } from "file-saver"; // For file download
+import Filters from "../components/Filters";
+import MonthlyMetrics from "../components/MonthlyMetrics";
+import LineChartComponent from "../components/LineChart";
+import GuestDemographics from "../components/GuestDemographics";
+import NationalityCounts from "../components/NationalityCounts";
+import RegionalDistribution from "../utils/RegionalDistribution";
+
 
 // Helper function to safely convert a value to a number
 const toNumber = (value, defaultValue = 0) => {
@@ -125,9 +132,6 @@ const MainDashboard = () => {
 
   
 
-  // Generate year options for the dropdown
-  const currentYear = new Date().getFullYear();
-  const yearOptions = Array.from({ length: 10 }, (_, i) => currentYear - i);
 
   // Format month names
   const formatMonth = (month) => {
@@ -135,250 +139,59 @@ const MainDashboard = () => {
     return date.toLocaleString("default", { month: "long" });
   };
 
-  // Export Monthly Metrics to Excel
-  const exportMonthlyMetrics = () => {
-    const worksheet = XLSX.utils.json_to_sheet(
-      monthlyMetrics.map((metrics) => ({
-        Month: formatMonth(metrics.month),
-        "Total Check-Ins": toNumber(metrics.total_check_ins),
-        "Total Overnight": toNumber(metrics.total_overnight),
-        "Total Occupied": toNumber(metrics.total_occupied),
-        "Average Guest-Nights": toNumber(metrics.average_guest_nights).toFixed(2),
-        "Average Room Occupancy Rate": `${toNumber(metrics.average_room_occupancy_rate).toFixed(2)}%`,
-        "Average Guests per Room": toNumber(metrics.average_guests_per_room).toFixed(2),
-        "Total Submissions": toNumber(metrics.total_submissions),
-        "Submission Rate": `${toNumber(metrics.submission_rate).toFixed(2)}%`,
-      }))
-    );
-
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Monthly Metrics");
-    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
-    saveAs(blob, `Monthly_Metrics_${selectedYear}.xlsx`);
-  };
-
-  // Export Nationality Counts to Excel
-  const exportNationalityCounts = () => {
-    const worksheet = XLSX.utils.json_to_sheet(
-      nationalityCounts.map((nationality) => ({
-        Nationality: nationality.nationality,
-        Count: nationality.count,
-      }))
-    );
-
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Nationality Counts");
-    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
-    saveAs(blob, `Nationality_Counts_${selectedYear}_${formatMonth(selectedMonth)}.xlsx`);
-  };
-
-  // Export Guest Demographics to Excel
-  const exportGuestDemographics = () => {
-    const worksheet = XLSX.utils.json_to_sheet(
-      guestDemographics.map((demo) => ({
-        Gender: demo.gender,
-        AgeGroup: demo.age_group,
-        Status: demo.status,
-        Count: demo.count,
-      }))
-    );
-
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Guest Demographics");
-    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
-    saveAs(blob, `Guest_Demographics_${selectedYear}_${selectedMonth}.xlsx`);
-  };
-
   
+  const toNumber = (value, defaultValue = 0) => {
+    const num = parseFloat(value);
+    return isNaN(num) ? defaultValue : num;
+  };
 
   return (
     <div>
-      <h2>Main Dashboard</h2>
+    <h2>Main Dashboard</h2>
+    <Filters
+      selectedYear={selectedYear}
+      setSelectedYear={setSelectedYear}
+      selectedMonth={selectedMonth}
+      setSelectedMonth={setSelectedMonth}
+      formatMonth={formatMonth}
+    />
+    {loading ? (
+      <p>Loading monthly check-ins...</p>
+    ) : (
+      <LineChartComponent
+        monthlyCheckIns={monthlyCheckIns}
+        selectedYear={selectedYear}
+        formatMonth={formatMonth}
+      />
+    )}
+    <MonthlyMetrics
+      monthlyMetrics={monthlyMetrics}
+      selectedYear={selectedYear}
+      formatMonth={formatMonth}
+      toNumber={toNumber}
+    />
+    <GuestDemographics
+      guestDemographics={guestDemographics}
+      selectedYear={selectedYear}
+      selectedMonth={selectedMonth}
+      formatMonth={formatMonth}
+    />
+     <RegionalDistribution
+      nationalityCounts={nationalityCounts}
+      selectedYear={selectedYear}
+      selectedMonth={selectedMonth}
+      formatMonth={formatMonth}
+    />
+    <NationalityCounts
+      nationalityCounts={nationalityCounts}
+      selectedYear={selectedYear}
+      selectedMonth={selectedMonth}
+      formatMonth={formatMonth}
+    />
 
-      {/* Year Filter Dropdown */}
-      <div className="mb-4">
-        <label htmlFor="yearFilter">Select Year:</label>
-        <select
-          id="yearFilter"
-          className="form-control"
-          value={selectedYear}
-          onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-        >
-          {yearOptions.map((year) => (
-            <option key={year} value={year}>
-              {year}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Month Filter Dropdown */}
-      <div className="mb-4">
-        <label htmlFor="monthFilter">Select Month:</label>
-        <select
-          id="monthFilter"
-          className="form-control"
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-        >
-          {Array.from({ length: 12 }, (_, i) => (
-            <option key={i + 1} value={i + 1}>
-              {formatMonth(i + 1)}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Line Graph */}
-      {loading ? (
-        <p>Loading monthly check-ins...</p>
-      ) : (
-        <ResponsiveContainer width="100%" height={400}>
-          <LineChart
-            data={monthlyCheckIns}
-            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="month"
-              tickFormatter={formatMonth} // Display full month names
-            />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            {/* Actual Data Line */}
-            <Line
-              type="monotone"
-              dataKey="total_check_ins"
-              stroke="#8884d8"
-              activeDot={{ r: 8 }}
-              name="Actual Guest Check-In"
-              strokeOpacity={0.8}
-              dot={false}
-            />
-            {/* Predicted Data Line */}
-            {selectedYear === 2025 && (
-              <Line
-                type="monotone"
-                dataKey="total_check_ins"
-                stroke="#ff0000" // Red color for predicted data
-                strokeDasharray="5 5" // Dashed line for predicted data
-                name="Prediction of Guest Check-In"
-                strokeOpacity={0.8}
-                dot={false}
-                data={monthlyCheckIns.filter((d) => d.isPredicted)}
-              />
-            )}
-          </LineChart>
-        </ResponsiveContainer>
-      )}
-
-      {/* Monthly Metrics Table */}
-      <h3 className="mt-5">Monthly Metrics</h3>
-      <button className="btn btn-success mb-3" onClick={exportMonthlyMetrics}>
-        Export Monthly Metrics to Excel
-      </button>
-      {loading ? (
-        <p>Loading monthly metrics...</p>
-      ) : (
-        <div className="table-responsive">
-          <table className="table table-bordered">
-            <thead>
-              <tr>
-                <th>Month</th>
-                <th>Total Check-Ins</th>
-                <th>Total Overnight</th>
-                <th>Total Occupied</th>
-                <th>Average Guest-Nights</th>
-                <th>Average Room Occupancy Rate</th>
-                <th>Average Guests per Room</th>
-                <th>Total Submissions</th>
-                <th>Submission Rate</th>
-              </tr>
-            </thead>
-            <tbody>
-              {monthlyMetrics.map((metrics) => (
-                <tr key={metrics.month}>
-                  <td>{formatMonth(metrics.month)}</td>
-                  <td>{toNumber(metrics.total_check_ins)}</td>
-                  <td>{toNumber(metrics.total_overnight)}</td>
-                  <td>{toNumber(metrics.total_occupied)}</td>
-                  <td>{toNumber(metrics.average_guest_nights).toFixed(2)}</td>
-                  <td>{toNumber(metrics.average_room_occupancy_rate).toFixed(2)}%</td>
-                  <td>{toNumber(metrics.average_guests_per_room).toFixed(2)}</td>
-                  <td>{toNumber(metrics.total_submissions)}</td>
-                  <td>{toNumber(metrics.submission_rate).toFixed(2)}%</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-        {/* Guest Demographics Section */}
-        <h3 className="mt-5">Guest Demographics (Check-Ins Only)</h3>
-      <button className="btn btn-success mb-3" onClick={exportGuestDemographics}>
-        Export Guest Demographics to Excel
-      </button>
-      {loading ? (
-        <p>Loading guest demographics...</p>
-      ) : (
-        <div className="table-responsive">
-          <table className="table table-bordered">
-            <thead>
-              <tr>
-                <th>Gender</th>
-                <th>Age Group</th>
-                <th>Status</th>
-                <th>Count</th>
-              </tr>
-            </thead>
-            <tbody>
-              {guestDemographics.map((demo, index) => (
-                <tr key={index}>
-                  <td>{demo.gender}</td>
-                  <td>{demo.age_group}</td>
-                  <td>{demo.status}</td>
-                  <td>{demo.count}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Nationality Counts Table */}
-      <h3 className="mt-5">Nationality Counts (Check-Ins Only)</h3>
-      <button className="btn btn-success mb-3" onClick={exportNationalityCounts}>
-        Export Nationality Counts to Excel
-      </button>
-      {loading ? (
-        <p>Loading nationality counts...</p>
-      ) : (
-        <div className="table-responsive">
-          <table className="table table-bordered">
-            <thead>
-              <tr>
-                <th>Nationality</th>
-                <th>Count</th>
-              </tr>
-            </thead>
-            <tbody>
-              {nationalityCounts.map((nationality) => (
-                <tr key={nationality.nationality}>
-                  <td>{nationality.nationality}</td>
-                  <td>{nationality.count}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
+  
+  </div>
+);
 };
 
 export default MainDashboard;
