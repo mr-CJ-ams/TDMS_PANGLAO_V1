@@ -162,7 +162,6 @@ router.get("/history/:userId", async (req, res) => {
 });
 
 // Inside server/routes/submissions.js
-// Inside server/routes/submissions.js
 router.get("/details/:submissionId", async (req, res) => {
   try {
     const { submissionId } = req.params;
@@ -217,7 +216,7 @@ router.get("/details/:submissionId", async (req, res) => {
       nationalityCounts,
     };
 
-    console.log("Submission details response:", response); // Debugging
+    // console.log("Submission details response:", response); // Debugging
     res.json(response);
   } catch (err) {
     console.error("Details error:", err);
@@ -289,7 +288,7 @@ router.delete("/:submissionId", async (req, res) => {
   }
 });
 
-// Inside server/routes/submissions.js
+
 router.get("/check-submission", async (req, res) => {
   try {
     const { user_id, month, year } = req.query;

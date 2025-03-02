@@ -251,57 +251,143 @@ const AdminDashboard = () => {
   return (
     <div className="container-fluid">
       <div className="row">
-        {/* Sidebar */}
-        <div className="col-md-3 bg-light sidebar">
-          <div className="sidebar-sticky">
-            {/* Display the Tourism Logo */}
-            <div className="text-center mt-3">
-              <img
-                src={TourismLogo} // Use the imported image
-                alt="Tourism Logo"
-                style={{ width: "100px", height: "auto" }} // Adjust size as needed
-              />
-            </div>
-
-            <h4 className="sidebar-heading p-3">Admin Dashboard</h4>
-            <ul className="nav flex-column">
-              <li className="nav-item">
-                <Link
-                  to="#"
-                  className={`nav-link ${activeSection === "dashboard" ? "active" : ""}`}
-                  onClick={() => setActiveSection("dashboard")}
-                >
-                  Main Dashboard
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link
-                  to="#"
-                  className={`nav-link ${activeSection === "user-approval" ? "active" : ""}`}
-                  onClick={() => setActiveSection("user-approval")}
-                >
-                  User Approval
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link
-                  to="#"
-                  className={`nav-link ${activeSection === "submission-overview" ? "active" : ""}`}
-                  onClick={() => setActiveSection("submission-overview")}
-                >
-                  Submission Overview
-                </Link>
-              </li>
-            </ul>
-
-            {/* Logout Button */}
-            <div className="mt-4 p-3">
-              <button className="btn btn-danger w-100" onClick={handleLogout}>
-                Logout
-              </button>
-            </div>
-          </div>
+    {/* Sidebar */}
+    <div
+      className="col-md-3 sidebar"
+      style={{
+        backgroundColor: "#E0F7FA", // Light cyan background
+        minHeight: "50vh", // Full height
+        boxShadow: "2px 0 8px rgba(0, 0, 0, 0.1)", // Subtle shadow
+        padding: "20px 0", // Add padding for spacing
+      }}
+    >
+      <div className="sidebar-sticky">
+        {/* Display the Tourism Logo */}
+        <div
+          className="text-center mb-4"
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <img
+            src={TourismLogo} // Use the imported image
+            alt="Tourism Logo"
+            style={{
+              width: "100px",
+              height: "auto",
+              // borderRadius: "50%",
+              // border: "3px solid #0288D1", // Accent border
+              padding: "5px", // Add padding for a polished look
+            }}
+          />
         </div>
+
+    {/* Sidebar Heading */}
+    <h4
+      className="sidebar-heading mb-4"
+      style={{
+        color: "#37474F", // Dark gray text
+        fontWeight: "600", // Semi-bold
+        textAlign: "center",
+        fontSize: "1.25rem", // Slightly larger font
+        letterSpacing: "0.5px", // Subtle letter spacing
+      }}
+    >
+      Panglao Tourist Data Management System
+    </h4>
+
+    {/* Navigation Links */}
+    <ul className="nav flex-column">
+      <li className="nav-item">
+        <Link
+          to="#"
+          className={`nav-link ${
+            activeSection === "dashboard" ? "active" : ""
+          }`}
+          style={{
+            color: "#37474F", // Dark gray text
+            padding: "12px 20px", // Increased padding
+            transition: "all 0.3s ease", // Smooth transition
+            backgroundColor: activeSection === "dashboard" ? "#00BCD4" : "transparent", // Active state
+            color: activeSection === "dashboard" ? "#FFFFFF" : "#37474F", // Active state
+            borderRadius: "8px", // Rounded corners
+            margin: "4px 0", // Spacing between links
+            display: "block", // Ensure full width
+          }}
+          onClick={() => setActiveSection("dashboard")}
+        >
+          Main Dashboard
+        </Link>
+      </li>
+      <li className="nav-item">
+        <Link
+          to="#"
+          className={`nav-link ${
+            activeSection === "user-approval" ? "active" : ""
+          }`}
+          style={{
+            color: "#37474F", // Dark gray text
+            padding: "12px 20px", // Increased padding
+            transition: "all 0.3s ease", // Smooth transition
+            backgroundColor: activeSection === "user-approval" ? "#00BCD4" : "transparent", // Active state
+            color: activeSection === "user-approval" ? "#FFFFFF" : "#37474F", // Active state
+            borderRadius: "8px", // Rounded corners
+            margin: "4px 0", // Spacing between links
+            display: "block", // Ensure full width
+          }}
+          onClick={() => setActiveSection("user-approval")}
+        >
+          User Approval
+        </Link>
+      </li>
+      <li className="nav-item">
+        <Link
+          to="#"
+          className={`nav-link ${
+            activeSection === "submission-overview" ? "active" : ""
+          }`}
+          style={{
+            color: "#37474F", // Dark gray text
+            padding: "12px 20px", // Increased padding
+            transition: "all 0.3s ease", // Smooth transition
+            backgroundColor: activeSection === "submission-overview" ? "#00BCD4" : "transparent", // Active state
+            color: activeSection === "submission-overview" ? "#FFFFFF" : "#37474F", // Active state
+            borderRadius: "8px", // Rounded corners
+            margin: "4px 0", // Spacing between links
+            display: "block", // Ensure full width
+          }}
+          onClick={() => setActiveSection("submission-overview")}
+        >
+          Submission Overview
+        </Link>
+      </li>
+    </ul>
+
+    {/* Logout Button */}
+    <div className="mt-4 p-3">
+      <button
+        className="btn w-100"
+        style={{
+          backgroundColor: "#FF6F00", // Amber color for logout
+          color: "#FFFFFF",
+          border: "none",
+          padding: "12px", // Increased padding
+          borderRadius: "8px", // Rounded corners
+          cursor: "pointer",
+          transition: "all 0.3s ease", // Smooth transition
+          fontWeight: "600", // Semi-bold
+          fontSize: "1rem", // Slightly larger font
+          letterSpacing: "0.5px", // Subtle letter spacing
+        }}
+        onClick={handleLogout}
+      >
+        Logout
+      </button>
+    </div>
+  </div>
+</div>
 
         {/* Main Content */}
         <div className="col-md-9">

@@ -5,7 +5,11 @@ const SaveButton = ({ onSave, isFormSaved, hasSubmitted }) => {
     <button
       onClick={onSave}
       disabled={isFormSaved || hasSubmitted}
-      className={`btn btn-primary ${isFormSaved || hasSubmitted ? "disabled" : ""}`}
+      className={`px-4 py-2 rounded text-white font-bold ${
+        isFormSaved || hasSubmitted
+          ? "bg-gray-400 cursor-not-allowed" // Disabled state
+          : "bg-cyan-500 hover:bg-cyan-600" // Enabled state
+      }`}
     >
       {hasSubmitted ? "Already Submitted" : "Save Form"}
     </button>

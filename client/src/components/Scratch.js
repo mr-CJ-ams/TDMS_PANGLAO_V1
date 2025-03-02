@@ -1,272 +1,183 @@
 import React, { useState } from "react";
-import { Modal, Button } from "react-bootstrap";
-import axios from "axios";
-
-// Define accommodationCodes object
-const accommodationCodes = {
-  Hotel: "HTL",
-  Condotel: "CON",
-  "Serviced Residence": "SER",
-  Resort: "RES",
-  Apartelle: "APA",
-  Motel: "MOT",
-  "Pension House": "PEN",
-  "Home Stay Site": "HSS",
-  "Tourist Inn": "TIN",
-  Other: "OTH",
-};
-
-const UserApproval = ({
-  users,
-  setUsers,
-  selectedUserId,
-  declineMessage,
-  showDeleteModal,
-  userToDelete,
-  approveUser,
-  setSelectedUserId,
-  declineUser,
-  setDeclineMessage,
-  handleDeleteClick,
-  deleteUser,
-  setShowDeleteModal,
-}) => {
-  const [editingAccommodation, setEditingAccommodation] = useState(null); // Track user being edited
-  const [newAccommodationType, setNewAccommodationType] = useState(""); // Track new accommodation type
-
-  // Handle accommodation type update
-  const handleUpdateAccommodation = async (userId) => {
-    try {
-      const token = sessionStorage.getItem("token");
-      await axios.put(
-        `http://localhost:5000/admin/update-accommodation/${userId}`,
-        { accommodation_type: newAccommodationType },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      // Update the users list
-      const updatedUsers = users.map((user) =>
-        user.user_id === userId
-          ? {
-              ...user,
-              accommodation_type: newAccommodationType,
-              accommodation_code: accommodationCodes[newAccommodationType] || "OTH", // Use accommodationCodes
-            }
-          : user
-      );
-      setUsers(updatedUsers);
-
-      // Reset editing state
-      setEditingAccommodation(null);
-      setNewAccommodationType("");
-    } catch (err) {
-      console.error("Error updating accommodation type:", err);
-    }
+import { Edit2, Save, X } from "lucide-react";
+const ProfileSection = ({ user, onUpdateRooms }) => {
+  const [editingRooms, setEditingRooms] = useState(false);
+  const [newNumberOfRooms, setNewNumberOfRooms] = useState(
+    user?.number_of_rooms || "",
+  );
+  const handleUpdateRooms = async (e) => {
+    e.preventDefault();
+    await onUpdateRooms(newNumberOfRooms);
+    setEditingRooms(false);
   };
-
-  // Accommodation type options
-  const accommodationTypes = [
-    "Hotel",
-    "Condotel",
-    "Serviced Residence",
-    "Resort",
-    "Apartelle",
-    "Motel",
-    "Pension House",
-    "Home Stay Site",
-    "Tourist Inn",
-    "Other",
-  ];
-
   return (
-    <div>
-      <h2>User Approval</h2>
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Username</th>
-            <th>Company Name</th>
-            <th>Email</th>
-            <th>Phone Number</th>
-            <th>Registered Owner</th>
-            <th>TIN</th>
-            <th>Company Address</th>
-            <th>Accommodation Type</th>
-            <th>Accommodation Code</th>
-            <th>Number of Rooms</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((user) => (
-            <tr key={user.user_id}>
-              <td>{user.username}</td>
-              <td>{user.company_name}</td>
-              <td>{user.email}</td>
-              <td>{user.phone_number}</td>
-              <td>{user.registered_owner}</td>
-              <td>{user.tin}</td>
-              <td>{user.company_address}</td>
-              <td>
-                {editingAccommodation === user.user_id ? (
-                  <select
-                    className="form-control"
-                    value={newAccommodationType}
-                    onChange={(e) => setNewAccommodationType(e.target.value)}
-                  >
-                    {accommodationTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  user.accommodation_type
-                )}
-              </td>
-              <td>{user.accommodation_code}</td>
-              <td>{user.number_of_rooms}</td>
-              <td>{user.is_approved ? "Approved" : "Pending"}</td>
-              <td>
-                {!user.is_approved ? (
-                  <>
-                    <button
-                      className="btn btn-success"
-                      onClick={() => approveUser(user.user_id)}
-                    >
-                      Approve
-                    </button>
-                    <button
-                      className="btn btn-danger"
-                      onClick={() => setSelectedUserId(user.user_id)}
-                    >
-                      Decline
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => {
-                        setEditingAccommodation(user.user_id);
-                        setNewAccommodationType(user.accommodation_type);
-                      }}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="btn btn-danger"
-                      onClick={() => handleDeleteClick(user.user_id)}
-                    >
-                      Delete
-                    </button>
-                  </>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {/* Save Button for Editing Accommodation Type */}
-      {editingAccommodation && (
-        <div className="mt-3">
-          <button
-            className="btn btn-success"
-            onClick={() => handleUpdateAccommodation(editingAccommodation)}
-          >
-            Save Changes
-          </button>
-          <button
-            className="btn btn-secondary ms-2"
-            onClick={() => setEditingAccommodation(null)}
-          >
-            Cancel
-          </button>
+    <div className="min-h-screen bg-gradient-to-r from-cyan-500 to-teal-500 p-6">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-white">Profile Management</h1>
         </div>
-      )}
-
-      {/* Modal for Decline Message */}
-      {selectedUserId && (
-        <div className="modal" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Decline User</h5>
-                <button
-                  type="button"
-                  className="close"
-                  onClick={() => setSelectedUserId(null)}
-                >
-                  &times;
-                </button>
+        {user ? (
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-cyan-100">
+            {/* Profile Information */}
+            <div className="divide-y divide-cyan-100">
+              {/* Basic Info Section */}
+              <div className="p-6 bg-gradient-to-r from-cyan-50/30 to-teal-50/30">
+                <h2 className="text-lg font-semibold text-cyan-900 mb-4">
+                  Basic Information
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="text-sm font-medium text-cyan-600">
+                      Username
+                    </label>
+                    <p className="mt-1 text-gray-900">{user.username}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-cyan-600">
+                      Email
+                    </label>
+                    <p className="mt-1 text-gray-900">{user.email}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-cyan-600">
+                      Phone Number
+                    </label>
+                    <p className="mt-1 text-gray-900">{user.phone_number}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-cyan-600">
+                      Registered Owner
+                    </label>
+                    <p className="mt-1 text-gray-900">
+                      {user.registered_owner}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div className="modal-body">
-                <textarea
-                  className="form-control"
-                  placeholder="Enter reason for declining..."
-                  value={declineMessage}
-                  onChange={(e) => setDeclineMessage(e.target.value)}
-                />
+              {/* Company Info Section */}
+              <div className="p-6 bg-gradient-to-r from-teal-50/30 to-cyan-50/30">
+                <h2 className="text-lg font-semibold text-teal-900 mb-4">
+                  Company Details
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="text-sm font-medium text-teal-600">
+                      Company Name
+                    </label>
+                    <p className="mt-1 text-gray-900">{user.company_name}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-teal-600">
+                      TIN
+                    </label>
+                    <p className="mt-1 text-gray-900">{user.tin}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-sm font-medium text-teal-600">
+                      Company Address
+                    </label>
+                    <p className="mt-1 text-gray-900">{user.company_address}</p>
+                  </div>
+                </div>
               </div>
-              <div className="modal-footer">
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => setSelectedUserId(null)}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="btn btn-danger"
-                  onClick={() => declineUser(selectedUserId)}
-                >
-                  Confirm Decline
-                </button>
+              {/* Accommodation Info Section */}
+              <div className="p-6 bg-gradient-to-r from-cyan-50/30 to-teal-50/30">
+                <h2 className="text-lg font-semibold text-cyan-900 mb-4">
+                  Accommodation Details
+                </h2>
+                <div className="space-y-6">
+                  <div>
+                    <label className="text-sm font-medium text-cyan-600">
+                      Accommodation Type
+                    </label>
+                    <p className="mt-1 text-gray-900">
+                      {user.accommodation_type}
+                    </p>
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="text-sm font-medium text-cyan-600">
+                          Number of Rooms
+                        </label>
+                        <p className="mt-1 text-gray-900">
+                          {user.number_of_rooms}
+                        </p>
+                      </div>
+                      {!editingRooms && (
+                        <button
+                          onClick={() => setEditingRooms(true)}
+                          className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium text-teal-600 hover:bg-teal-50 transition-colors border border-teal-200"
+                        >
+                          <Edit2 className="w-4 h-4 mr-1.5" />
+                          Edit Rooms
+                        </button>
+                      )}
+                    </div>
+                    {/* Edit Rooms Form */}
+                    {editingRooms && (
+                      <div className="mt-4 p-4 rounded-xl bg-gradient-to-r from-cyan-50 to-teal-50 border border-cyan-100">
+                        <h3 className="text-lg font-semibold text-cyan-900 mb-4">
+                          Edit Number of Rooms
+                        </h3>
+                        <form
+                          onSubmit={handleUpdateRooms}
+                          className="space-y-4"
+                        >
+                          <div>
+                            <label className="block text-sm font-medium text-cyan-700 mb-1">
+                              Number of Rooms
+                            </label>
+                            <input
+                              type="number"
+                              value={newNumberOfRooms}
+                              onChange={(e) =>
+                                setNewNumberOfRooms(e.target.value)
+                              }
+                              min="1"
+                              required
+                              className="w-full px-4 py-2 rounded-lg border border-cyan-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
+                            />
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <button
+                              type="submit"
+                              className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 transition-all"
+                            >
+                              <Save className="w-4 h-4 mr-1.5" />
+                              Save Changes
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingRooms(false)}
+                              className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 transition-all"
+                            >
+                              <X className="w-4 h-4 mr-1.5" />
+                              Cancel
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Modal for Delete Confirmation */}
-      {showDeleteModal && (
-        <div className="modal" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Delete User</h5>
-                <button
-                  type="button"
-                  className="close"
-                  onClick={() => setShowDeleteModal(false)}
-                >
-                  &times;
-                </button>
-              </div>
-              <div className="modal-body">
-                <p>Are you sure you want to delete this user?</p>
-              </div>
-              <div className="modal-footer">
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => setShowDeleteModal(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="btn btn-danger"
-                  onClick={() => deleteUser(userToDelete)}
-                >
-                  Confirm Delete
-                </button>
+        ) : (
+          <div className="bg-white rounded-xl shadow-sm p-6 text-center">
+            <div className="animate-pulse">
+              <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto"></div>
+              <div className="space-y-3 mt-4">
+                <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto"></div>
+                <div className="h-4 bg-gray-200 rounded w-2/3 mx-auto"></div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
-
-export default UserApproval;
+export default ProfileSection;

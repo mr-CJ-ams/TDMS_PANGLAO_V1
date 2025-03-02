@@ -2,26 +2,26 @@
 import React from "react";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import processNationalityCounts from "./processNationalityCounts";
+import processNationalityCounts from "../utils/processNationalityCounts";
 
 const RegionalDistribution = ({ nationalityCounts, selectedYear, selectedMonth, formatMonth }) => {
   const processedData = processNationalityCounts(nationalityCounts);
 
   const exportToExcel = () => {
     const worksheetData = [];
-  
+
     // Add headers
     worksheetData.push(["REGIONAL DISTRIBUTION OF TRAVELLERS"]);
     worksheetData.push(["Year =", selectedYear]);
     worksheetData.push(["(PANGLAO REPORT)"]);
     worksheetData.push([]);
-  
+
     // Add Philippine and Non-Philippine Residents
     worksheetData.push(["COUNTRY OF RESIDENCE"]);
     worksheetData.push(["TOTAL PHILIPPINE RESIDENTS =", processedData.PHILIPPINE_RESIDENTS]);
     worksheetData.push(["NON-PHILIPPINE RESIDENTS =", processedData.NON_PHILIPPINE_RESIDENTS]);
     worksheetData.push([]);
-  
+
     // Add regions and sub-regions
     const addRegion = (region, label) => {
       worksheetData.push([label]);
@@ -35,7 +35,7 @@ const RegionalDistribution = ({ nationalityCounts, selectedYear, selectedMonth, 
       }
       worksheetData.push([]);
     };
-  
+
     addRegion(processedData.ASIA.ASEAN, "ASIA - ASEAN");
     addRegion(processedData.ASIA.EAST_ASIA, "ASIA - EAST ASIA");
     addRegion(processedData.ASIA.SOUTH_ASIA, "ASIA - SOUTH ASIA");
@@ -49,19 +49,19 @@ const RegionalDistribution = ({ nationalityCounts, selectedYear, selectedMonth, 
     addRegion(processedData.AUSTRALASIA_PACIFIC, "AUSTRALASIA/PACIFIC");
     addRegion(processedData.AFRICA, "AFRICA");
     addRegion(processedData.OTHERS, "OTHERS AND UNSPECIFIED RESIDENCES");
-  
+
     // Add totals
     worksheetData.push(["TOTAL NON-PHILIPPINE RESIDENTS =", processedData.NON_PHILIPPINE_RESIDENTS]);
     worksheetData.push([]);
     worksheetData.push(["GRAND TOTAL GUEST ARRIVALS =", processedData.PHILIPPINE_RESIDENTS + processedData.NON_PHILIPPINE_RESIDENTS]);
     worksheetData.push(["   Total Philippine Residents =", processedData.PHILIPPINE_RESIDENTS]);
     worksheetData.push(["   Total Non-Philippine Residents =", processedData.NON_PHILIPPINE_RESIDENTS]);
-  
+
     // Create worksheet and workbook
     const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Regional Distribution");
-  
+
     // Export to Excel
     const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
     const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
@@ -69,9 +69,20 @@ const RegionalDistribution = ({ nationalityCounts, selectedYear, selectedMonth, 
   };
 
   return (
-    <div>
-      <h3>Regional Distribution of Travellers</h3>
-      <button className="btn btn-success mb-3" onClick={exportToExcel}>
+    <div style={{ padding: "20px", backgroundColor: "#E0F7FA" }}>
+      <h3 style={{ color: "#37474F", marginBottom: "20px" }}>Regional Distribution of Travellers</h3>
+      <button
+        style={{
+          backgroundColor: "#00BCD4",
+          color: "#FFFFFF",
+          border: "none",
+          padding: "10px 20px",
+          borderRadius: "8px",
+          cursor: "pointer",
+          marginBottom: "20px",
+        }}
+        onClick={exportToExcel}
+      >
         Export Regional Distribution to Excel
       </button>
       {/* <pre>{JSON.stringify(processedData, null, 2)}</pre> For debugging */}

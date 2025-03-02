@@ -1,5 +1,5 @@
-import React from "react";
-import { Modal, Button } from "react-bootstrap";
+import React, { useMemo, useState } from "react";
+import { X, Search, ChevronUp, ChevronDown } from "lucide-react";
 
 const UserApproval = ({
   users,
@@ -15,103 +15,221 @@ const UserApproval = ({
   deleteUser,
   setShowDeleteModal,
 }) => {
-  return (
-    <div>
-      <h2>User Approval</h2>
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Username</th>
-            <th>Company Name</th>
-            <th>Email</th>
-            <th>Phone Number</th>
-            <th>Registered Owner</th>
-            <th>TIN</th>
-            <th>Company Address</th>
-            <th>Accommodation Type</th>
-            <th>Accommodation Code</th>
-            <th>Number of Rooms</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((user) => (
-            <tr key={user.user_id}>
-              <td>{user.username}</td>
-              <td>{user.company_name}</td>
-              <td>{user.email}</td>
-              <td>{user.phone_number}</td>
-              <td>{user.registered_owner}</td>
-              <td>{user.tin}</td>
-              <td>{user.company_address}</td>
-              <td>{user.accommodation_type}</td>
-              <td>{user.accommodation_code}</td>
-              <td>{user.number_of_rooms}</td>
-              <td>{user.is_approved ? "Approved" : "Pending"}</td>
-              <td>
-                {!user.is_approved ? (
-                  <>
-                    <button
-                      className="btn btn-success"
-                      onClick={() => approveUser(user.user_id)}
-                    >
-                      Approve
-                    </button>
-                    <button
-                      className="btn btn-danger"
-                      onClick={() => setSelectedUserId(user.user_id)}
-                    >
-                      Decline
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    className="btn btn-danger"
-                    onClick={() => handleDeleteClick(user.user_id)}
-                  >
-                    Delete
-                  </button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeFilter, setActiveFilter] = useState("all"); // "all", "pending", or "approved"
+  const [sortDirection, setSortDirection] = useState("asc"); // "asc" or "desc"
 
-      {/* Modal for Decline Message */}
-      {selectedUserId && (
-        <div className="modal" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Decline User</h5>
-                <button
-                  type="button"
-                  className="close"
-                  onClick={() => setSelectedUserId(null)}
+  const filteredAndSortedUsers = useMemo(() => {
+    return users
+      .filter((user) => {
+        const companyName = user.company_name || ""; // Fallback to an empty string if null/undefined
+        const matchesSearch = companyName
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
+        const matchesFilter =
+          activeFilter === "all" ||
+          (activeFilter === "pending" && !user.is_approved) ||
+          (activeFilter === "approved" && user.is_approved);
+        return matchesSearch && matchesFilter;
+      })
+      .sort((a, b) => {
+        const companyNameA = a.company_name || ""; // Fallback to an empty string if null/undefined
+        const companyNameB = b.company_name || ""; // Fallback to an empty string if null/undefined
+        const comparison = companyNameA.localeCompare(companyNameB);
+        return sortDirection === "asc" ? comparison : -comparison;
+      });
+  }, [users, searchTerm, activeFilter, sortDirection]);
+
+  // Calculate the number of users matching the current filter and search
+  const userCount = filteredAndSortedUsers.length;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-sky-50 to-white p-8">
+      <h2 className="text-3xl font-semibold text-sky-900 mb-8">User Approval</h2>
+      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="relative w-full sm:w-96">
+          <Search
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+            size={20}
+          />
+          <input
+            type="text"
+            placeholder="Search by company name..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-sky-200 focus:border-sky-500 transition-all"
+          />
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setActiveFilter("all")}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              activeFilter === "all"
+                ? "bg-sky-500 text-white"
+                : "bg-white text-gray-600 hover:bg-sky-50"
+            }`}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setActiveFilter("pending")}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              activeFilter === "pending"
+                ? "bg-amber-500 text-white"
+                : "bg-white text-gray-600 hover:bg-amber-50"
+            }`}
+          >
+            Pending
+          </button>
+          <button
+            onClick={() => setActiveFilter("approved")}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              activeFilter === "approved"
+                ? "bg-emerald-500 text-white"
+                : "bg-white text-gray-600 hover:bg-emerald-50"
+            }`}
+          >
+            Approved
+          </button>
+        </div>
+      </div>
+
+      {/* Display the number of users */}
+      <div className="mb-4 text-sky-900 font-medium">
+        Showing {userCount} {userCount === 1 ? "user" : "users"}
+      </div>
+
+      <div className="overflow-x-auto rounded-lg shadow-lg bg-white">
+        <table className="w-full">
+          <thead>
+            <tr className="bg-sky-100 text-sky-900">
+              <th
+                className="p-4 text-left font-medium cursor-pointer"
+                onClick={() =>
+                  setSortDirection(sortDirection === "asc" ? "desc" : "asc")
+                }
+              >
+                <div className="flex items-center gap-2">
+                  Company Name
+                  {sortDirection === "asc" ? (
+                    <ChevronUp size={16} />
+                  ) : (
+                    <ChevronDown size={16} />
+                  )}
+                </div>
+              </th>
+              <th className="p-4 text-left font-medium">Username</th>
+              <th className="p-4 text-left font-medium">Email</th>
+              <th className="p-4 text-left font-medium">Phone Number</th>
+              <th className="p-4 text-left font-medium">Registered Owner</th>
+              <th className="p-4 text-left font-medium">TIN</th>
+              <th className="p-4 text-left font-medium">Company Address</th>
+              <th className="p-4 text-left font-medium">Accommodation Type</th>
+              <th className="p-4 text-left font-medium">Accommodation Code</th>
+              <th className="p-4 text-left font-medium">Number of Rooms</th>
+              <th className="p-4 text-left font-medium">Status</th>
+              <th className="p-4 text-left font-medium">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-sky-100">
+            {filteredAndSortedUsers.length === 0 ? (
+              <tr>
+                <td colSpan={12} className="p-4 text-center text-gray-500">
+                  No users found matching your criteria
+                </td>
+              </tr>
+            ) : (
+              filteredAndSortedUsers.map((user) => (
+                <tr
+                  key={user.user_id}
+                  className="hover:bg-sky-50 transition-colors"
                 >
-                  &times;
+                  <td className="p-4 font-medium">{user.company_name || "N/A"}</td>
+                  <td className="p-4">{user.username}</td>
+                  <td className="p-4">{user.email}</td>
+                  <td className="p-4">{user.phone_number}</td>
+                  <td className="p-4">{user.registered_owner}</td>
+                  <td className="p-4">{user.tin}</td>
+                  <td className="p-4">{user.company_address}</td>
+                  <td className="p-4">{user.accommodation_type}</td>
+                  <td className="p-4">{user.accommodation_code}</td>
+                  <td className="p-4">{user.number_of_rooms}</td>
+                  <td className="p-4">
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm ${
+                        user.is_approved
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-amber-100 text-amber-700"
+                      }`}
+                    >
+                      {user.is_approved ? "Approved" : "Pending"}
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    {!user.is_approved ? (
+                      <div className="space-x-2">
+                        <button
+                          onClick={() => approveUser(user.user_id)}
+                          className="px-4 py-2 bg-emerald-500 text-white rounded hover:bg-emerald-600 transition-colors"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => setSelectedUserId(user.user_id)}
+                          className="px-4 py-2 bg-rose-500 text-white rounded hover:bg-rose-600 transition-colors"
+                        >
+                          Decline
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleDeleteClick(user.user_id)}
+                        className="px-4 py-2 bg-rose-500 text-white rounded hover:bg-rose-600 transition-colors"
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Decline User Modal */}
+      {selectedUserId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold text-sky-900">
+                  Decline User
+                </h3>
+                <button
+                  onClick={() => setSelectedUserId(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X size={24} />
                 </button>
               </div>
-              <div className="modal-body">
-                <textarea
-                  className="form-control"
-                  placeholder="Enter reason for declining..."
-                  value={declineMessage}
-                  onChange={(e) => setDeclineMessage(e.target.value)}
-                />
-              </div>
-              <div className="modal-footer">
+              <textarea
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-sky-200 focus:border-sky-500 transition-all"
+                placeholder="Enter reason for declining..."
+                value={declineMessage}
+                onChange={(e) => setDeclineMessage(e.target.value)}
+                rows={4}
+              />
+              <div className="flex justify-end space-x-3 mt-6">
                 <button
-                  className="btn btn-secondary"
                   onClick={() => setSelectedUserId(null)}
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
-                  className="btn btn-danger"
                   onClick={() => declineUser(selectedUserId)}
+                  className="px-4 py-2 bg-rose-500 text-white rounded hover:bg-rose-600 transition-colors"
                 >
                   Confirm Decline
                 </button>
@@ -121,34 +239,35 @@ const UserApproval = ({
         </div>
       )}
 
-      {/* Modal for Delete Confirmation */}
+      {/* Delete User Modal */}
       {showDeleteModal && (
-        <div className="modal" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Delete User</h5>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold text-sky-900">
+                  Delete User
+                </h3>
                 <button
-                  type="button"
-                  className="close"
                   onClick={() => setShowDeleteModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
                 >
-                  &times;
+                  <X size={24} />
                 </button>
               </div>
-              <div className="modal-body">
-                <p>Are you sure you want to delete this user?</p>
-              </div>
-              <div className="modal-footer">
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to delete this user?
+              </p>
+              <div className="flex justify-end space-x-3">
                 <button
-                  className="btn btn-secondary"
                   onClick={() => setShowDeleteModal(false)}
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
-                  className="btn btn-danger"
                   onClick={() => deleteUser(userToDelete)}
+                  className="px-4 py-2 bg-rose-500 text-white rounded hover:bg-rose-600 transition-colors"
                 >
                   Confirm Delete
                 </button>

@@ -1,9 +1,11 @@
 const { Pool } = require("pg");
 require("dotenv").config();
 
+const isProduction = process.env.NODE_ENV === "production";
+
 const pool = new Pool({
-  connectionString: "postgresql://postgres.xfxhhyfnqvcvarmloqrm:@maquinCJ00@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres",
-  ssl: { rejectUnauthorized: false }, // Required for Render's PostgreSQL
+  connectionString: process.env.DATABASE_URL,
+  ssl: isProduction ? { rejectUnauthorized: false } : false, // Enable SSL only in production
 });
 
 module.exports = pool;

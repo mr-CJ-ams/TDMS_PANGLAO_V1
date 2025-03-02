@@ -27,38 +27,70 @@ const MonthlyMetrics = ({ monthlyMetrics, selectedYear, formatMonth, toNumber })
   };
 
   return (
-    <div>
-      <h3>Monthly Metrics</h3>
-      <button className="btn btn-success mb-3" onClick={exportMonthlyMetrics}>
+    <div style={{ padding: "20px", backgroundColor: "#E0F7FA"}}>
+      <h3 style={{ color: "#37474F", marginBottom: "20px" }}>Monthly Metrics</h3>
+      <button
+        style={{
+          backgroundColor: "#00BCD4",
+          color: "#FFFFFF",
+          border: "none",
+          padding: "10px 20px",
+          borderRadius: "8px",
+          cursor: "pointer",
+          marginBottom: "20px",
+        }}
+        onClick={exportMonthlyMetrics}
+      >
         Export Monthly Metrics to Excel
       </button>
       <div className="table-responsive">
-        <table className="table table-bordered">
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            backgroundColor: "#FFFFFF",
+            borderRadius: "12px",
+            overflow: "hidden",
+            boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.1)",
+          }}
+        >
           <thead>
-            <tr>
-              <th>Month</th>
-              <th>Total Check-Ins</th>
-              <th>Total Overnight</th>
-              <th>Total Occupied</th>
-              <th>Average Guest-Nights</th>
-              <th>Average Room Occupancy Rate</th>
-              <th>Average Guests per Room</th>
-              <th>Total Submissions</th>
-              <th>Submission Rate</th>
+            <tr style={{ backgroundColor: "#00BCD4", color: "#FFFFFF" }}>
+              <th style={{ padding: "12px", textAlign: "left" }}>Month</th>
+              <th style={{ padding: "12px", textAlign: "left" }}>Total Check-Ins</th>
+              <th style={{ padding: "12px", textAlign: "left" }}>Total Overnight</th>
+              <th style={{ padding: "12px", textAlign: "left" }}>Total Occupied</th>
+              <th style={{ padding: "12px", textAlign: "left" }}>Average Guest-Nights</th>
+              <th style={{ padding: "12px", textAlign: "left" }}>Average Room Occupancy Rate</th>
+              <th style={{ padding: "12px", textAlign: "left" }}>Average Guests per Room</th>
+              <th style={{ padding: "12px", textAlign: "left" }}>Total Submissions</th>
+              <th style={{ padding: "12px", textAlign: "left" }}>Submission Rate</th>
             </tr>
           </thead>
           <tbody>
             {monthlyMetrics.map((metrics) => (
-              <tr key={metrics.month}>
-                <td>{formatMonth(metrics.month)}</td>
-                <td>{toNumber(metrics.total_check_ins)}</td>
-                <td>{toNumber(metrics.total_overnight)}</td>
-                <td>{toNumber(metrics.total_occupied)}</td>
-                <td>{toNumber(metrics.average_guest_nights).toFixed(2)}</td>
-                <td>{toNumber(metrics.average_room_occupancy_rate).toFixed(2)}%</td>
-                <td>{toNumber(metrics.average_guests_per_room).toFixed(2)}</td>
-                <td>{toNumber(metrics.total_submissions)}</td>
-                <td>{toNumber(metrics.submission_rate).toFixed(2)}%</td>
+              <tr
+                key={metrics.month}
+                style={{
+                  borderBottom: "1px solid #B0BEC5",
+                  backgroundColor: metrics.month % 2 === 0 ? "#F5F5F5" : "#FFFFFF",
+                }}
+              >
+                <td style={{ padding: "12px", color: "#37474F" }}>{formatMonth(metrics.month)}</td>
+                <td style={{ padding: "12px", color: "#37474F" }}>{toNumber(metrics.total_check_ins)}</td>
+                <td style={{ padding: "12px", color: "#37474F" }}>{toNumber(metrics.total_overnight)}</td>
+                <td style={{ padding: "12px", color: "#37474F" }}>{toNumber(metrics.total_occupied)}</td>
+                <td style={{ padding: "12px", color: "#37474F" }}>{toNumber(metrics.average_guest_nights).toFixed(2)}</td>
+                <td style={{ padding: "12px", color: "#37474F" }}>
+                  {toNumber(metrics.average_room_occupancy_rate).toFixed(2)}%
+                </td>
+                <td style={{ padding: "12px", color: "#37474F" }}>
+                  {toNumber(metrics.average_guests_per_room).toFixed(2)}
+                </td>
+                <td style={{ padding: "12px", color: "#37474F" }}>{toNumber(metrics.total_submissions)}</td>
+                <td style={{ padding: "12px", color: "#37474F" }}>
+                  {toNumber(metrics.submission_rate).toFixed(2)}%
+                </td>
               </tr>
             ))}
           </tbody>

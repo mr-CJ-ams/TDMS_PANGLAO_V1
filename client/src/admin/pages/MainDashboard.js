@@ -9,7 +9,7 @@ import MonthlyMetrics from "../components/MonthlyMetrics";
 import LineChartComponent from "../components/LineChart";
 import GuestDemographics from "../components/GuestDemographics";
 import NationalityCounts from "../components/NationalityCounts";
-import RegionalDistribution from "../utils/RegionalDistribution";
+import RegionalDistribution from "../components/RegionalDistribution";
 
 
 // Helper function to safely convert a value to a number

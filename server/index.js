@@ -29,16 +29,6 @@ app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../client/build", "index.html"));
 });
 
-app.get("/test-db", async (req, res) => {
-  try {
-    const result = await pool.query("SELECT NOW()");
-    res.json({ success: true, data: result.rows[0] });
-  } catch (err) {
-    console.error("Database connection error:", err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
 // Start the server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

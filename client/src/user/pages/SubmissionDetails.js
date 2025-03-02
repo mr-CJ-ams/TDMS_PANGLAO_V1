@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import * as XLSX from "xlsx"; // For Excel file generation
-import { saveAs } from "file-saver"; // For file download
-import { Modal, Button, ListGroup } from "react-bootstrap";
-
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+import { Modal, ListGroup } from "react-bootstrap";
+import { FileSpreadsheet, Users, ArrowLeft } from "lucide-react";
+import { MetricsCard } from "../components/MetricsCard";
+import { ActionButton } from "../components/ActionButton";
 const SubmissionDetails = () => {
   const { submissionId } = useParams();
   const [submission, setSubmission] = useState({ days: [] });
@@ -213,179 +215,163 @@ const SubmissionDetails = () => {
   };
 
   return (
-    <div className="container mt-5">
-      <h2>Submission Details</h2>
-      <p>
-        <strong>Month:</strong>{" "}
-        {new Date(0, submission.month - 1).toLocaleString("default", {
-          month: "long",
-        })}
-      </p>
-      <p>
-        <strong>Year:</strong> {submission.year}
-      </p>
-      <p>
-        <strong>Submitted At:</strong>{" "}
-        {new Date(submission.submitted_at).toLocaleString()}
-      </p>
-
-      <button
-        className="btn btn-success mb-4"
-        onClick={() => exportToExcel(submission)}
-      >
-        Export to Excel
-      </button>
-
-      {/* Nationality Count Button */}
-      <button
-        className="btn btn-info mb-4"
-        onClick={() => setShowNationalityModal(true)}
-      >
-        View Nationality Counts
-      </button>
-
-      {/* Export Nationality Counts Button */}
-      <button
-        className="btn btn-warning mb-4 ms-2"
-        onClick={exportNationalityCountsToExcel}
-      >
-        Export Nationality Counts to Excel
-      </button>
-
-      {/* Nationality Count Modal */}
-      <Modal
-        show={showNationalityModal}
-        onHide={() => setShowNationalityModal(false)}
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Nationality Counts (Check-ins Only)</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <ListGroup>
-            {sortedNationalities.map((nationality) => (
-              <ListGroup.Item key={nationality}>
-                {nationality}: {nationalityCounts[nationality]}
-              </ListGroup.Item>
-            ))}
-          </ListGroup>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button
-            variant="secondary"
-            onClick={() => setShowNationalityModal(false)}
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">
+            Submission Details
+          </h1>
+          <div className="mt-2 text-gray-600">
+            <p className="mb-1">
+              <span className="font-medium">Month:</span>{" "}
+              {new Date(0, submission.month - 1).toLocaleString("default", {
+                month: "long",
+              })}
+            </p>
+            <p className="mb-1">
+              <span className="font-medium">Year:</span> {submission.year}
+            </p>
+            <p>
+              <span className="font-medium">Submitted:</span>{" "}
+              {new Date(submission.submitted_at).toLocaleString()}
+            </p>
+          </div>
+        </div>
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-3 mb-8">
+          <ActionButton 
+            onClick={() => exportToExcel(submission)}>
+            <FileSpreadsheet className="w-4 h-4 inline mr-2" />
+            Export to Excel
+          </ActionButton>
+          <ActionButton
+            onClick={() => setShowNationalityModal(true)}
+            variant="outline"
           >
-            Close
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      {/* Totals Section */}
-      <div className="mt-4">
-        <h3>Totals</h3>
-        <div className="row">
-          <div className="col-md-4">
-            <div className="card">
-              <div className="card-body">
-                <h5 className="card-title">Total Check-Ins</h5>
-                <p className="card-text">{totalCheckIns}</p>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-4">
-            <div className="card">
-              <div className="card-body">
-                <h5 className="card-title">Total Overnight</h5>
-                <p className="card-text">{totalOvernight}</p>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-4">
-            <div className="card">
-              <div className="card-body">
-                <h5 className="card-title">Total Occupied</h5>
-                <p className="card-text">{totalOccupied}</p>
-              </div>
-            </div>
-          </div>
+            <Users className="w-4 h-4 inline mr-2" />
+            View Nationality Counts
+          </ActionButton>
+          <ActionButton
+            onClick={exportNationalityCountsToExcel}
+          >
+            <FileSpreadsheet className="w-4 h-4 inline mr-2" />
+            Export Nationality Counts
+          </ActionButton>
         </div>
-      </div>
-
-      {/* Averages Section */}
-      <div className="mt-4">
-        <h3>Averages</h3>
-        <div className="row">
-          <div className="col-md-4">
-            <div className="card">
-              <div className="card-body">
-                <h5 className="card-title">Average Guest-Nights</h5>
-                <p className="card-text">{averageGuestNights}</p>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-4">
-            <div className="card">
-              <div className="card-body">
-                <h5 className="card-title">Average Room Occupancy Rate</h5>
-                <p className="card-text">{averageRoomOccupancyRate}%</p>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-4">
-            <div className="card">
-              <div className="card-body">
-                <h5 className="card-title">Average Guests per Room</h5>
-                <p className="card-text">{averageGuestsPerRoom}</p>
-              </div>
-            </div>
-          </div>
+        {/* Metrics Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <MetricsCard title="Total Check-Ins" value={totalCheckIns} />
+          <MetricsCard title="Total Overnight" value={totalOvernight} />
+          <MetricsCard title="Total Occupied" value={totalOccupied} />
         </div>
-      </div>
-
-      {/* Daily Metrics Table */}
-      <h3 className="mt-4">Daily Metrics</h3>
-      {submission.days.length > 0 ? (
-        <div className="table-responsive">
-          <table className="table table-bordered">
-            <thead>
-              <tr>
-                <th>Day</th>
-                <th>Check Ins</th>
-                <th>Overnight</th>
-                <th>Occupied</th>
-                <th>Guests</th>                         
-              </tr>
-            </thead>
-            <tbody>
-              {submission.days.map((day) => (
-                <tr key={day.day}>
-                  <td>{day.day}</td>
-                  <td>{day.check_ins || 0}</td>
-                  <td>{day.overnight || 0}</td>
-                  <td>{day.occupied || 0}</td>
-                  <td>
-                    <ul>
-                      {day.guests && day.guests.map((guest, index) => (
-                        <li key={index}>
-                          Room {guest.room_number}, {guest.gender}, {guest.age}, {guest.status}, {guest.nationality}
-                        </li>
-                      ))}
-                    </ul>
-                  </td>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <MetricsCard
+            title="Average Guest-Nights"
+            value={`${averageGuestNights}`}
+          />
+          <MetricsCard
+            title="Room Occupancy Rate"
+            value={`${averageRoomOccupancyRate}%`}
+          />
+          <MetricsCard title="Guests per Room" value={averageGuestsPerRoom} />
+        </div>
+        {/* Daily Metrics Table */}
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-8">
+          <h2 className="text-xl font-semibold p-6 border-b">Daily Metrics</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Day
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Check Ins
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Overnight
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Occupied
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Guests
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {submission.days.map((day) => (
+                  <tr key={day.day} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">{day.day}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {day.check_ins || 0}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {day.overnight || 0}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {day.occupied || 0}
+                    </td>
+                    <td className="px-6 py-4">
+                      {day.guests && day.guests.length > 0 ? (
+                        <ul className="space-y-1">
+                          {day.guests.map((guest, index) => (
+                            <li key={index} className="text-sm text-gray-600">
+                              Room {guest.room_number}, {guest.gender},{" "}
+                              {guest.age}, {guest.status}, {guest.nationality}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span className="text-gray-400">No guests</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      ) : (
-        <p>No data available for this submission.</p>
-      )}
-
-      {/* Back Button */}
-      <button className="btn btn-secondary mt-4" onClick={() => navigate(-1)}>
-        Back to History
-      </button>
+        {/* Back Button */}
+        <ActionButton onClick={() => navigate(-1)} variant="secondary">
+          <ArrowLeft className="w-4 h-4 inline mr-2" />
+          Back to History
+        </ActionButton>
+        {/* Nationality Modal */}
+        <Modal
+          show={showNationalityModal}
+          onHide={() => setShowNationalityModal(false)}
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>Nationality Counts (Check-ins Only)</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <ListGroup>
+              {sortedNationalities.map((nationality) => (
+                <ListGroup.Item
+                  key={nationality}
+                  className="d-flex justify-content-between align-items-center"
+                >
+                  <span>{nationality}</span>
+                  <span className="badge bg-primary rounded-pill">
+                    {nationalityCounts[nationality]}
+                  </span>
+                </ListGroup.Item>
+              ))}
+            </ListGroup>
+          </Modal.Body>
+          <Modal.Footer>
+            <ActionButton
+              onClick={() => setShowNationalityModal(false)}
+              variant="secondary"
+            >
+              Close
+            </ActionButton>
+          </Modal.Footer>
+        </Modal>
+      </div>
     </div>
   );
 };
-
 export default SubmissionDetails;

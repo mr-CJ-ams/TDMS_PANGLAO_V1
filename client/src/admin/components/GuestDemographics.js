@@ -22,28 +22,54 @@ const GuestDemographics = ({ guestDemographics, selectedYear, selectedMonth, for
   };
 
   return (
-    <div>
-      <h3>Guest Demographics (Check-Ins Only)</h3>
-      <button className="btn btn-success mb-3" onClick={exportGuestDemographics}>
+    <div style={{ padding: "20px", backgroundColor: "#E0F7FA"}}>
+      <h3 style={{ color: "#37474F", marginBottom: "20px" }}>Guest Demographics (Check-Ins Only)</h3>
+      <button
+        style={{
+          backgroundColor: "#00BCD4",
+          color: "#FFFFFF",
+          border: "none",
+          padding: "10px 20px",
+          borderRadius: "8px",
+          cursor: "pointer",
+          marginBottom: "20px",
+        }}
+        onClick={exportGuestDemographics}
+      >
         Export Guest Demographics to Excel
       </button>
       <div className="table-responsive">
-        <table className="table table-bordered">
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            backgroundColor: "#FFFFFF",
+            borderRadius: "12px",
+            overflow: "hidden",
+            boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.1)",
+          }}
+        >
           <thead>
-            <tr>
-              <th>Gender</th>
-              <th>Age Group</th>
-              <th>Status</th>
-              <th>Count</th>
+            <tr style={{ backgroundColor: "#00BCD4", color: "#FFFFFF" }}>
+              <th style={{ padding: "12px", textAlign: "left" }}>Gender</th>
+              <th style={{ padding: "12px", textAlign: "left" }}>Age Group</th>
+              <th style={{ padding: "12px", textAlign: "left" }}>Status</th>
+              <th style={{ padding: "12px", textAlign: "left" }}>Count</th>
             </tr>
           </thead>
           <tbody>
             {guestDemographics.map((demo, index) => (
-              <tr key={index}>
-                <td>{demo.gender}</td>
-                <td>{demo.age_group}</td>
-                <td>{demo.status}</td>
-                <td>{demo.count}</td>
+              <tr
+                key={index}
+                style={{
+                  borderBottom: "1px solid #B0BEC5",
+                  backgroundColor: index % 2 === 0 ? "#F5F5F5" : "#FFFFFF",
+                }}
+              >
+                <td style={{ padding: "12px", color: "#37474F" }}>{demo.gender}</td>
+                <td style={{ padding: "12px", color: "#37474F" }}>{demo.age_group}</td>
+                <td style={{ padding: "12px", color: "#37474F" }}>{demo.status}</td>
+                <td style={{ padding: "12px", color: "#37474F" }}>{demo.count}</td>
               </tr>
             ))}
           </tbody>

@@ -6,6 +6,8 @@ import ProfileSection from "../components/ProfileSection";
 import SubmissionInput from "../components/SubmissionInput";
 import SubmissionHistory from "../components/SubmissionHistory";
 import HelpSupport from "../components/HelpSupport";
+import Ordinance from "../components/Ordinance";
+import MainDashboard from "../../admin/pages/MainDashboard";
 
 const UserDashboard = () => {
   const [user, setUser] = useState(null);
@@ -65,9 +67,8 @@ const UserDashboard = () => {
 
         <div className="col-md-9">
           <div className="p-4">
-            <h2>User Dashboard</h2>
 
-            {activeSection === "dashboard" && <div></div>}
+            {activeSection === "dashboard" && <Ordinance/> }
 
             {activeSection === "submission-input" && <SubmissionInput />}
 
@@ -76,6 +77,8 @@ const UserDashboard = () => {
             {activeSection === "profile-management" && (
               <ProfileSection user={user} onUpdateRooms={handleUpdateRooms} />
             )}
+
+            {activeSection === "admin-dashboard" && <MainDashboard/>}
 
             {activeSection === "help-support" && <HelpSupport />}
           </div>

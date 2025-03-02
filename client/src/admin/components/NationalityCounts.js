@@ -20,24 +20,36 @@ const NationalityCounts = ({ nationalityCounts, selectedYear, selectedMonth, for
   };
 
   return (
-    <div>
-      {/* <h3>Nationality Counts (Check-Ins Only)</h3>
-      <button className="btn btn-success mb-3" onClick={exportNationalityCounts}>
-        Export Nationality Counts to Excel
-      </button> */}
+    <div style={{ padding: "20px", backgroundColor: "#E0F7FA"}}>
+      
       <div className="table-responsive">
-        <table className="table table-bordered">
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            backgroundColor: "#FFFFFF",
+            borderRadius: "12px",
+            overflow: "hidden",
+            boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.1)",
+          }}
+        >
           <thead>
-            <tr>
-              <th>Nationality</th>
-              <th>Count</th>
+            <tr style={{ backgroundColor: "#00BCD4", color: "#FFFFFF" }}>
+              <th style={{ padding: "12px", textAlign: "left" }}>Nationality</th>
+              <th style={{ padding: "12px", textAlign: "left" }}>Count</th>
             </tr>
           </thead>
           <tbody>
-            {nationalityCounts.map((nationality) => (
-              <tr key={nationality.nationality}>
-                <td>{nationality.nationality}</td>
-                <td>{nationality.count}</td>
+            {nationalityCounts.map((nationality, index) => (
+              <tr
+                key={nationality.nationality}
+                style={{
+                  borderBottom: "1px solid #B0BEC5",
+                  backgroundColor: index % 2 === 0 ? "#F5F5F5" : "#FFFFFF",
+                }}
+              >
+                <td style={{ padding: "12px", color: "#37474F" }}>{nationality.nationality}</td>
+                <td style={{ padding: "12px", color: "#37474F" }}>{nationality.count}</td>
               </tr>
             ))}
           </tbody>

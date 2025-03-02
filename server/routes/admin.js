@@ -6,7 +6,7 @@ const { sendEmailNotification } = require("../utils/email");
 // Get all users
 router.get("/users", async (req, res) => {
   try {
-    const allUsers = await pool.query("SELECT * FROM users");
+    const allUsers = await pool.query("SELECT * FROM users WHERE role = 'user'");
     res.json(allUsers.rows);
   } catch (err) {
     console.error(err.message);
