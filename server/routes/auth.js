@@ -176,9 +176,15 @@ router.put("/update-rooms", async (req, res) => {
   }
 });
 
-// Forgot Password Endpoint
+
+
 router.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
+
+  // Input validation
+  if (!email) {
+    return res.status(400).json({ message: "Email is required" });
+  }
 
   try {
     // Check if the email exists in the database
@@ -188,7 +194,7 @@ router.post("/forgot-password", async (req, res) => {
     }
 
     // Generate a reset token
-    const resetToken = jwt.sign({ email }, "tourismSecretKey", { expiresIn: "1h" });
+    const resetToken = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
     // Save the reset token and expiry in the database
     await pool.query(
@@ -197,17 +203,21 @@ router.post("/forgot-password", async (req, res) => {
     );
 
     // Generate the reset link
-    const resetLink = `https://tdms-panglao-client.onrender.com/reset-password/${resetToken}`; // Frontend reset password page
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
 
     // Send the reset link via email
     const emailSubject = "Password Reset Request";
-    const emailMessage = `Click the link to reset your password: ${resetLink}`;
+    const emailMessage = `
+      <p>You requested a password reset. Click the link below to reset your password:</p>
+      <a href="${resetLink}">Reset Password</a>
+      <p>This link will expire in 1 hour.</p>
+    `;
     sendEmailNotification(email, emailSubject, emailMessage);
 
     res.json({ message: "Reset link sent to your email" });
   } catch (err) {
     console.error("Forgot password error:", err);
-    res.status(500).json({ message: "Failed to send reset link" });
+    res.status(500).json({ message: "Failed to send reset link. Please try again later." });
   }
 });
 
