@@ -197,7 +197,7 @@ router.post("/forgot-password", async (req, res) => {
     );
 
     // Generate the reset link
-    const resetLink = `http://localhost:5000/reset-password/${resetToken}`; // Frontend reset password page
+    const resetLink = `https://tdms-panglao-client.onrender.com/reset-password/${resetToken}`; // Frontend reset password page
 
     // Send the reset link via email
     const emailSubject = "Password Reset Request";
