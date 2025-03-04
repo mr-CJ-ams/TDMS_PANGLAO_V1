@@ -78,7 +78,7 @@ const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData
 
             {/* Length of Stay */}
             <div className="form-group">
-              <label>Length of Stay (days)</label>
+              <label>Length of Overnight Stay</label>
               <input
                 type="number"
                 className="form-control"
