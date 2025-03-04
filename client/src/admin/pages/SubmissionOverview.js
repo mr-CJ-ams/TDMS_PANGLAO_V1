@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import NationalityCountsModal from "./NationalityCountsModal";
+import AccessCodePrompt from "../components/AccessCodePrompt"; // Import the new component
 
 const SubmissionOverview = ({
   submissions,
@@ -34,11 +35,12 @@ const SubmissionOverview = ({
   const [total, setTotal] = useState(0);
   const limit = 20;
   const [showNationalityCountsModal, setShowNationalityCountsModal] = useState(false);
-  const [loadingPenalty, setLoadingPenalty] = useState({}); // Track loading state for each submission
+  const [loadingPenalty, setLoadingPenalty] = useState({});
+  const [showAccessCodePrompt, setShowAccessCodePrompt] = useState(false);
+  const [currentSubmissionId, setCurrentSubmissionId] = useState(null);
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+  const ACCESS_CODE = process.env.REACT_APP_ACCESS_CODE;
 
-
-  // Fetch submissions with filters
   const fetchFilteredSubmissions = async () => {
     try {
       const token = sessionStorage.getItem("token");
@@ -59,44 +61,47 @@ const SubmissionOverview = ({
     }
   }, [filters, page, activeSection]);
 
-  // Handle filter changes
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters({ ...filters, [name]: value });
-    setPage(1); // Reset to first page when filters change
+    setPage(1);
   };
 
-  // Handle penalty payment status
   const handlePenaltyPayment = async (submissionId, penaltyStatus) => {
-    // Show confirmation dialog
-    const confirmUpdate = window.confirm(
-      "Are you sure you want to mark this penalty as Paid?"
-    );
-    if (!confirmUpdate) return; // Exit if the user cancels
+    setCurrentSubmissionId(submissionId);
+    setShowAccessCodePrompt(true);
+  };
 
-    setLoadingPenalty((prev) => ({ ...prev, [submissionId]: true })); // Set loading state
+  const confirmPenaltyPayment = async (accessCode) => {
+    if (accessCode !== ACCESS_CODE) {
+      alert("Invalid access code");
+      return;
+    }
+
+    setShowAccessCodePrompt(false);
+    setLoadingPenalty((prev) => ({ ...prev, [currentSubmissionId]: true }));
 
     try {
       const token = sessionStorage.getItem("token");
       await axios.put(
-        `${API_BASE_URL}/api/submissions/penalty/${submissionId}`,
-        { penalty: penaltyStatus },
+        `${API_BASE_URL}/api/submissions/penalty/${currentSubmissionId}`,
+        { penalty: true },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // Update the submissions list
       const updatedSubmissions = submissions.map((submission) =>
-        submission.submission_id === submissionId
-          ? { ...submission, penalty: penaltyStatus }
+        submission.submission_id === currentSubmissionId
+          ? { ...submission, penalty: true }
           : submission
       );
       setSubmissions(updatedSubmissions);
     } catch (err) {
       console.error("Error updating penalty status:", err);
     } finally {
-      setLoadingPenalty((prev) => ({ ...prev, [submissionId]: false })); // Clear loading state
+      setLoadingPenalty((prev) => ({ ...prev, [currentSubmissionId]: false }));
     }
   };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-50 to-white p-8">
       <h2 className="text-3xl font-semibold text-sky-900 mb-8">
@@ -192,7 +197,6 @@ const SubmissionOverview = ({
               <th className="p-4 text-left font-medium">Year</th>
               <th className="p-4 text-left font-medium">Submitted At</th>
               <th className="p-4 text-left font-medium">Status</th>
-              {/* <th className="p-4 text-left font-medium">Penalty Amount</th> */}
               <th className="p-4 text-left font-medium">Penalty Status</th>
               <th className="p-4 text-left font-medium">Actions</th>
             </tr>
@@ -218,7 +222,6 @@ const SubmissionOverview = ({
                     {isSubmissionLate(submission) ? "Late" : "On-Time"}
                   </span>
                 </td>
-                {/* <td className="p-4">{submission.penalty_amount}</td> */}
                 <td className="p-4">
                   {isSubmissionLate(submission) && (
                     <button
@@ -466,6 +469,13 @@ const SubmissionOverview = ({
             nationalityCounts={selectedSubmission?.nationalityCounts || {}}
           />
         </div>
+      )}
+      {/* Access Code Prompt Modal */}
+      {showAccessCodePrompt && (
+        <AccessCodePrompt
+          onConfirm={confirmPenaltyPayment}
+          onCancel={() => setShowAccessCodePrompt(false)}
+        />
       )}
     </div>
   );
