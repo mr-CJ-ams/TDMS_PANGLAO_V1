@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
+import TourismLogo from "../components/img/Tourism_logo.png"
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -28,7 +29,7 @@ const Login = () => {
         <div className="flex flex-col items-center mb-8">
           <div className="flex items-center gap-4 mb-4">
             <img
-              src="https://mirrorful-production.s3.us-west-1.amazonaws.com/patterns/files/ece929bb-12dc-4f7e-ac34-573ca00f9b74/Logo.png"
+              src={TourismLogo}
               alt="Panglao Logo 2"
               className="w-20 h-20 object-contain"
             />

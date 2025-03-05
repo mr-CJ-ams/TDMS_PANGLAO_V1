@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff, Check, X, Loader } from "lucide-react";
+import TourismLogo from "../components/img/Tourism_logo.png"
 const ResetPassword = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -74,13 +75,8 @@ const ResetPassword = () => {
         <div className="flex flex-col items-center mb-8">
           <div className="flex items-center gap-4 mb-4">
             <img
-              src="https://mirrorful-production.s3.us-west-1.amazonaws.com/patterns/files/f74aedcb-4284-4226-916a-ee2a83561662/panglao-logo.png"
+              src={TourismLogo}
               alt="Panglao Logo 1"
-              className="w-20 h-20 object-contain"
-            />
-            <img
-              src="https://mirrorful-production.s3.us-west-1.amazonaws.com/patterns/files/bd51a523-b635-4694-b25e-58e77e5a6f0e/Logo.png"
-              alt="Panglao Logo 2"
               className="w-20 h-20 object-contain"
             />
           </div>

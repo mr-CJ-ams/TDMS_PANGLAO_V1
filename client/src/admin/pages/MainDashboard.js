@@ -12,6 +12,7 @@ import NationalityCounts from "../components/NationalityCounts";
 import RegionalDistribution from "../components/RegionalDistribution";
 
 
+
 // Helper function to safely convert a value to a number
 const toNumber = (value, defaultValue = 0) => {
   const num = parseFloat(value);

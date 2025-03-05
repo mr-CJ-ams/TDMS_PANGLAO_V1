@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import TourismLogo from "./1738398998646-Tourism_logo.png"; // Import the image
+import TourismLogo from "../components/img/1738398998646-Tourism_logo.png"// Import the image
 import { Modal, Button, ListGroup } from "react-bootstrap"; // Import Modal and Button
 import UserApproval from "./UserApproval";
 import SubmissionOverview from "./SubmissionOverview";

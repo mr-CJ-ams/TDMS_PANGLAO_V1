@@ -1,9 +1,9 @@
 import React from "react";
 import { Phone, Mail, MapPin, Clock } from "lucide-react"; // Icons for contact details
-import Panglao_lgu_logo from "./panglao-logo.png"
-import Panglao_tourism_logo from "./Tourism_logo.png"
-import BISU_logo from "./BISU_Logo.png"
-import ICpEP_Logo from "./CpE_Logo.png"
+import Panglao_lgu_logo from "./img/panglao-logo.png"
+import Panglao_tourism_logo from "./img/Tourism_logo.png"
+import BISU_logo from "./img/BISU_Logo.png"
+import ICpEP_Logo from "./img/CpE_Logo.png"
 
 const HelpSupport = () => {
   return (
