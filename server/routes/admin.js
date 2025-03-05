@@ -24,8 +24,17 @@ router.put("/approve/:id", async (req, res) => {
     const user = await pool.query("SELECT email FROM users WHERE user_id = $1", [id]);
     const email = user.rows[0].email;
 
-    // Send approval email
-    sendEmailNotification(email, "Your account has been approved. You can now log in.");
+    // Send approval email with login link
+    const subject = "Your TDMS Account Has Been Approved";
+    const message = `
+      Your account has been approved. You can now log in to the Tourism Data Management System (TDMS) using the link below:
+      
+      Login Link: https://tdms-panglao-client.onrender.com
+
+      Thank you for using TDMS!
+    `;
+
+    sendEmailNotification(email, subject, message);
 
     res.json("User approved");
   } catch (err) {
