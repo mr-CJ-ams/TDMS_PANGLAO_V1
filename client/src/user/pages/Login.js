@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
-import { Eye, EyeOff, BarChart2 } from "lucide-react"; // Import BarChart2 for the statistics icon
+import { Eye, EyeOff, BarChart2 } from "lucide-react"; // Import BarChart2 icon
 import TourismLogo from "../components/img/Tourism_logo.png";
 
 const Login = () => {
@@ -26,17 +26,12 @@ const Login = () => {
     }
   };
 
+  const handleDashboardClick = () => {
+    navigate("/main-dashboard"); // Navigate to MainDashboard
+  };
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-cyan-400 to-teal-500 p-4">
-      {/* Floating BarChart2 Icon for Statistics */}
-      <button
-        onClick={() => navigate("/statistics")} // Navigate to the statistics page
-        className="fixed bottom-6 right-6 text-cyan-600 hover:text-cyan-700 transition-colors"
-        aria-label="View Statistics"
-      >
-        <BarChart2 size={35} /> {/* BarChart2 icon */}
-      </button>
-
       <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
           <div className="flex items-center gap-4 mb-4">
@@ -116,6 +111,14 @@ const Login = () => {
           </p>
         </div>
       </div>
+
+      {/* Add the Statistics/Data Button */}
+      <button
+        onClick={handleDashboardClick}
+        className="fixed bottom-6 right-6 text-gray-700 hover:text-cyan-600 transition-colors"
+      >
+        <BarChart2 size={32} /> {/* BarChart2 icon */}
+      </button>
     </div>
   );
 };
