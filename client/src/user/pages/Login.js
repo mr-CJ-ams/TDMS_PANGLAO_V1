@@ -115,7 +115,7 @@ const Login = () => {
       {/* Add the Statistics/Data Button */}
       <button
         onClick={handleDashboardClick}
-        className="fixed bottom-6 right-6 text-gray-700 hover:text-cyan-600 transition-colors"
+        className="fixed bottom-6 right-6 text-amber-500 hover:text-amber-600 transition-colors"
       >
         <BarChart2 size={32} /> {/* BarChart2 icon */}
       </button>

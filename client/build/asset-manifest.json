@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/static/css/main.49faa5e3.css",
-    "main.js": "/static/js/main.dd84719f.js",
+    "main.js": "/static/js/main.1fffdacd.js",
     "static/media/panglao-logo.png": "/static/media/panglao-logo.be234f41004ffceba328.png",
     "static/media/CpE_Logo.png": "/static/media/CpE_Logo.44c9124a6f4589e73370.png",
     "static/media/BISU_Logo.png": "/static/media/BISU_Logo.b9e7cc6c2837d8709ac5.png",
@@ -9,10 +9,10 @@
     "static/media/Tourism_logo.png": "/static/media/Tourism_logo.5bf61d0da60cf121406e.png",
     "index.html": "/index.html",
     "main.49faa5e3.css.map": "/static/css/main.49faa5e3.css.map",
-    "main.dd84719f.js.map": "/static/js/main.dd84719f.js.map"
+    "main.1fffdacd.js.map": "/static/js/main.1fffdacd.js.map"
   },
   "entrypoints": [
     "static/css/main.49faa5e3.css",
-    "static/js/main.dd84719f.js"
+    "static/js/main.1fffdacd.js"
   ]
 }
