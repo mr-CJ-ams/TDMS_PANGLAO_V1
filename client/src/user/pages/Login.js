@@ -115,8 +115,11 @@ const Login = () => {
       {/* Add the Statistics/Data Button */}
       <button
         onClick={handleDashboardClick}
-        className="fixed bottom-6 right-6 p-4 bg-gradient-to-r from-cyan-400 to-teal-500 text-white rounded-full shadow-lg hover:opacity-90 transition-opacity flex items-center justify-center"
-        style={{ width: "56px", height: "56px" }} // Fixed size for a circular button
+        className="fixed bottom-6 right-6 p-4 text-white rounded-full shadow-lg hover:opacity-90 transition-opacity flex items-center justify-center"
+        style={{ 
+          backgroundColor: "#FF6F00", // Amber color for logout
+          width: "56px", 
+          height: "56px" }} // Fixed size for a circular button
       >
         <BarChart2 size={24} /> {/* BarChart2 icon */}
       </button>
