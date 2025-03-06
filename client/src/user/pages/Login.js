@@ -1,14 +1,16 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
-import TourismLogo from "../components/img/Tourism_logo.png"
+import { Eye, EyeOff, BarChart2 } from "lucide-react"; // Import BarChart2 icon
+import TourismLogo from "../components/img/Tourism_logo.png";
+
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";  
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -23,6 +25,11 @@ const Login = () => {
       console.error(err);
     }
   };
+
+  const handleDashboardClick = () => {
+    navigate("/main-dashboard"); // Navigate to MainDashboard
+  };
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-cyan-400 to-teal-500 p-4">
       <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
@@ -104,7 +111,17 @@ const Login = () => {
           </p>
         </div>
       </div>
+
+      {/* Add the Statistics/Data Button */}
+      <button
+        onClick={handleDashboardClick}
+        className="fixed bottom-6 right-6 p-4 bg-gradient-to-r from-cyan-400 to-teal-500 text-white rounded-full shadow-lg hover:opacity-90 transition-opacity flex items-center justify-center"
+        style={{ width: "56px", height: "56px" }} // Fixed size for a circular button
+      >
+        <BarChart2 size={24} /> {/* BarChart2 icon */}
+      </button>
     </div>
   );
 };
+
 export default Login;

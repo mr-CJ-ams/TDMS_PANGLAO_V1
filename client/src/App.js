@@ -9,6 +9,7 @@ import ProtectedRoute from "./components/ProtectRoute";
 import ForgotPassword from "./user/pages/ForgotPassword";
 import ResetPassword from "./user/pages/ResetPassword";
 import SubmissionDetails from "./user/pages/SubmissionDetails";
+import MainDashboard from "./admin/pages/MainDashboard";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const App = () => {
@@ -42,6 +43,7 @@ const App = () => {
           path="/submission-details/:submissionId"
           element={<SubmissionDetails />}
         />
+        <Route path="/main-dashboard" element={<MainDashboard />} />
       </Routes>
     </Router>
   );
