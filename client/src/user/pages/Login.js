@@ -121,7 +121,7 @@ const Login = () => {
           width: "56px", 
           height: "56px" }} // Fixed size for a circular button
       >
-        <BarChart2 size={24} /> {/* BarChart2 icon */}
+        <BarChart2 size={35} /> {/* BarChart2 icon */}
       </button>
     </div>
   );
