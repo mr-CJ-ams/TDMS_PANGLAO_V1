@@ -69,12 +69,12 @@ const SubmissionForm = () => {
 
   // Save guest data for a specific day and room
   const handleSaveGuests = (day, room, guestData) => {
-    const { guests, lengthOfStay } = guestData;
+    const { guests, lengthOfStay, isCheckIn } = guestData;
 
     // Mark the first day as a check-in
     const updatedGuests = guests.map((guest) => ({
       ...guest,
-      isCheckIn: true,
+      isCheckIn: isCheckIn,
     }));
 
     // Save the first day's data
@@ -85,7 +85,7 @@ const SubmissionForm = () => {
         room,
         guests: updatedGuests,
         lengthOfStay,
-        isCheckIn: true,
+        isCheckIn: isCheckIn,
       },
     ]);
 
