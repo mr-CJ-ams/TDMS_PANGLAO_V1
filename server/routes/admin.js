@@ -68,16 +68,39 @@ router.put("/decline/:id", async (req, res) => {
 
 // Delete User
 router.delete("/delete/:id", async (req, res) => {
+  const client = await pool.connect(); // Use a client for transaction management
   try {
     const { id } = req.params;
 
-    // Delete the user
-    await pool.query("DELETE FROM users WHERE user_id = $1", [id]);
+    // Start a transaction
+    await client.query("BEGIN");
 
-    res.json("User deleted");
+    // Check if the user exists
+    const userExists = await client.query(
+      "SELECT * FROM users WHERE user_id = $1",
+      [id]
+    );
+
+    if (userExists.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Delete the user (this should cascade to submissions, daily_metrics, and guests)
+    await client.query("DELETE FROM users WHERE user_id = $1", [id]);
+
+    // Commit the transaction
+    await client.query("COMMIT");
+
+    res.json({ message: "User and associated data deleted successfully" });
   } catch (err) {
+    // Rollback the transaction in case of error
+    await client.query("ROLLBACK");
     console.error(err.message);
-    res.status(500).send("Server error");
+    res.status(500).json({ message: "Server error", error: err.message });
+  } finally {
+    // Release the client back to the pool
+    client.release();
   }
 });
 
