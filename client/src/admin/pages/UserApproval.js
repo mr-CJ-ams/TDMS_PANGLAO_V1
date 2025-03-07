@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useState, useMemo } from "react";
 import { X, Search, ChevronUp, ChevronDown } from "lucide-react";
 
 const UserApproval = ({
@@ -18,9 +18,16 @@ const UserApproval = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState("all"); // "all", "pending", or "approved"
   const [sortDirection, setSortDirection] = useState("asc"); // "asc" or "desc"
+  const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+  const [userToDeactivate, setUserToDeactivate] = useState(null);
 
-  const filteredAndSortedUsers = useMemo(() => {
-    return users
+  // Separate active and deactivated users
+  const activeUsers = users.filter((user) => user.is_active);
+  const deactivatedUsers = users.filter((user) => !user.is_active);
+
+  // Filter and sort active users
+  const filteredAndSortedActiveUsers = useMemo(() => {
+    return activeUsers
       .filter((user) => {
         const companyName = user.company_name || ""; // Fallback to an empty string if null/undefined
         const matchesSearch = companyName
@@ -38,10 +45,46 @@ const UserApproval = ({
         const comparison = companyNameA.localeCompare(companyNameB);
         return sortDirection === "asc" ? comparison : -comparison;
       });
-  }, [users, searchTerm, activeFilter, sortDirection]);
+  }, [activeUsers, searchTerm, activeFilter, sortDirection]);
 
-  // Calculate the number of users matching the current filter and search
-  const userCount = filteredAndSortedUsers.length;
+  // Calculate the number of active users matching the current filter and search
+  const activeUserCount = filteredAndSortedActiveUsers.length;
+
+  const handleDeactivateClick = (userId) => {
+    setUserToDeactivate(userId); // Set the user to deactivate
+    setShowDeactivateModal(true); // Show the deactivation modal
+  };
+
+  const deactivateUser = async (userId) => {
+    try {
+      const response = await fetch(`http://localhost:5000/admin/deactivate/${userId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await response.json();
+      console.log("Response:", data); // Log the response
+
+      if (response.ok) {
+        alert("User deactivated successfully");
+        setShowDeactivateModal(false); // Close the modal
+
+        // Update the users state locally
+        const updatedUsers = users.map((user) =>
+          user.user_id === userId ? { ...user, is_active: false } : user
+        );
+        // Assuming `users` is passed as a prop and can be updated
+        // If not, you need to pass a function from the parent to update the users list
+      } else {
+        alert(`Failed to deactivate user: ${data.message || "Unknown error"}`);
+      }
+    } catch (error) {
+      console.error("Error deactivating user:", error);
+      alert("An error occurred while deactivating the user");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-50 to-white p-8">
@@ -94,12 +137,13 @@ const UserApproval = ({
         </div>
       </div>
 
-      {/* Display the number of users */}
+      {/* Display the number of active users */}
       <div className="mb-4 text-sky-900 font-medium">
-        Showing {userCount} {userCount === 1 ? "user" : "users"}
+        Showing {activeUserCount} {activeUserCount === 1 ? "user" : "users"}
       </div>
 
-      <div className="overflow-x-auto rounded-lg shadow-lg bg-white">
+      {/* Active Users Table */}
+      <div className="overflow-x-auto rounded-lg shadow-lg bg-white mb-8">
         <table className="w-full">
           <thead>
             <tr className="bg-sky-100 text-sky-900">
@@ -132,14 +176,14 @@ const UserApproval = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-sky-100">
-            {filteredAndSortedUsers.length === 0 ? (
+            {filteredAndSortedActiveUsers.length === 0 ? (
               <tr>
                 <td colSpan={12} className="p-4 text-center text-gray-500">
-                  No users found matching your criteria
+                  No active users found matching your criteria
                 </td>
               </tr>
             ) : (
-              filteredAndSortedUsers.map((user) => (
+              filteredAndSortedActiveUsers.map((user) => (
                 <tr
                   key={user.user_id}
                   className="hover:bg-sky-50 transition-colors"
@@ -183,12 +227,66 @@ const UserApproval = ({
                       </div>
                     ) : (
                       <button
-                        onClick={() => handleDeleteClick(user.user_id)}
+                        onClick={() => handleDeactivateClick(user.user_id)}
                         className="px-4 py-2 bg-rose-500 text-white rounded hover:bg-rose-600 transition-colors"
                       >
-                        Delete
+                        Deactivate
                       </button>
                     )}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Deactivated Users Section */}
+      <h3 className="text-2xl font-semibold text-sky-900 mb-4">Deactivated Accounts</h3>
+      <div className="overflow-x-auto rounded-lg shadow-lg bg-white">
+        <table className="w-full">
+          <thead>
+            <tr className="bg-sky-100 text-sky-900">
+              <th className="p-4 text-left font-medium">Company Name</th>
+              <th className="p-4 text-left font-medium">Username</th>
+              <th className="p-4 text-left font-medium">Email</th>
+              <th className="p-4 text-left font-medium">Phone Number</th>
+              <th className="p-4 text-left font-medium">Registered Owner</th>
+              <th className="p-4 text-left font-medium">TIN</th>
+              <th className="p-4 text-left font-medium">Company Address</th>
+              <th className="p-4 text-left font-medium">Accommodation Type</th>
+              <th className="p-4 text-left font-medium">Accommodation Code</th>
+              <th className="p-4 text-left font-medium">Number of Rooms</th>
+              <th className="p-4 text-left font-medium">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-sky-100">
+            {deactivatedUsers.length === 0 ? (
+              <tr>
+                <td colSpan={11} className="p-4 text-center text-gray-500">
+                  No deactivated users found
+                </td>
+              </tr>
+            ) : (
+              deactivatedUsers.map((user) => (
+                <tr
+                  key={user.user_id}
+                  className="hover:bg-sky-50 transition-colors"
+                >
+                  <td className="p-4 font-medium">{user.company_name || "N/A"}</td>
+                  <td className="p-4">{user.username}</td>
+                  <td className="p-4">{user.email}</td>
+                  <td className="p-4">{user.phone_number}</td>
+                  <td className="p-4">{user.registered_owner}</td>
+                  <td className="p-4">{user.tin}</td>
+                  <td className="p-4">{user.company_address}</td>
+                  <td className="p-4">{user.accommodation_type}</td>
+                  <td className="p-4">{user.accommodation_code}</td>
+                  <td className="p-4">{user.number_of_rooms}</td>
+                  <td className="p-4">
+                    <span className="px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-700">
+                      Deactivated
+                    </span>
                   </td>
                 </tr>
               ))
@@ -228,7 +326,10 @@ const UserApproval = ({
                   Cancel
                 </button>
                 <button
-                  onClick={() => declineUser(selectedUserId)}
+                  onClick={() => {
+                    declineUser(selectedUserId); // Call the declineUser function
+                    setSelectedUserId(null); // Close the modal
+                  }}
                   className="px-4 py-2 bg-rose-500 text-white rounded hover:bg-rose-600 transition-colors"
                 >
                   Confirm Decline
@@ -239,37 +340,37 @@ const UserApproval = ({
         </div>
       )}
 
-      {/* Delete User Modal */}
-      {showDeleteModal && (
+      {/* Deactivate User Modal */}
+      {showDeactivateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-semibold text-sky-900">
-                  Delete User
+                  Deactivate User
                 </h3>
                 <button
-                  onClick={() => setShowDeleteModal(false)}
+                  onClick={() => setShowDeactivateModal(false)}
                   className="text-gray-400 hover:text-gray-600"
                 >
                   <X size={24} />
                 </button>
               </div>
               <p className="text-gray-600 mb-6">
-                Are you sure you want to delete this user?
+                Are you sure you want to deactivate this user?
               </p>
               <div className="flex justify-end space-x-3">
                 <button
-                  onClick={() => setShowDeleteModal(false)}
+                  onClick={() => setShowDeactivateModal(false)}
                   className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={() => deleteUser(userToDelete)}
+                  onClick={() => deactivateUser(userToDeactivate)}
                   className="px-4 py-2 bg-rose-500 text-white rounded hover:bg-rose-600 transition-colors"
                 >
-                  Confirm Delete
+                  Confirm Deactivate
                 </button>
               </div>
             </div>

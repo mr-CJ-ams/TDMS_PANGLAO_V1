@@ -66,8 +66,8 @@ router.put("/decline/:id", async (req, res) => {
   }
 });
 
-// Delete User
-router.delete("/delete/:id", async (req, res) => {
+// Deactivate User
+router.put("/deactivate/:id", async (req, res) => {
   const client = await pool.connect(); // Use a client for transaction management
   try {
     const { id } = req.params;
@@ -86,13 +86,13 @@ router.delete("/delete/:id", async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Delete the user (this should cascade to submissions, daily_metrics, and guests)
-    await client.query("DELETE FROM users WHERE user_id = $1", [id]);
+    // Deactivate the user
+    await client.query("UPDATE users SET is_active = FALSE WHERE user_id = $1", [id]);
 
     // Commit the transaction
     await client.query("COMMIT");
 
-    res.json({ message: "User and associated data deleted successfully" });
+    res.json({ message: "User deactivated successfully" });
   } catch (err) {
     // Rollback the transaction in case of error
     await client.query("ROLLBACK");

@@ -18,11 +18,18 @@ const Login = () => {
         username,
         password,
       });
+  
+      if (res.data.message === "Account is deactivated") {
+        alert("Your account has been deactivated. Please contact the administrator.");
+        return;
+      }
+  
       sessionStorage.setItem("token", res.data.token);
       sessionStorage.setItem("user", JSON.stringify(res.data.user));
       navigate("/user/dashboard");
     } catch (err) {
       console.error(err);
+      alert("Invalid credentials or account is deactivated");
     }
   };
 

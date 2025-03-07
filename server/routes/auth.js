@@ -87,7 +87,11 @@ router.post("/login", async (req, res) => {
     const validPassword = await bcrypt.compare(password, user.rows[0].password);
     if (!validPassword) return res.status(400).json("Invalid credentials");
 
+    // Check if the user is approved
     if (!user.rows[0].is_approved) return res.status(400).json("Waiting for admin approval");
+
+    // Check if the user is active
+    if (!user.rows[0].is_active) return res.status(400).json("Account is deactivated");
 
     const token = jwt.sign({ user_id: user.rows[0].user_id, role: user.rows[0].role }, "tourismSecretKey");
 
