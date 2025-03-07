@@ -24,7 +24,6 @@ const Signup = () => {
     hasUpperCase: false,
     hasLowerCase: false,
     hasNumber: false,
-    hasSpecial: false,
   });
   const navigate = useNavigate();
   const API_BASE_URL =
@@ -90,7 +89,6 @@ const Signup = () => {
         hasUpperCase: /[A-Z]/.test(password),
         hasLowerCase: /[a-z]/.test(password),
         hasNumber: /[0-9]/.test(password),
-        hasSpecial: /[!@#$%^&*(),.?":{}|<>]/.test(password),
       });
     };
     validatePassword(formData.password);
@@ -221,10 +219,6 @@ const Signup = () => {
                 <div className="flex items-center gap-2 text-sm">
                   <ValidationIcon isValid={passwordValidation.hasNumber} />
                   <span>One number</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <ValidationIcon isValid={passwordValidation.hasSpecial} />
-                  <span>One special character</span>
                 </div>
               </div>
             </div>
