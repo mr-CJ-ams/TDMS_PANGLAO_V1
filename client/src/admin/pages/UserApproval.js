@@ -20,6 +20,7 @@ const UserApproval = ({
   const [sortDirection, setSortDirection] = useState("asc"); // "asc" or "desc"
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
   const [userToDeactivate, setUserToDeactivate] = useState(null);
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
   // Separate active and deactivated users
   const activeUsers = users.filter((user) => user.is_active);
@@ -57,7 +58,7 @@ const UserApproval = ({
 
   const deactivateUser = async (userId) => {
     try {
-      const response = await fetch(`http://localhost:5000/admin/deactivate/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/admin/deactivate/${userId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
