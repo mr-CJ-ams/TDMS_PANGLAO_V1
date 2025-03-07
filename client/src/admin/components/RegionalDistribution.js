@@ -7,12 +7,19 @@ import processNationalityCounts from "../utils/processNationalityCounts";
 const RegionalDistribution = ({ nationalityCounts, selectedYear, selectedMonth, formatMonth }) => {
   const processedData = processNationalityCounts(nationalityCounts);
 
+  // Function to convert month number to month name
+  const getMonthName = (monthNumber) => {
+    const date = new Date(selectedYear, monthNumber - 1, 1); // Month is 0-indexed in JavaScript
+    return date.toLocaleString("default", { month: "long" }); // Get full month name
+  };
+
   const exportToExcel = () => {
     const worksheetData = [];
 
     // Add headers
     worksheetData.push(["REGIONAL DISTRIBUTION OF TRAVELLERS"]);
     worksheetData.push(["Year =", selectedYear]);
+    worksheetData.push(["Month =", getMonthName(selectedMonth)]); // Add month name
     worksheetData.push(["(PANGLAO REPORT)"]);
     worksheetData.push([]);
 
@@ -61,6 +68,28 @@ const RegionalDistribution = ({ nationalityCounts, selectedYear, selectedMonth, 
     const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Regional Distribution");
+
+    // Merge cells for "REGIONAL DISTRIBUTION OF TRAVELLERS"
+    worksheet["!merges"] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 1 } }, // Merge A1 to B1
+    ];
+
+    // Auto-fit columns
+    const range = XLSX.utils.decode_range(worksheet["!ref"]);
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      let maxWidth = 0;
+      for (let R = range.s.r; R <= range.e.r; ++R) {
+        const cell = worksheet[XLSX.utils.encode_cell({ r: R, c: C })];
+        if (cell && cell.v) {
+          const cellWidth = cell.v.toString().length;
+          if (cellWidth > maxWidth) {
+            maxWidth = cellWidth;
+          }
+        }
+      }
+      worksheet["!cols"] = worksheet["!cols"] || [];
+      worksheet["!cols"][C] = { wch: maxWidth + 2 }; // Add padding
+    }
 
     // Export to Excel
     const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });

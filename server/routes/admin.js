@@ -269,7 +269,11 @@ router.get("/nationality-counts", async (req, res) => {
     const { year, month } = req.query;
 
     const query = `
-      SELECT g.nationality, COUNT(*) AS count
+      SELECT 
+        g.nationality, 
+        COUNT(*) AS count,
+        SUM(CASE WHEN g.gender = 'Male' THEN 1 ELSE 0 END) AS male_count,
+        SUM(CASE WHEN g.gender = 'Female' THEN 1 ELSE 0 END) AS female_count
       FROM guests g
       JOIN daily_metrics dm ON g.metric_id = dm.metric_id
       JOIN submissions s ON dm.submission_id = s.submission_id

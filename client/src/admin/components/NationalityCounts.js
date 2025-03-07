@@ -9,6 +9,8 @@ const NationalityCounts = ({ nationalityCounts, selectedYear, selectedMonth, for
       nationalityCounts.map((nationality) => ({
         Nationality: nationality.nationality,
         Count: nationality.count,
+        Male: nationality.male_count,
+        Female: nationality.female_count,
       }))
     );
 
@@ -37,6 +39,8 @@ const NationalityCounts = ({ nationalityCounts, selectedYear, selectedMonth, for
             <tr style={{ backgroundColor: "#00BCD4", color: "#FFFFFF" }}>
               <th style={{ padding: "12px", textAlign: "left" }}>Nationality</th>
               <th style={{ padding: "12px", textAlign: "left" }}>Count</th>
+              <th style={{ padding: "12px", textAlign: "left" }}>Male</th>
+              <th style={{ padding: "12px", textAlign: "left" }}>Female</th>
             </tr>
           </thead>
           <tbody>
@@ -50,6 +54,8 @@ const NationalityCounts = ({ nationalityCounts, selectedYear, selectedMonth, for
               >
                 <td style={{ padding: "12px", color: "#37474F" }}>{nationality.nationality}</td>
                 <td style={{ padding: "12px", color: "#37474F" }}>{nationality.count}</td>
+                <td style={{ padding: "12px", color: "#37474F" }}>{nationality.male_count}</td>
+                <td style={{ padding: "12px", color: "#37474F" }}>{nationality.female_count}</td>
               </tr>
             ))}
           </tbody>
