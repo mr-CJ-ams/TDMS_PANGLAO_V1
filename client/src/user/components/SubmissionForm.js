@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import MonthYearSelector from "./MonthYearSelector";
 import MonthlyGrid from "./MonthlyGrid";
 import GuestModal from "./GuestModal";
 import MetricsDisplay from "./MetricsDisplay";
 import SaveButton from "./SaveButton";
+import RoomSearchBar from "./RoomSearchBar";
 
 const SubmissionForm = () => {
   const [selectedDate, setSelectedDate] = useState(null);
@@ -21,6 +22,9 @@ const SubmissionForm = () => {
   const [numberOfRooms, setNumberOfRooms] = useState(0);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+
+  const gridRef = useRef(null);
+
 
   // Fetch user profile data
   useEffect(() => {
@@ -59,6 +63,18 @@ const SubmissionForm = () => {
 
     checkSubmission();
   }, [user, selectedMonth, selectedYear]);
+
+  // Handle search for a specific room
+  const handleSearch = (roomNumber) => {
+    if (roomNumber > 0 && roomNumber <= numberOfRooms) {
+      const roomElement = gridRef.current.querySelector(`th[data-room="${roomNumber}"]`);
+      if (roomElement) {
+        roomElement.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    } else {
+      alert("Invalid room number");
+    }
+  };
 
   // Handle cell click in the monthly grid
   const handleCellClick = (day, room) => {
@@ -256,6 +272,8 @@ const SubmissionForm = () => {
       <h2>Monthly Recording Format</h2>
       <p>Form: DAE-1A</p>
 
+      
+
       <SaveButton onSave={handleSaveForm} isFormSaved={isFormSaved} hasSubmitted={hasSubmitted} />
 
       <MonthYearSelector
@@ -264,7 +282,9 @@ const SubmissionForm = () => {
         onMonthChange={(e) => setSelectedMonth(parseInt(e.target.value))}
         onYearChange={(e) => setSelectedYear(parseInt(e.target.value))}
       />
+      <RoomSearchBar onSearch={handleSearch} />
 
+    <div ref={gridRef}>
       <MonthlyGrid
         daysInMonth={daysInMonth}
         numberOfRooms={numberOfRooms}
@@ -274,6 +294,7 @@ const SubmissionForm = () => {
         calculateDailyTotals={calculateDailyTotals}
         disabled={hasSubmitted}
       />
+      </div>
 
       {isModalOpen && (
         <GuestModal

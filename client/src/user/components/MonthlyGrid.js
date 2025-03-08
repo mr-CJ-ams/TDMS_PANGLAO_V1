@@ -42,6 +42,7 @@ const MonthlyGrid = ({
           {rooms.map((room) => (
             <th
               key={room}
+              data-room={room}
               style={{
                 backgroundColor: "#06b6d4", // cyan-500
                 color: "white",
