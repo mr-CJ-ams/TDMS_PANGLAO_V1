@@ -26,7 +26,6 @@ const getPhilippinesTime = () => {
 
 
 // Submit a new submission
-
 router.post("/submit", async (req, res) => {
   const client = await pool.connect();
   try {
@@ -36,6 +35,13 @@ router.post("/submit", async (req, res) => {
     if (!user_id || !month || !year || !days) {
       return res.status(400).json({ error: "Missing required fields" });
     }
+
+    // Fetch the user's current number of rooms
+    const user = await pool.query(
+      "SELECT number_of_rooms FROM users WHERE user_id = $1",
+      [user_id]
+    );
+    const numberOfRooms = user.rows[0].number_of_rooms;
 
     // Calculate the deadline
     const deadline = calculateDeadline(month, year);
@@ -56,25 +62,19 @@ router.post("/submit", async (req, res) => {
       totalOccupied += day.occupied;
     });
 
-    const numberOfRooms = await pool.query(
-      "SELECT number_of_rooms FROM users WHERE user_id = $1",
-      [user_id]
-    );
-    const rooms = numberOfRooms.rows[0].number_of_rooms;
-
     const averageGuestNights = totalCheckIns > 0 ? (totalOvernight / totalCheckIns).toFixed(2) : 0;
     const averageRoomOccupancyRate =
-      rooms > 0 ? ((totalOccupied / (rooms * days.length)) * 100).toFixed(2) : 0;
+      numberOfRooms > 0 ? ((totalOccupied / (numberOfRooms * days.length)) * 100).toFixed(2) : 0;
     const averageGuestsPerRoom = totalOccupied > 0 ? (totalOvernight / totalOccupied).toFixed(2) : 0;
 
     await client.query("BEGIN");
 
-    // Create submission entry with metrics and penalty
+    // Create submission entry with metrics, penalty, and number_of_rooms
     const submissionRes = await client.query(
       `INSERT INTO submissions 
        (user_id, month, year, deadline, submitted_at, is_late, penalty_amount,
-        average_guest_nights, average_room_occupancy_rate, average_guests_per_room)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        average_guest_nights, average_room_occupancy_rate, average_guests_per_room, number_of_rooms)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING submission_id`,
       [
         user_id,
@@ -87,6 +87,7 @@ router.post("/submit", async (req, res) => {
         averageGuestNights,
         averageRoomOccupancyRate,
         averageGuestsPerRoom,
+        numberOfRooms, // Store the number_of_rooms at the time of submission
       ]
     );
     const submissionId = submissionRes.rows[0].submission_id;
@@ -170,7 +171,7 @@ router.get("/details/:submissionId", async (req, res) => {
     const submissionRes = await pool.query(
       `SELECT s.submission_id, s.month, s.year, s.submitted_at, s.is_late, s.penalty,
               s.average_guest_nights, s.average_room_occupancy_rate, s.average_guests_per_room,
-              u.number_of_rooms,
+              s.number_of_rooms, -- Include number_of_rooms from submissions
               COALESCE(json_agg(json_build_object(
                 'day', dm.day,
                 'check_ins', dm.check_ins,
@@ -186,10 +187,9 @@ router.get("/details/:submissionId", async (req, res) => {
                 )) FROM guests g WHERE g.metric_id = dm.metric_id), '[]'::json)
               )) FILTER (WHERE dm.metric_id IS NOT NULL), '[]'::json) AS days
        FROM submissions s
-       JOIN users u ON s.user_id = u.user_id
        LEFT JOIN daily_metrics dm ON s.submission_id = dm.submission_id
        WHERE s.submission_id = $1
-       GROUP BY s.submission_id, u.number_of_rooms`,
+       GROUP BY s.submission_id`,
       [submissionId]
     );
 
@@ -216,7 +216,7 @@ router.get("/details/:submissionId", async (req, res) => {
       nationalityCounts,
     };
 
-    // console.log("Submission details response:", response); // Debugging
+    console.log("Submission details response:", response); // Debugging
     res.json(response);
   } catch (err) {
     console.error("Details error:", err);

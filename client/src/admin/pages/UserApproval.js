@@ -5,15 +5,11 @@ const UserApproval = ({
   users,
   selectedUserId,
   declineMessage,
-  showDeleteModal,
-  userToDelete,
   approveUser,
   setSelectedUserId,
   declineUser,
   setDeclineMessage,
-  handleDeleteClick,
-  deleteUser,
-  setShowDeleteModal,
+
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState("all"); // "all", "pending", or "approved"

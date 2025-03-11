@@ -3,6 +3,7 @@ import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff, Check, X } from "lucide-react";
 import TourismLogo from "../components/img/Tourism_logo.png"
+import places from "../../components/places.json"
 const Signup = () => {
   const [formData, setFormData] = useState({
     username: "",
@@ -16,7 +17,15 @@ const Signup = () => {
     companyAddress: "",
     accommodationType: "",
     numberOfRooms: "",
+    region: "",
+    province: "",
+    municipality: "",
+    barangay: "",
   });
+  const [regions, setRegions] = useState([]);
+  const [provinces, setProvinces] = useState([]);
+  const [municipalities, setMunicipalities] = useState([]);
+  const [barangays, setBarangays] = useState([]);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordValidation, setPasswordValidation] = useState({
@@ -28,18 +37,18 @@ const Signup = () => {
   const navigate = useNavigate();
   const API_BASE_URL =
     process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
-  const barangays = [
-    "Bil‑isan",
-    "Bolod",
-    "Danao",
-    "Doljo",
-    "Libaong",
-    "Looc",
-    "Lourdes",
-    "Poblacion",
-    "Tangnan",
-    "Tawala",
-  ];
+  // const barangays = [
+  //   "Bil‑isan",
+  //   "Bolod",
+  //   "Danao",
+  //   "Doljo",
+  //   "Libaong",
+  //   "Looc",
+  //   "Lourdes",
+  //   "Poblacion",
+  //   "Tangnan",
+  //   "Tawala",
+  // ];
   const accommodationTypes = [
     {
       name: "Hotel",
@@ -82,7 +91,63 @@ const Signup = () => {
       code: "OTH",
     },
   ];
+
   useEffect(() => {
+    // Extract regions from places.json
+    const regionsList = Object.keys(places).map((regionCode) => ({
+      code: regionCode,
+      name: places[regionCode].region_name,
+    }));
+    setRegions(regionsList);
+  }, []);
+
+  const handleRegionChange = (e) => {
+    const regionCode = e.target.value;
+    const selectedRegion = places[regionCode];
+    const provincesList = Object.keys(selectedRegion.province_list).map((province) => ({
+      name: province,
+    }));
+    setProvinces(provincesList);
+    setFormData((prev) => ({
+      ...prev,
+      region: regionCode,
+      province: "",
+      municipality: "",
+      barangay: "",
+    }));
+  };
+
+  const handleProvinceChange = (e) => {
+    const provinceName = e.target.value;
+    const selectedProvince = places[formData.region].province_list[provinceName];
+    const municipalitiesList = Object.keys(selectedProvince.municipality_list).map((municipality) => ({
+      name: municipality,
+    }));
+    setMunicipalities(municipalitiesList);
+    setFormData((prev) => ({
+      ...prev,
+      province: provinceName,
+      municipality: "",
+      barangay: "",
+    }));
+  };
+
+  const handleMunicipalityChange = (e) => {
+    const municipalityName = e.target.value;
+    const selectedMunicipality = places[formData.region].province_list[formData.province].municipality_list[municipalityName];
+    const barangaysList = selectedMunicipality.barangay_list;
+    setBarangays(barangaysList);
+    setFormData((prev) => ({
+      ...prev,
+      municipality: municipalityName,
+      barangay: "",
+    }));
+  };
+
+
+
+  useEffect(() => {
+
     const validatePassword = (password) => {
       setPasswordValidation({
         hasLength: password.length >= 8,
@@ -93,6 +158,7 @@ const Signup = () => {
     };
     validatePassword(formData.password);
   }, [formData.password]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -124,6 +190,10 @@ const Signup = () => {
         company_address: formData.companyAddress,
         accommodation_type: formData.accommodationType,
         number_of_rooms: formData.numberOfRooms,
+        region: formData.region,
+        province: formData.province,
+        municipality: formData.municipality,
+        barangay: formData.barangay,
       });
       alert("Signup successful! Waiting for admin approval.");
       navigate("/login");
@@ -306,13 +376,71 @@ const Signup = () => {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
               />
             </div>
+            
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Company Address *
+                Region *
               </label>
               <select
-                name="companyAddress"
-                value={formData.companyAddress}
+                name="region"
+                value={formData.region}
+                onChange={handleRegionChange}
+                required
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
+              >
+                <option value="">Select Region</option>
+                {regions.map((region) => (
+                  <option key={region.code} value={region.code}>
+                    {region.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Province *
+              </label>
+              <select
+                name="province"
+                value={formData.province}
+                onChange={handleProvinceChange}
+                required
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
+              >
+                <option value="">Select Province</option>
+                {provinces.map((province) => (
+                  <option key={province.name} value={province.name}>
+                    {province.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Municipality *
+              </label>
+              <select
+                name="municipality"
+                value={formData.municipality}
+                onChange={handleMunicipalityChange}
+                required
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
+              >
+                <option value="">Select Municipality</option>
+                {municipalities.map((municipality) => (
+                  <option key={municipality.name} value={municipality.name}>
+                    {municipality.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Barangay *
+              </label>
+              <select
+                name="barangay"
+                value={formData.barangay}
                 onChange={handleChange}
                 required
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
@@ -325,6 +453,10 @@ const Signup = () => {
                 ))}
               </select>
             </div>
+         
+
+
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Accommodation Type *

@@ -259,9 +259,10 @@ const SubmissionDetails = () => {
             Export Nationality Counts
           </ActionButton>
         </div>
-        {/* Metrics Grid */}
+        {/* Metrics Grid submission.number_of_rooms */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <MetricsCard title="Total Check-Ins" value={totalCheckIns} />
+          <MetricsCard title="Total Rooms" value={submission.number_of_rooms} />
           <MetricsCard title="Total Overnight" value={totalOvernight} />
           <MetricsCard title="Total Occupied" value={totalOccupied} />
         </div>

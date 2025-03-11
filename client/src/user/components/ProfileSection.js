@@ -73,11 +73,46 @@ const ProfileSection = ({ user, onUpdateRooms }) => {
                     </label>
                     <p className="mt-1 text-gray-900">{user.tin}</p>
                   </div>
-                  <div className="md:col-span-2">
+                  {/* <div className="md:col-span-2">
                     <label className="text-sm font-medium text-teal-600">
                       Company Address
                     </label>
                     <p className="mt-1 text-gray-900">{user.company_address}</p>
+                  </div> */}
+
+                </div>
+              </div>
+
+              
+              {/* Location Info Section */}
+              <div className="p-6 bg-gradient-to-r from-cyan-50/30 to-teal-50/30">
+                <h2 className="text-lg font-semibold text-cyan-900 mb-4">
+                  Location Details
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="text-sm font-medium text-cyan-600">
+                      Region
+                    </label>
+                    <p className="mt-1 text-gray-900">{user.region}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-cyan-600">
+                      Province
+                    </label>
+                    <p className="mt-1 text-gray-900">{user.province}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-cyan-600">
+                      Municipality
+                    </label>
+                    <p className="mt-1 text-gray-900">{user.municipality}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-cyan-600">
+                      Barangay
+                    </label>
+                    <p className="mt-1 text-gray-900">{user.barangay}</p>
                   </div>
                 </div>
               </div>

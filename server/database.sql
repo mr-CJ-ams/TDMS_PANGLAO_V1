@@ -1,79 +1,143 @@
 CREATE DATABASE rbac;
 
--- Create the users table
-CREATE TABLE users (
-    user_id SERIAL PRIMARY KEY,
-    username VARCHAR(255) UNIQUE NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    role VARCHAR(50) DEFAULT 'user',
-    is_approved BOOLEAN DEFAULT false,
-    phone_number VARCHAR(15),
-    registered_owner VARCHAR(255),
-    tin VARCHAR(20),
-    company_name VARCHAR(255),
-    company_address VARCHAR(255),
-    accommodation_type VARCHAR(50),
-    accommodation_code VARCHAR(3),
+-- Drop the table if it exists
+IF OBJECT_ID('users', 'U') IS NOT NULL
+    DROP TABLE users;
+
+-- Create the table
+CREATE TABLE users
+(
+    user_id INT NOT NULL IDENTITY(1,1),
+    username NVARCHAR(255) NOT NULL,
+    email NVARCHAR(255) NOT NULL,
+    password NVARCHAR(255) NOT NULL,
+    role NVARCHAR(50) DEFAULT 'user',
+    is_approved BIT DEFAULT 0,
+    phone_number NVARCHAR(15),
+    registered_owner NVARCHAR(255),
+    tin NVARCHAR(20),
+    company_address NVARCHAR(255),
+    accommodation_type NVARCHAR(50),
     number_of_rooms INT,
-    reset_token VARCHAR(255),
+    company_name NVARCHAR(255),
+    accommodation_code NVARCHAR(3),
     reset_token_expiry BIGINT,
-    profile_picture TEXT,
-    region VARCHAR(255),
-    province VARCHAR(255),
-    municipality VARCHAR(255),
-    barangay VARCHAR(255)
+    profile_picture NVARCHAR(MAX),
+    region NVARCHAR(255),
+    province NVARCHAR(255),
+    municipality NVARCHAR(255),
+    barangay NVARCHAR(255),
+    reset_token NVARCHAR(255),
+    is_active BIT DEFAULT 1,
+    CONSTRAINT users_pkey PRIMARY KEY (user_id),
+    CONSTRAINT users_email_key UNIQUE (email),
+    CONSTRAINT users_username_key UNIQUE (username)
 );
 
--- Create the submissions table
-CREATE TABLE submissions (
-    submission_id SERIAL PRIMARY KEY,
-    user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
+
+-- Drop the table if it exists
+IF OBJECT_ID('submissions', 'U') IS NOT NULL
+    DROP TABLE submissions;
+
+-- Create the table
+CREATE TABLE submissions
+(
+    submission_id INT NOT NULL IDENTITY(1,1),
+    user_id INT,
     month INT NOT NULL,
     year INT NOT NULL,
-    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    deadline TIMESTAMP,
-    is_late BOOLEAN DEFAULT FALSE,
-    penalty BOOLEAN DEFAULT FALSE,
-    penalty_paid BOOLEAN DEFAULT false,
-    penalty_amount NUMERIC DEFAULT 0.0,
-    average_guest_nights NUMERIC(10,2),
-    average_room_occupancy_rate NUMERIC(10,2),
-    average_guests_per_room NUMERIC(10,2)
+    penalty_paid BIT DEFAULT 0,
+    deadline DATETIMEOFFSET,
+    is_late BIT DEFAULT 0,
+    submitted_at DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET(),
+    penalty_amount DECIMAL(10,2) DEFAULT 0.0,
+    average_guest_nights DECIMAL(10,2),
+    average_room_occupancy_rate DECIMAL(10,2),
+    average_guests_per_room DECIMAL(10,2),
+    penalty BIT DEFAULT 0,
+    CONSTRAINT submissions_pkey PRIMARY KEY (submission_id),
+    CONSTRAINT submissions_user_id_fkey FOREIGN KEY (user_id)
+        REFERENCES users (user_id)
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE
 );
 
--- Create indexes for performance optimization
-CREATE INDEX idx_submissions_month_year ON submissions (month, year);
-CREATE INDEX idx_submissions_user ON submissions (user_id);
+-- Drop indexes if they exist
+IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_submissions_month_year' AND object_id = OBJECT_ID('submissions'))
+    DROP INDEX idx_submissions_month_year ON submissions;
 
--- Create the daily_metrics table
-CREATE TABLE daily_metrics (
-    metric_id SERIAL PRIMARY KEY,
-    submission_id INT REFERENCES submissions(submission_id) ON DELETE CASCADE,
+IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_submissions_user' AND object_id = OBJECT_ID('submissions'))
+    DROP INDEX idx_submissions_user ON submissions;
+
+IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_submissions_user_month_year' AND object_id = OBJECT_ID('submissions'))
+    DROP INDEX idx_submissions_user_month_year ON submissions;
+
+-- Create indexes
+CREATE INDEX idx_submissions_month_year
+    ON submissions (month ASC, year ASC);
+
+CREATE INDEX idx_submissions_user
+    ON submissions (user_id ASC);
+
+CREATE INDEX idx_submissions_user_month_year
+    ON submissions (user_id ASC, month ASC, year ASC);
+
+
+-- Drop the table if it exists
+IF OBJECT_ID('daily_metrics', 'U') IS NOT NULL
+    DROP TABLE daily_metrics;
+
+-- Create the table
+CREATE TABLE daily_metrics
+(
+    metric_id INT NOT NULL IDENTITY(1,1), -- Use IDENTITY for auto-increment in SQL Server
+    submission_id INT,
     day INT NOT NULL,
     check_ins INT NOT NULL,
     overnight INT NOT NULL,
-    occupied INT NOT NULL
+    occupied INT NOT NULL,
+    CONSTRAINT daily_metrics_pkey PRIMARY KEY (metric_id),
+    CONSTRAINT daily_metrics_submission_id_fkey FOREIGN KEY (submission_id)
+        REFERENCES submissions (submission_id)
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE
 );
 
--- Create the guests table
-CREATE TABLE guests (
-    guest_id SERIAL PRIMARY KEY,
-    metric_id INT REFERENCES daily_metrics(metric_id) ON DELETE CASCADE,
+-- Drop the table if it exists
+IF OBJECT_ID('guests', 'U') IS NOT NULL
+    DROP TABLE guests;
+
+-- Create the table
+CREATE TABLE guests
+(
+    guest_id INT NOT NULL IDENTITY(1,1),
+    metric_id INT,
     room_number INT NOT NULL,
-    gender VARCHAR(50) NOT NULL,
+    gender NVARCHAR(50) NOT NULL,
     age INT NOT NULL,
-    status VARCHAR(50) NOT NULL,
-    nationality VARCHAR(100) NOT NULL,
-    is_check_in BOOLEAN DEFAULT TRUE
+    status NVARCHAR(50) NOT NULL,
+    nationality NVARCHAR(100) NOT NULL,
+    is_check_in BIT DEFAULT 1,
+    CONSTRAINT guests_pkey PRIMARY KEY (guest_id),
+    CONSTRAINT guests_metric_id_fkey FOREIGN KEY (metric_id)
+        REFERENCES daily_metrics (metric_id)
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE
 );
 
--- Create indexes for optimization
-CREATE INDEX idx_guests_metric ON guests (metric_id);
+-- Drop indexes if they exist
+IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_guests_metric' AND object_id = OBJECT_ID('guests'))
+    DROP INDEX idx_guests_metric ON guests;
 
-CREATE INDEX idx_submissions_user_month_year ON submissions (user_id, month, year);
-CREATE INDEX idx_guests_metric_id ON guests (metric_id);
+IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_guests_metric_id' AND object_id = OBJECT_ID('guests'))
+    DROP INDEX idx_guests_metric_id ON guests;
 
+-- Create indexes
+CREATE INDEX idx_guests_metric
+    ON guests (metric_id ASC);
+
+CREATE INDEX idx_guests_metric_id
+    ON guests (metric_id ASC);
 
 
 -- Predefined Admin
