@@ -52,6 +52,18 @@ const UserApproval = ({
     setShowDeactivateModal(true); // Show the deactivation modal
   };
 
+  // Utility function to format date as "Day-Month-Year"
+const formatDate = (dateString) => {
+  if (!dateString) return "N/A"; // Handle null or undefined dates
+
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, "0"); // Ensure two digits
+  const month = String(date.getMonth() + 1).padStart(2, "0"); // Months are zero-based
+  const year = date.getFullYear();
+
+  return `${day}-${month}-${year}`;
+};
+
   const deactivateUser = async (userId) => {
     try {
       const response = await fetch(`${API_BASE_URL}/admin/deactivate/${userId}`, {
@@ -164,7 +176,11 @@ const UserApproval = ({
               <th className="p-4 text-left font-medium">Phone Number</th>
               <th className="p-4 text-left font-medium">Registered Owner</th>
               <th className="p-4 text-left font-medium">TIN</th>
-              <th className="p-4 text-left font-medium">Company Address</th>
+              <th className="p-4 text-left font-medium">Region</th> {/* Add this line */}
+              <th className="p-4 text-left font-medium">Province</th> {/* Add this line */}
+              <th className="p-4 text-left font-medium">Municipality</th> {/* Add this line */}
+              <th className="p-4 text-left font-medium">Barangay</th> 
+              <th className="p-4 text-left font-medium">Date Established</th>
               <th className="p-4 text-left font-medium">Accommodation Type</th>
               <th className="p-4 text-left font-medium">Accommodation Code</th>
               <th className="p-4 text-left font-medium">Number of Rooms</th>
@@ -191,10 +207,16 @@ const UserApproval = ({
                   <td className="p-4">{user.phone_number}</td>
                   <td className="p-4">{user.registered_owner}</td>
                   <td className="p-4">{user.tin}</td>
-                  <td className="p-4">{user.company_address}</td>
+                  {/* <td className="p-4">{user.company_address}</td> */}
+                  <td className="p-4">{user.region || "N/A"}</td> {/* Add this line */}
+                  <td className="p-4">{user.province || "N/A"}</td> {/* Add this line */}
+                  <td className="p-4">{user.municipality || "N/A"}</td> {/* Add this line */}
+                  <td className="p-4">{user.barangay || "N/A"}</td> {/* Add this line */}
+                  <td className="p-4">{formatDate(user.date_established)}</td>
                   <td className="p-4">{user.accommodation_type}</td>
                   <td className="p-4">{user.accommodation_code}</td>
                   <td className="p-4">{user.number_of_rooms}</td>
+                  
                   <td className="p-4">
                     <span
                       className={`px-3 py-1 rounded-full text-sm ${
@@ -250,7 +272,11 @@ const UserApproval = ({
               <th className="p-4 text-left font-medium">Phone Number</th>
               <th className="p-4 text-left font-medium">Registered Owner</th>
               <th className="p-4 text-left font-medium">TIN</th>
-              <th className="p-4 text-left font-medium">Company Address</th>
+              <th className="p-4 text-left font-medium">Region</th> {/* Add this line */}
+              <th className="p-4 text-left font-medium">Province</th> {/* Add this line */}
+              <th className="p-4 text-left font-medium">Municipality</th> {/* Add this line */}
+              <th className="p-4 text-left font-medium">Barangay</th> 
+              <th className="p-4 text-left font-medium">Date Established</th>
               <th className="p-4 text-left font-medium">Accommodation Type</th>
               <th className="p-4 text-left font-medium">Accommodation Code</th>
               <th className="p-4 text-left font-medium">Number of Rooms</th>
@@ -276,7 +302,12 @@ const UserApproval = ({
                   <td className="p-4">{user.phone_number}</td>
                   <td className="p-4">{user.registered_owner}</td>
                   <td className="p-4">{user.tin}</td>
-                  <td className="p-4">{user.company_address}</td>
+                  {/* <td className="p-4">{user.company_address}</td> */}
+                  <td className="p-4">{user.region || "N/A"}</td> {/* Add this line */}
+                  <td className="p-4">{user.province || "N/A"}</td> {/* Add this line */}
+                  <td className="p-4">{user.municipality || "N/A"}</td> {/* Add this line */}
+                  <td className="p-4">{user.barangay || "N/A"}</td> {/* Add this line */}
+                  <td className="p-4">{formatDate(user.date_established)}</td>
                   <td className="p-4">{user.accommodation_type}</td>
                   <td className="p-4">{user.accommodation_code}</td>
                   <td className="p-4">{user.number_of_rooms}</td>

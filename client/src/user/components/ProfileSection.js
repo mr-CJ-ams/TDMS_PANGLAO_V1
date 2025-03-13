@@ -10,6 +10,22 @@ const ProfileSection = ({ user, onUpdateRooms }) => {
     await onUpdateRooms(newNumberOfRooms);
     setEditingRooms(false);
   };
+  // Utility function to format date as "Day-Month-Year"
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A"; // Handle null or undefined dates
+
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) { // Check if the date is invalid
+      return "N/A";
+    }
+
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+
+    return `${day}-${month}-${year}`;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-r from-cyan-500 to-teal-500 p-6">
       <div className="max-w-4xl mx-auto">
@@ -113,6 +129,12 @@ const ProfileSection = ({ user, onUpdateRooms }) => {
                       Barangay
                     </label>
                     <p className="mt-1 text-gray-900">{user.barangay}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-cyan-600">
+                      Date Established
+                    </label>
+                    <p className="mt-1 text-gray-900">{formatDate(user.date_established)}</p> {/* Add this line */}
                   </div>
                 </div>
               </div>

@@ -55,6 +55,7 @@ CREATE TABLE submissions
     average_room_occupancy_rate DECIMAL(10,2),
     average_guests_per_room DECIMAL(10,2),
     penalty BIT DEFAULT 0,
+    number_of_rooms INT,
     CONSTRAINT submissions_pkey PRIMARY KEY (submission_id),
     CONSTRAINT submissions_user_id_fkey FOREIGN KEY (user_id)
         REFERENCES users (user_id)
@@ -139,9 +140,7 @@ CREATE INDEX idx_guests_metric
 CREATE INDEX idx_guests_metric_id
     ON guests (metric_id ASC);
 
+-- ALTER TABLE submissions ADD COLUMN number_of_rooms INT;
 
--- Predefined Admin
-INSERT INTO users (username, email, password, role, is_approved)
-VALUES ('TDMS Admin', 'statisticstourismpanglao@gmail.com', 
-        '$2b$10$MjoygsGSlw.3JSrEqA300.X/Sv.Tv1OZPEdC8pmrAniGrQpPbONia', 
-        'admin', true);
+
+

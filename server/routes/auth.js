@@ -36,6 +36,7 @@ router.post("/signup", async (req, res) => {
     province,
     municipality,
     barangay,
+    dateEstablished,
   } = req.body;
 
   // Map accommodation type to code
@@ -58,7 +59,7 @@ router.post("/signup", async (req, res) => {
 
   try {
     const newUser = await pool.query(
-      "INSERT INTO users (username, email, password, phone_number, registered_owner, tin, company_name, company_address, accommodation_type, accommodation_code, number_of_rooms, region, province, municipality, barangay) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *",
+      "INSERT INTO users (username, email, password, phone_number, registered_owner, tin, company_name, company_address, accommodation_type, accommodation_code, number_of_rooms, region, province, municipality, barangay, date_established) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING *",
       [
         username,
         email,
@@ -75,6 +76,7 @@ router.post("/signup", async (req, res) => {
         province,
         municipality,
         barangay,
+        dateEstablished
       ]
     );
     res.json(newUser.rows[0]);

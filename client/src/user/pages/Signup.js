@@ -21,6 +21,7 @@ const Signup = () => {
     province: "",
     municipality: "",
     barangay: "",
+    dateEstablished: "",
   });
   const [regions, setRegions] = useState([]);
   const [provinces, setProvinces] = useState([]);
@@ -194,6 +195,7 @@ const Signup = () => {
         province: formData.province,
         municipality: formData.municipality,
         barangay: formData.barangay,
+        dateEstablished: formData.dateEstablished,
       });
       alert("Signup successful! Waiting for admin approval.");
       navigate("/login");
@@ -358,6 +360,19 @@ const Signup = () => {
                 type="text"
                 name="registeredOwner"
                 value={formData.registeredOwner}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Date Established *
+              </label>
+              <input
+                type="date"
+                name="dateEstablished"
+                value={formData.dateEstablished}
                 onChange={handleChange}
                 required
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
