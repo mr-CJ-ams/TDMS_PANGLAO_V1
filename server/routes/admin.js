@@ -240,28 +240,50 @@ router.get("/monthly-checkins", async (req, res) => {
   }
 });
 
-// Inside server/routes/admin.js
+
 // Inside server/routes/admin.js
 router.get("/monthly-metrics", async (req, res) => {
   try {
     const { year } = req.query;
 
-    // Query to fetch monthly metrics
+    // Corrected query to calculate total_rooms
     const query = `
+      WITH monthly_metrics AS (
+        SELECT 
+          s.month,
+          SUM(dm.check_ins) AS total_check_ins,
+          SUM(dm.overnight) AS total_overnight,
+          SUM(dm.occupied) AS total_occupied,
+          AVG(s.average_guest_nights) AS average_guest_nights,
+          AVG(s.average_room_occupancy_rate) AS average_room_occupancy_rate,
+          AVG(s.average_guests_per_room) AS average_guests_per_room,
+          COUNT(DISTINCT s.submission_id) AS total_submissions
+        FROM submissions s
+        LEFT JOIN daily_metrics dm ON s.submission_id = dm.submission_id
+        WHERE s.year = $1
+        GROUP BY s.month
+      ),
+      total_rooms AS (
+        SELECT
+          month,
+          SUM(number_of_rooms) AS total_rooms
+        FROM submissions
+        WHERE year = $1
+        GROUP BY month
+      )
       SELECT 
-        s.month,
-        SUM(dm.check_ins) AS total_check_ins,
-        SUM(dm.overnight) AS total_overnight,
-        SUM(dm.occupied) AS total_occupied,
-        AVG(s.average_guest_nights) AS average_guest_nights,
-        AVG(s.average_room_occupancy_rate) AS average_room_occupancy_rate,
-        AVG(s.average_guests_per_room) AS average_guests_per_room,
-        COUNT(DISTINCT s.submission_id) AS total_submissions
-      FROM submissions s
-      JOIN daily_metrics dm ON s.submission_id = dm.submission_id
-      WHERE s.year = $1
-      GROUP BY s.month
-      ORDER BY s.month ASC
+        m.month,
+        m.total_check_ins,
+        m.total_overnight,
+        m.total_occupied,
+        m.average_guest_nights,
+        m.average_room_occupancy_rate,
+        m.average_guests_per_room,
+        m.total_submissions,
+        COALESCE(t.total_rooms, 0) AS total_rooms
+      FROM monthly_metrics m
+      LEFT JOIN total_rooms t ON m.month = t.month
+      ORDER BY m.month ASC;
     `;
 
     const result = await pool.query(query, [year]);
@@ -278,6 +300,8 @@ router.get("/monthly-metrics", async (req, res) => {
       submission_rate: totalUsers > 0 ? ((row.total_submissions / totalUsers) * 100).toFixed(2) : 0,
     }));
 
+    console.log("Monthly Metrics Query Result:", result.rows);
+
     res.json(metricsWithSubmissionRate);
   } catch (err) {
     console.error("Error fetching monthly metrics:", err);
@@ -285,7 +309,7 @@ router.get("/monthly-metrics", async (req, res) => {
   }
 });
 
-// Inside server/routes/admin.js
+
 // Inside server/routes/admin.js
 router.get("/nationality-counts", async (req, res) => {
   try {

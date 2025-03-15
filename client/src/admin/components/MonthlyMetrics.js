@@ -14,6 +14,7 @@ const MonthlyMetrics = ({ monthlyMetrics, selectedYear, formatMonth, toNumber })
         "Average Guest-Nights": toNumber(metrics.average_guest_nights).toFixed(2),
         "Average Room Occupancy Rate": `${toNumber(metrics.average_room_occupancy_rate).toFixed(2)}%`,
         "Average Guests per Room": toNumber(metrics.average_guests_per_room).toFixed(2),
+        "Total Rooms": toNumber(metrics.total_rooms), // Add this line
         "Total Submissions": toNumber(metrics.total_submissions),
         "Submission Rate": `${toNumber(metrics.submission_rate).toFixed(2)}%`,
       }))
@@ -63,8 +64,10 @@ const MonthlyMetrics = ({ monthlyMetrics, selectedYear, formatMonth, toNumber })
               <th style={{ padding: "12px", textAlign: "left" }}>Average Guest-Nights</th>
               <th style={{ padding: "12px", textAlign: "left" }}>Average Room Occupancy Rate</th>
               <th style={{ padding: "12px", textAlign: "left" }}>Average Guests per Room</th>
+              <th style={{ padding: "12px", textAlign: "left" }}>Total Rooms</th> {/* Add this line */}
               <th style={{ padding: "12px", textAlign: "left" }}>Total Submissions</th>
               <th style={{ padding: "12px", textAlign: "left" }}>Submission Rate</th>
+              
             </tr>
           </thead>
           <tbody>
@@ -87,10 +90,12 @@ const MonthlyMetrics = ({ monthlyMetrics, selectedYear, formatMonth, toNumber })
                 <td style={{ padding: "12px", color: "#37474F" }}>
                   {toNumber(metrics.average_guests_per_room).toFixed(2)}
                 </td>
+                <td style={{ padding: "12px", color: "#37474F" }}>{toNumber(metrics.total_rooms)}</td> {/* Add this line */}
                 <td style={{ padding: "12px", color: "#37474F" }}>{toNumber(metrics.total_submissions)}</td>
                 <td style={{ padding: "12px", color: "#37474F" }}>
                   {toNumber(metrics.submission_rate).toFixed(2)}%
                 </td>
+                
               </tr>
             ))}
           </tbody>

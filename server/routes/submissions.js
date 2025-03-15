@@ -41,7 +41,7 @@ router.post("/submit", async (req, res) => {
       "SELECT number_of_rooms FROM users WHERE user_id = $1",
       [user_id]
     );
-    const numberOfRooms = user.rows[0].number_of_rooms;
+    const numberOfRooms = user.rows[0].number_of_rooms; // Get the number_of_rooms from the user
 
     // Calculate the deadline
     const deadline = calculateDeadline(month, year);
@@ -87,7 +87,7 @@ router.post("/submit", async (req, res) => {
         averageGuestNights,
         averageRoomOccupancyRate,
         averageGuestsPerRoom,
-        numberOfRooms, // Store the number_of_rooms at the time of submission
+        numberOfRooms, // Insert the number_of_rooms here
       ]
     );
     const submissionId = submissionRes.rows[0].submission_id;

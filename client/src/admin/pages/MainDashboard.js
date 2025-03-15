@@ -59,13 +59,13 @@ const MainDashboard = () => {
     setLoading(true);
     try {
       const token = sessionStorage.getItem("token");
-
+  
       // Fetch monthly check-ins
       const checkInsResponse = await axios.get(`${API_BASE_URL}/admin/monthly-checkins`, {
         headers: { Authorization: `Bearer ${token}` },
         params: { year: selectedYear },
       });
-
+  
       // Fill in missing months with zero check-ins
       const allMonths = Array.from({ length: 12 }, (_, i) => i + 1); // [1, 2, ..., 12]
       const dataWithAllMonths = allMonths.map((month) => {
@@ -76,18 +76,18 @@ const MainDashboard = () => {
           isPredicted: false, // Mark as actual data
         };
       });
-
+  
       // Append predicted data if the selected year is 2025
       const finalData = selectedYear === 2025 ? [...dataWithAllMonths, ...predictedData] : dataWithAllMonths;
-
+  
       setMonthlyCheckIns(finalData);
-
+  
       // Fetch monthly metrics
       const metricsResponse = await axios.get(`${API_BASE_URL}/admin/monthly-metrics`, {
         headers: { Authorization: `Bearer ${token}` },
         params: { year: selectedYear },
       });
-
+  
       // Fill in missing months with zero values
       const metricsWithAllMonths = allMonths.map((month) => {
         const monthData = metricsResponse.data.find((d) => d.month === month);
@@ -101,17 +101,18 @@ const MainDashboard = () => {
           average_guests_per_room: monthData ? monthData.average_guests_per_room : 0,
           total_submissions: monthData ? monthData.total_submissions : 0,
           submission_rate: monthData ? monthData.submission_rate : 0,
+          total_rooms: monthData ? monthData.total_rooms : 0, // Ensure this line is added
         };
       });
-
+  
       setMonthlyMetrics(metricsWithAllMonths);
-
+  
       // Fetch nationality counts
       const nationalityResponse = await axios.get(`${API_BASE_URL}/admin/nationality-counts`, {
         headers: { Authorization: `Bearer ${token}` },
         params: { year: selectedYear, month: selectedMonth },
       });
-
+  
       setNationalityCounts(nationalityResponse.data);
     } catch (err) {
       console.error("Error fetching data:", err);
