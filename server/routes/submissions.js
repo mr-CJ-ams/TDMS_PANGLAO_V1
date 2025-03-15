@@ -130,6 +130,7 @@ router.post("/submit", async (req, res) => {
       averageGuestNights,
       averageRoomOccupancyRate,
       averageGuestsPerRoom,
+      days: req.body.days, // Return the saved days data
     });
   } catch (err) {
     await client.query("ROLLBACK");
@@ -302,6 +303,20 @@ router.get("/check-submission", async (req, res) => {
   } catch (err) {
     console.error("Error checking submission:", err);
     res.status(500).json({ error: "Failed to check submission" });
+  }
+});
+
+router.get("/:userId/:month/:year", async (req, res) => {
+  const { userId, month, year } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT * FROM submissions WHERE user_id = $1 AND month = $2 AND year = $3`,
+      [userId, month, year]
+    );
+    res.json(result.rows[0] || null);
+  } catch (err) {
+    console.error("Error fetching submission:", err);
+    res.status(500).json({ error: "Failed to fetch submission" });
   }
 });
 

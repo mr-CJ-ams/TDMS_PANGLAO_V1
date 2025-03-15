@@ -11,7 +11,8 @@ const SubmissionForm = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [occupiedRooms, setOccupiedRooms] = useState([]);
+  const [occupiedRooms, setOccupiedRooms] = useState([]); // Data for the current month
+  const [monthlyData, setMonthlyData] = useState({}); // Data for all months
   const [isFormSaved, setIsFormSaved] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -25,7 +26,6 @@ const SubmissionForm = () => {
 
   const gridRef = useRef(null);
 
-
   // Fetch user profile data
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -36,6 +36,10 @@ const SubmissionForm = () => {
         });
         setUser(response.data);
         setNumberOfRooms(response.data.number_of_rooms);
+
+        // Load cached data from localStorage after user data is fetched
+        const cachedData = loadDataFromLocalStorage(response.data.user_id);
+        setMonthlyData(cachedData);
       } catch (err) {
         console.error("Error fetching user profile:", err);
       }
@@ -63,6 +67,44 @@ const SubmissionForm = () => {
 
     checkSubmission();
   }, [user, selectedMonth, selectedYear]);
+
+  // Load data for the selected month/year
+  useEffect(() => {
+    if (user) {
+      const key = `${selectedYear}-${selectedMonth}`;
+      const cachedData = monthlyData[key] || [];
+      setOccupiedRooms(cachedData); // Set data for the current month
+
+      // Fetch data from the backend if not already cached
+      if (!monthlyData[key]) {
+        const fetchSubmissionData = async () => {
+          try {
+            const token = sessionStorage.getItem("token");
+            const response = await axios.get(
+              `${API_BASE_URL}/api/submissions/${user.user_id}/${selectedMonth}/${selectedYear}`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (response.data) {
+              setMonthlyData((prev) => ({
+                ...prev,
+                [key]: response.data.days || [],
+              }));
+            }
+          } catch (err) {
+            console.error("Error fetching submission data:", err);
+          }
+        };
+        fetchSubmissionData();
+      }
+    }
+  }, [user, selectedMonth, selectedYear, monthlyData]);
+
+  // Save data to localStorage whenever monthlyData changes
+  useEffect(() => {
+    if (user) {
+      saveDataToLocalStorage(user.user_id, monthlyData);
+    }
+  }, [monthlyData, user]);
 
   // Handle search for a specific room
   const handleSearch = (roomNumber) => {
@@ -94,8 +136,8 @@ const SubmissionForm = () => {
     }));
 
     // Save the first day's data
-    setOccupiedRooms((prev) => [
-      ...prev.filter((r) => !(r.day === day && r.room === room)),
+    const updatedRooms = [
+      ...(occupiedRooms || []).filter((r) => !(r.day === day && r.room === room)), // Remove existing entry
       {
         day,
         room,
@@ -103,27 +145,32 @@ const SubmissionForm = () => {
         lengthOfStay,
         isCheckIn: isCheckIn,
       },
-    ]);
+    ];
 
     // Mark the remaining days as overnight stays (not check-ins)
     for (let i = 1; i < lengthOfStay; i++) {
       const nextDay = day + i;
       if (nextDay <= daysInMonth) {
-        setOccupiedRooms((prev) => [
-          ...prev,
-          {
-            day: nextDay,
-            room,
-            guests: guests.map((guest) => ({
-              ...guest,
-              isCheckIn: false,
-            })),
-            lengthOfStay,
+        updatedRooms.push({
+          day: nextDay,
+          room,
+          guests: guests.map((guest) => ({
+            ...guest,
             isCheckIn: false,
-          },
-        ]);
+          })),
+          lengthOfStay,
+          isCheckIn: false,
+        });
       }
     }
+
+    // Update occupiedRooms and monthlyData
+    setOccupiedRooms(updatedRooms);
+    const key = `${selectedYear}-${selectedMonth}`;
+    setMonthlyData((prev) => ({
+      ...prev,
+      [key]: updatedRooms,
+    }));
   };
 
   // Check if a room is occupied on a specific day
@@ -147,6 +194,10 @@ const SubmissionForm = () => {
 
   // Calculate daily totals for check-ins, overnight stays, and occupied rooms
   const calculateDailyTotals = (day) => {
+    if (!occupiedRooms || occupiedRooms.length === 0) {
+      return { checkIns: 0, overnight: 0, occupied: 0 };
+    }
+
     const dayRooms = occupiedRooms.filter((r) => r.day === day);
 
     const checkIns = dayRooms
@@ -255,9 +306,26 @@ const SubmissionForm = () => {
 
   // Function to remove all guest data for a specific day and room
   const handleRemoveAllGuests = (day, room) => {
-    setOccupiedRooms((prev) =>
-      prev.filter((r) => !(r.day === day && r.room === room))
-    );
+    const updatedRooms = occupiedRooms.filter((r) => !(r.day === day && r.room === room));
+    setOccupiedRooms(updatedRooms);
+    const key = `${selectedYear}-${selectedMonth}`;
+    setMonthlyData((prev) => ({
+      ...prev,
+      [key]: updatedRooms,
+    }));
+  };
+
+  // Clear all guest data for the selected month
+  const handleClearMonth = () => {
+    const isConfirmed = window.confirm("Are you sure you want to clear all guest data for this month? This action cannot be undone.");
+    if (!isConfirmed) return;
+
+    const key = `${selectedYear}-${selectedMonth}`;
+    setMonthlyData((prev) => ({
+      ...prev,
+      [key]: [], // Clear data for the selected month
+    }));
+    setOccupiedRooms([]); // Clear the current month's data
   };
 
   // Get the number of days in the selected month and year
@@ -265,14 +333,29 @@ const SubmissionForm = () => {
     return new Date(year, month, 0).getDate();
   };
 
-  const daysInMonth = getDaysInMonth(selectedMonth, selectedYear);
+  const [daysInMonth, setDaysInMonth] = useState(getDaysInMonth(selectedMonth, selectedYear));
+
+  useEffect(() => {
+    setDaysInMonth(getDaysInMonth(selectedMonth, selectedYear));
+  }, [selectedMonth, selectedYear]);
+
+  // Save data to localStorage
+  const saveDataToLocalStorage = (userId, data) => {
+    const key = `submission_${userId}`;
+    localStorage.setItem(key, JSON.stringify(data));
+  };
+
+  // Load data from localStorage
+  const loadDataFromLocalStorage = (userId) => {
+    const key = `submission_${userId}`;
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : {};
+  };
 
   return (
     <div className="container mt-5">
       <h2>Monthly Recording Format</h2>
       <p>Form: DAE-1A</p>
-
-      
 
       <SaveButton onSave={handleSaveForm} isFormSaved={isFormSaved} hasSubmitted={hasSubmitted} />
 
@@ -284,7 +367,16 @@ const SubmissionForm = () => {
       />
       <RoomSearchBar onSearch={handleSearch} />
 
-    <div ref={gridRef}>
+      {/* Clear Button */}
+      <button
+        className="btn btn-danger mt-3"
+        onClick={handleClearMonth}
+        disabled={hasSubmitted}
+      >
+        Clear All Data 
+      </button>
+
+      <div ref={gridRef}>
       <MonthlyGrid
         daysInMonth={daysInMonth}
         numberOfRooms={numberOfRooms}
@@ -292,7 +384,7 @@ const SubmissionForm = () => {
         isRoomOccupied={isRoomOccupied}
         getRoomColor={getRoomColor}
         calculateDailyTotals={calculateDailyTotals}
-        disabled={hasSubmitted}
+        disabled={hasSubmitted} // Pass hasSubmitted as the disabled prop
       />
       </div>
 

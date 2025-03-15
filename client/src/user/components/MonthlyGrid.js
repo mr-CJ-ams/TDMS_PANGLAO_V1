@@ -9,6 +9,7 @@ const MonthlyGrid = ({
   isRoomOccupied,
   getRoomColor,
   calculateDailyTotals,
+  disabled, // Add disabled prop
 }) => {
   const rooms = Array.from({ length: numberOfRooms }, (_, i) => i + 1);
 
@@ -24,25 +25,36 @@ const MonthlyGrid = ({
         }}
       >
         <thead>
-        <tr>
-          <th
-            style={{
-              position: "sticky",
-              left: 0,
-              zIndex: 2,
-              backgroundColor: "#06b6d4", // cyan-500
-              color: "white",
-              fontWeight: "bold",
-              padding: "12px",
-              borderRadius: "12px 0 0 12px",
-            }}
-          >
-            Day
-          </th>
-          {rooms.map((room) => (
+          <tr>
             <th
-              key={room}
-              data-room={room}
+              style={{
+                position: "sticky",
+                left: 0,
+                zIndex: 2,
+                backgroundColor: "#06b6d4", // cyan-500
+                color: "white",
+                fontWeight: "bold",
+                padding: "12px",
+                borderRadius: "12px 0 0 12px",
+              }}
+            >
+              Day
+            </th>
+            {rooms.map((room) => (
+              <th
+                key={room}
+                data-room={room}
+                style={{
+                  backgroundColor: "#06b6d4", // cyan-500
+                  color: "white",
+                  fontWeight: "bold",
+                  padding: "12px",
+                }}
+              >
+                Room {room}
+              </th>
+            ))}
+            <th
               style={{
                 backgroundColor: "#06b6d4", // cyan-500
                 color: "white",
@@ -50,41 +62,30 @@ const MonthlyGrid = ({
                 padding: "12px",
               }}
             >
-              Room {room}
+              Check In
             </th>
-          ))}
-          <th
-            style={{
-              backgroundColor: "#06b6d4", // cyan-500
-              color: "white",
-              fontWeight: "bold",
-              padding: "12px",
-            }}
-          >
-            Check In
-          </th>
-          <th
-            style={{
-              backgroundColor: "#06b6d4", // cyan-500
-              color: "white",
-              fontWeight: "bold",
-              padding: "12px",
-            }}
-          >
-            Overnight
-          </th>
-          <th
-            style={{
-              backgroundColor: "#06b6d4", // cyan-500
-              color: "white",
-              fontWeight: "bold",
-              padding: "12px",
-              borderRadius: "0 12px 12px 0",
-            }}
-          >
-            Occupied
-          </th>
-        </tr>
+            <th
+              style={{
+                backgroundColor: "#06b6d4", // cyan-500
+                color: "white",
+                fontWeight: "bold",
+                padding: "12px",
+              }}
+            >
+              Overnight
+            </th>
+            <th
+              style={{
+                backgroundColor: "#06b6d4", // cyan-500
+                color: "white",
+                fontWeight: "bold",
+                padding: "12px",
+                borderRadius: "0 12px 12px 0",
+              }}
+            >
+              Occupied
+            </th>
+          </tr>
         </thead>
         <tbody>
           {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day, index) => {
@@ -116,15 +117,22 @@ const MonthlyGrid = ({
                         color: "#333",
                         transition: "all 0.3s ease",
                         boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                        cursor: disabled ? "not-allowed" : "pointer", // Disable cursor when disabled
+                        opacity: disabled ? 0.5 : 1, // Reduce opacity when disabled
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = "scale(1.05)";
-                        e.currentTarget.style.boxShadow = "0 6px 8px rgba(0, 0, 0, 0.15)";
+                        if (!disabled) {
+                          e.currentTarget.style.transform = "scale(1.05)";
+                          e.currentTarget.style.boxShadow = "0 6px 8px rgba(0, 0, 0, 0.15)";
+                        }
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = "scale(1)";
-                        e.currentTarget.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.1)";
+                        if (!disabled) {
+                          e.currentTarget.style.transform = "scale(1)";
+                          e.currentTarget.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.1)";
+                        }
                       }}
+                      disabled={disabled} // Disable the button when hasSubmitted is true
                     >
                       <Hotel size={16} />
                       Room {room}
