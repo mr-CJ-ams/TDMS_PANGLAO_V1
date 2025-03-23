@@ -15,7 +15,7 @@ const nationalities = [
     "Laos", "Luxembourg", 
     "Malaysia", "Mexico", "Myanmar", 
     "Nauru", "Nepal", "Netherlands", "New Zealand", "Nigeria", "Norway", 
-    "Pakistan", "Papua New Guinea", "Peru", "Poland", "Portugal", 
+    "Pakistan", "Papua New Guinea", "Peru", "Philippines", "Poland", "Portugal", 
     "Russia", 
     "Saudi Arabia", 
     "Singapore", 

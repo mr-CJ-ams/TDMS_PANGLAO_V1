@@ -108,7 +108,7 @@ const MonthlyGrid = ({
                 {rooms.map((room) => (
                   <td key={`${day}-${room}`}>
                     <button
-                      onClick={() => onCellClick(day, room)}
+                      onClick={() => !disabled && onCellClick(day, room)} // Disable onClick when disabled
                       className="btn w-100 d-flex align-items-center justify-content-center gap-2 px-2 py-1 border-0"
                       style={{
                         backgroundColor: getRoomColor(day, room),
@@ -117,18 +117,22 @@ const MonthlyGrid = ({
                         color: "#333",
                         transition: "all 0.3s ease",
                         boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-                        cursor: "pointer", // Disable cursor when disabled
-                        opacity: 1, // Reduce opacity when disabled
+                        cursor: disabled ? "not-allowed" : "pointer", // Disable cursor when disabled
+                        opacity: disabled ? 0.6 : 1, // Reduce opacity when disabled
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = "scale(1.05)";
+                        if (!disabled) {
+                          e.currentTarget.style.transform = "scale(1.05)";
                           e.currentTarget.style.boxShadow = "0 6px 8px rgba(0, 0, 0, 0.15)";
+                        }
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = "scale(1)";
+                        if (!disabled) {
+                          e.currentTarget.style.transform = "scale(1)";
                           e.currentTarget.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.1)";
+                        }
                       }}
-                      // disabled={disabled} // Disable the button when hasSubmitted is true
+                      disabled={disabled} // Disable the button when disabled is true
                     >
                       <Hotel size={16} />
                       Room {room}

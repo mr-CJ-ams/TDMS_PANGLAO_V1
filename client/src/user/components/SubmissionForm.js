@@ -352,12 +352,30 @@ const SubmissionForm = () => {
     return data ? JSON.parse(data) : {};
   };
 
+  const isFutureMonth = (selectedMonth, selectedYear) => {
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = currentDate.getMonth() + 1; // getMonth() returns 0-based month
+
+  return (
+    selectedYear > currentYear ||
+    (selectedYear === currentYear && selectedMonth > currentMonth)
+  );
+};
+
+const isFutureMonthValue = isFutureMonth(selectedMonth, selectedYear);
+
   return (
     <div className="container mt-5">
       <h2>Monthly Recording Format</h2>
       <p>Form: DAE-1A</p>
 
-      <SaveButton onSave={handleSaveForm} isFormSaved={isFormSaved} hasSubmitted={hasSubmitted} />
+      <SaveButton
+        onSave={handleSaveForm}
+        isFormSaved={isFormSaved}
+        hasSubmitted={hasSubmitted}
+        isFutureMonth={isFutureMonthValue}
+      />
 
       <MonthYearSelector
         selectedMonth={selectedMonth}
@@ -384,7 +402,7 @@ const SubmissionForm = () => {
         isRoomOccupied={isRoomOccupied}
         getRoomColor={getRoomColor}
         calculateDailyTotals={calculateDailyTotals}
-        disabled={hasSubmitted} // Pass hasSubmitted as the disabled prop
+        disabled={hasSubmitted || isFutureMonthValue} // Pass hasSubmitted or isFutureMonth as disabled
       />
       </div>
 

@@ -1,12 +1,12 @@
 import React from "react";
 
-const SaveButton = ({ onSave, isFormSaved, hasSubmitted }) => {
+const SaveButton = ({ onSave, isFormSaved, hasSubmitted, isFutureMonth }) => {
   return (
     <button
       onClick={onSave}
-      disabled={isFormSaved || hasSubmitted}
+      disabled={isFormSaved || hasSubmitted || isFutureMonth}
       className={`px-4 py-2 rounded text-white font-bold ${
-        isFormSaved || hasSubmitted
+        isFormSaved || hasSubmitted || isFutureMonth
           ? "bg-gray-400 cursor-not-allowed" // Disabled state
           : "bg-cyan-500 hover:bg-cyan-600" // Enabled state
       }`}
