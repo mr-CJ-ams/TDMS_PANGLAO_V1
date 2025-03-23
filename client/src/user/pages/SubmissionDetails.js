@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -7,8 +7,7 @@ import { Modal, ListGroup } from "react-bootstrap";
 import { FileSpreadsheet, Users, ArrowLeft } from "lucide-react";
 import { MetricsCard } from "../components/MetricsCard";
 import { ActionButton } from "../components/ActionButton";
-const SubmissionDetails = () => {
-  const { submissionId } = useParams();
+const SubmissionDetails = ({ submissionId }) => {
   const [submission, setSubmission] = useState({ days: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -62,7 +61,6 @@ const SubmissionDetails = () => {
           `${API_BASE_URL}/api/submissions/details/${submissionId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        console.log("Submission details response:", response.data); // Debugging
         setSubmission(response.data);
       } catch (err) {
         console.error("Error fetching submission details:", err);
@@ -72,7 +70,9 @@ const SubmissionDetails = () => {
       }
     };
 
-    fetchSubmissionDetails();
+    if (submissionId) {
+      fetchSubmissionDetails();
+    }
   }, [submissionId]);
 
   // Calculate nationality counts
@@ -219,15 +219,11 @@ const SubmissionDetails = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Submission Details
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900">Submission Details</h1>
           <div className="mt-2 text-gray-600">
             <p className="mb-1">
               <span className="font-medium">Month:</span>{" "}
-              {new Date(0, submission.month - 1).toLocaleString("default", {
-                month: "long",
-              })}
+              {new Date(0, submission.month - 1).toLocaleString("default", { month: "long" })}
             </p>
             <p className="mb-1">
               <span className="font-medium">Year:</span> {submission.year}
@@ -240,26 +236,20 @@ const SubmissionDetails = () => {
         </div>
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-3 mb-8">
-          <ActionButton 
-            onClick={() => exportToExcel(submission)}>
+          <ActionButton onClick={() => exportToExcel(submission)}>
             <FileSpreadsheet className="w-4 h-4 inline mr-2" />
             Export to Excel
           </ActionButton>
-          <ActionButton
-            onClick={() => setShowNationalityModal(true)}
-            variant="outline"
-          >
+          <ActionButton onClick={() => setShowNationalityModal(true)} variant="outline">
             <Users className="w-4 h-4 inline mr-2" />
             View Nationality Counts
           </ActionButton>
-          <ActionButton
-            onClick={exportNationalityCountsToExcel}
-          >
+          <ActionButton onClick={exportNationalityCountsToExcel}>
             <FileSpreadsheet className="w-4 h-4 inline mr-2" />
             Export Nationality Counts
           </ActionButton>
         </div>
-        {/* Metrics Grid submission.number_of_rooms */}
+        {/* Metrics Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <MetricsCard title="Total Check-Ins" value={totalCheckIns} />
           <MetricsCard title="Total Rooms" value={submission.number_of_rooms} />
@@ -267,14 +257,8 @@ const SubmissionDetails = () => {
           <MetricsCard title="Total Occupied" value={totalOccupied} />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <MetricsCard
-            title="Average Guest-Nights"
-            value={`${averageGuestNights}`}
-          />
-          <MetricsCard
-            title="Room Occupancy Rate"
-            value={`${averageRoomOccupancyRate}%`}
-          />
+          <MetricsCard title="Average Guest-Nights" value={`${averageGuestNights}`} />
+          <MetricsCard title="Room Occupancy Rate" value={`${averageRoomOccupancyRate}%`} />
           <MetricsCard title="Guests per Room" value={averageGuestsPerRoom} />
         </div>
         {/* Daily Metrics Table */}
@@ -284,43 +268,26 @@ const SubmissionDetails = () => {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Day
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Check Ins
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Overnight
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Occupied
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Guests
-                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Day</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check Ins</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Overnight</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Occupied</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guests</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {submission.days.map((day) => (
                   <tr key={day.day} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">{day.day}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{day.check_ins || 0}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{day.overnight || 0}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{day.occupied || 0}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {day.check_ins || 0}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {day.overnight || 0}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {day.occupied || 0}
-                    </td>
-                    <td className="px-6 py-4">
                       {day.guests && day.guests.length > 0 ? (
-                        <ul className="space-y-1">
+                        <ul className="list-none space-y-1">
                           {day.guests.map((guest, index) => (
-                            <li key={index} className="text-sm text-gray-600">
-                              Room {guest.room_number}, {guest.gender},{" "}
-                              {guest.age}, {guest.status}, {guest.nationality}
+                            <li key={index} className="text-sm text-gray-600 whitespace-nowrap">
+                              Room {guest.room_number}, {guest.gender}, {guest.age}, {guest.status}, {guest.nationality}
                             </li>
                           ))}
                         </ul>
@@ -334,39 +301,24 @@ const SubmissionDetails = () => {
             </table>
           </div>
         </div>
-        {/* Back Button */}
-        <ActionButton onClick={() => navigate(-1)} variant="secondary">
-          <ArrowLeft className="w-4 h-4 inline mr-2" />
-          Back to History
-        </ActionButton>
+        
         {/* Nationality Modal */}
-        <Modal
-          show={showNationalityModal}
-          onHide={() => setShowNationalityModal(false)}
-        >
+        <Modal show={showNationalityModal} onHide={() => setShowNationalityModal(false)}>
           <Modal.Header closeButton>
             <Modal.Title>Nationality Counts (Check-ins Only)</Modal.Title>
           </Modal.Header>
           <Modal.Body>
             <ListGroup>
               {sortedNationalities.map((nationality) => (
-                <ListGroup.Item
-                  key={nationality}
-                  className="d-flex justify-content-between align-items-center"
-                >
+                <ListGroup.Item key={nationality} className="d-flex justify-content-between align-items-center">
                   <span>{nationality}</span>
-                  <span className="badge bg-primary rounded-pill">
-                    {nationalityCounts[nationality]}
-                  </span>
+                  <span className="badge bg-primary rounded-pill">{nationalityCounts[nationality]}</span>
                 </ListGroup.Item>
               ))}
             </ListGroup>
           </Modal.Body>
           <Modal.Footer>
-            <ActionButton
-              onClick={() => setShowNationalityModal(false)}
-              variant="secondary"
-            >
+            <ActionButton onClick={() => setShowNationalityModal(false)} variant="secondary">
               Close
             </ActionButton>
           </Modal.Footer>

@@ -2,9 +2,12 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Loader2, ExternalLink } from "lucide-react";
+import SubmissionDetailsModal from "./SubmissionDetailsModal";
 const SubmissionHistory = ({ user }) => {
   const [submissionHistory, setSubmissionHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedSubmissionId, setSelectedSubmissionId] = useState(null);
   const navigate = useNavigate();
   const API_BASE_URL =
     process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
@@ -31,6 +34,16 @@ const SubmissionHistory = ({ user }) => {
     } finally {
       setLoadingHistory(false);
     }
+  };
+
+  const handleViewClick = (submissionId) => {
+    setSelectedSubmissionId(submissionId);
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedSubmissionId(null);
   };
   return (
     <div className="p-6 min-h-screen bg-gradient-to-b from-cyan-50 to-white">
@@ -128,11 +141,7 @@ const SubmissionHistory = ({ user }) => {
                     </td>
                     <td className="px-4 py-3">
                       <button
-                        onClick={() =>
-                          navigate(
-                            `/submission-details/${submission.submission_id}`,
-                          )
-                        }
+                        onClick={() => handleViewClick(submission.submission_id)}
                         className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-gradient-to-r from-cyan-500 to-teal-500 rounded-md hover:opacity-90 transition-opacity"
                       >
                         <ExternalLink size={16} className="mr-1" />
@@ -146,6 +155,11 @@ const SubmissionHistory = ({ user }) => {
           </div>
         )}
       </div>
+      <SubmissionDetailsModal
+        show={showModal}
+        onHide={handleCloseModal}
+        submissionId={selectedSubmissionId}
+      />
     </div>
   );
 };
