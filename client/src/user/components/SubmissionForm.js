@@ -396,7 +396,7 @@ const SubmissionForm = () => {
           onSave={handleSaveGuests}
           onRemoveAllGuests={handleRemoveAllGuests}
           initialData={getGuestData(selectedDate, selectedRoom)}
-          disabled={hasSubmitted}
+          disabled={hasSubmitted} // Pass hasSubmitted as the disabled prop
         />
       )}
 

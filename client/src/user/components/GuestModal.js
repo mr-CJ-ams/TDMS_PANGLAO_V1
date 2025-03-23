@@ -1,18 +1,23 @@
 import React, { useState } from "react";
 import nationalities from "./Nationality";
 
-const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData }) => {
+const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData, disabled }) => {
   const [lengthOfStay, setLengthOfStay] = useState(initialData?.lengthOfStay?.toString() || "");
   const [guests, setGuests] = useState(initialData?.guests || []);
   const [isCheckIn, setIsCheckIn] = useState(initialData?.isCheckIn || true);
   const [error, setError] = useState("");
-  
 
   const handleSave = () => {
+    if (guests.length === 0) {
+      setError("Please add at least one guest before saving.");
+      return;
+    }
+
     if (guests.some((guest) => !guest.age)) {
       setError("Please fill out the Age field for all guests.");
       return;
     }
+
     setError("");
     onSave(day, room, {
       guests: guests.map((guest) => ({ ...guest, roomNumber: room })),
@@ -50,9 +55,6 @@ const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData
         <div className="modal-content">
           <div className="modal-header">
             <h5 className="modal-title">Day {day} - Room {room}</h5>
-            <button type="button" className="close" onClick={onClose}>
-              <span>&times;</span>
-            </button>
           </div>
           <div className="modal-body">
             {error && <div className="alert alert-danger">{error}</div>}
@@ -64,12 +66,14 @@ const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData
                 <button
                   onClick={() => setIsCheckIn(true)}
                   className={`btn ${isCheckIn ? "btn-warning" : "btn-light"}`}
+                  disabled={disabled}
                 >
                   Yes
                 </button>
                 <button
                   onClick={() => setIsCheckIn(false)}
                   className={`btn ${!isCheckIn ? "btn-success" : "btn-light"}`}
+                  disabled={disabled}
                 >
                   No
                 </button>
@@ -84,6 +88,7 @@ const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData
                 className="form-control"
                 value={lengthOfStay}
                 onChange={(e) => setLengthOfStay(e.target.value)}
+                disabled={disabled}
               />
             </div>
 
@@ -98,6 +103,7 @@ const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData
                       onChange={(e) =>
                         handleUpdateGuest(index, "gender", e.target.value)
                       }
+                      disabled={disabled}
                     >
                       <option>Male</option>
                       <option>Female</option>
@@ -112,6 +118,7 @@ const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData
                       onChange={(e) =>
                         handleUpdateGuest(index, "age", e.target.value)
                       }
+                      disabled={disabled}
                     />
                   </div>
                 </div>
@@ -123,6 +130,7 @@ const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData
                       onChange={(e) =>
                         handleUpdateGuest(index, "status", e.target.value)
                       }
+                      disabled={disabled}
                     >
                       <option>Single</option>
                       <option>Married</option>
@@ -135,6 +143,7 @@ const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData
                       onChange={(e) =>
                         handleUpdateGuest(index, "nationality", e.target.value)
                       }
+                      disabled={disabled}
                     >
                       {nationalities.map((nationality) => (
                         <option key={nationality} value={nationality}>
@@ -147,23 +156,24 @@ const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData
                 <button
                   className="btn btn-danger btn-sm mt-2"
                   onClick={() => handleRemoveGuest(index)}
+                  disabled={disabled}
                 >
                   Remove
                 </button>
               </div>
             ))}
-            <button className="btn btn-primary" onClick={handleAddGuest}>
+            <button className="btn btn-primary" onClick={handleAddGuest} disabled={disabled}>
               Add Guest
             </button>
           </div>
           <div className="modal-footer">
-            <button className="btn btn-danger" onClick={handleRemoveAll}>
+            <button className="btn btn-danger" onClick={handleRemoveAll} disabled={disabled}>
               Remove All Guest Data
             </button>
             <button className="btn btn-secondary" onClick={onClose}>
               Cancel
             </button>
-            <button className="btn btn-primary" onClick={handleSave}>
+            <button className="btn btn-primary" onClick={handleSave} disabled={disabled || guests.length === 0}>
               Save
             </button>
           </div>
