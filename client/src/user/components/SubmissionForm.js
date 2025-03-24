@@ -352,6 +352,28 @@ const SubmissionForm = () => {
     return data ? JSON.parse(data) : {};
   };
 
+  // Helper function to check if the selected month is the current month
+const isCurrentMonth = (selectedMonth, selectedYear) => {
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = currentDate.getMonth() + 1; // getMonth() returns 0-based month
+
+  return selectedYear === currentYear && selectedMonth === currentMonth;
+};
+
+// Helper function to check if the selected month is a past month
+const isPastMonth = (selectedMonth, selectedYear) => {
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = currentDate.getMonth() + 1; // getMonth() returns 0-based month
+
+  return (
+    selectedYear < currentYear ||
+    (selectedYear === currentYear && selectedMonth < currentMonth)
+  );
+};
+
+
   const isFutureMonth = (selectedMonth, selectedYear) => {
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear();
@@ -364,6 +386,7 @@ const SubmissionForm = () => {
 };
 
 const isFutureMonthValue = isFutureMonth(selectedMonth, selectedYear);
+const isCurrentMonthValue = isCurrentMonth(selectedMonth, selectedYear);
 
   return (
     <div className="container mt-5">
@@ -371,11 +394,12 @@ const isFutureMonthValue = isFutureMonth(selectedMonth, selectedYear);
       <p>Form: DAE-1A</p>
 
       <SaveButton
-        onSave={handleSaveForm}
-        isFormSaved={isFormSaved}
-        hasSubmitted={hasSubmitted}
-        isFutureMonth={isFutureMonthValue}
-      />
+      onSave={handleSaveForm}
+      isFormSaved={isFormSaved}
+      hasSubmitted={hasSubmitted}
+      isFutureMonth={isFutureMonthValue}
+      isCurrentMonth={isCurrentMonthValue}
+    />
 
       <MonthYearSelector
         selectedMonth={selectedMonth}
@@ -414,7 +438,8 @@ const isFutureMonthValue = isFutureMonth(selectedMonth, selectedYear);
           onSave={handleSaveGuests}
           onRemoveAllGuests={handleRemoveAllGuests}
           initialData={getGuestData(selectedDate, selectedRoom)}
-          disabled={hasSubmitted} // Pass hasSubmitted as the disabled prop
+          disabled={hasSubmitted}
+          isCurrentMonth={isCurrentMonthValue}
         />
       )}
 

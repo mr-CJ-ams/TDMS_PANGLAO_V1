@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import nationalities from "./Nationality";
 
-const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData, disabled }) => {
+const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData, disabled, isCurrentMonth }) => {
   const [lengthOfStay, setLengthOfStay] = useState(initialData?.lengthOfStay?.toString() || "");
   const [guests, setGuests] = useState(initialData?.guests || []);
   const [isCheckIn, setIsCheckIn] = useState(initialData?.isCheckIn || true);
@@ -167,13 +167,13 @@ const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData
             </button>
           </div>
           <div className="modal-footer">
-            <button className="btn btn-danger" onClick={handleRemoveAll} disabled={disabled}>
+          <button className="btn btn-danger" onClick={handleRemoveAll} disabled={disabled || isCurrentMonth}>
               Remove All Guest Data
             </button>
             <button className="btn btn-secondary" onClick={onClose}>
               Cancel
             </button>
-            <button className="btn btn-primary" onClick={handleSave} disabled={disabled || guests.length === 0}>
+            <button className="btn btn-primary" onClick={handleSave} disabled={disabled || isCurrentMonth || guests.length === 0}>
               Save
             </button>
           </div>
