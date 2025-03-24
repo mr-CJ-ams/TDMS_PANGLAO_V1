@@ -60,9 +60,10 @@ const RegionalDistribution = ({ nationalityCounts, selectedYear, selectedMonth, 
     // Add totals
     worksheetData.push(["TOTAL NON-PHILIPPINE RESIDENTS =", processedData.NON_PHILIPPINE_RESIDENTS]);
     worksheetData.push([]);
-    worksheetData.push(["GRAND TOTAL GUEST ARRIVALS =", processedData.PHILIPPINE_RESIDENTS + processedData.NON_PHILIPPINE_RESIDENTS]);
+    worksheetData.push(["GRAND TOTAL GUEST ARRIVALS =", processedData.PHILIPPINE_RESIDENTS + processedData.NON_PHILIPPINE_RESIDENTS + processedData.OVERSEAS_FILIPINOS]);
     worksheetData.push(["   Total Philippine Residents =", processedData.PHILIPPINE_RESIDENTS]);
     worksheetData.push(["   Total Non-Philippine Residents =", processedData.NON_PHILIPPINE_RESIDENTS]);
+    worksheetData.push(["   Total Overseas Filipinos =", processedData.OVERSEAS_FILIPINOS || 0]);
 
     // Create worksheet and workbook
     const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);

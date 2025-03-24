@@ -24,7 +24,7 @@ const nationalities = [
     "Taiwan", "Thailand", 
     "Union of Serbia and Montenegro", "United Arab Emirates", "United Kingdom", "USA", 
     "Venezuela", "Vietnam",
-    "Others"
+    "Overseas Filipino", "Others"
 ];
 
 export default nationalities;

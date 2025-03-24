@@ -7,6 +7,7 @@ const processNationalityCounts = (nationalityCounts) => {
     const result = {
       PHILIPPINE_RESIDENTS: 0,
       NON_PHILIPPINE_RESIDENTS: 0,
+      OVERSEAS_FILIPINOS: 0,
       ASIA: {
         ASEAN: {},
         EAST_ASIA: {},
@@ -43,6 +44,8 @@ const processNationalityCounts = (nationalityCounts) => {
   
       if (nationality === "Philippines") {
         result.PHILIPPINE_RESIDENTS += parsedCount;
+      } else if (nationality === "Overseas Filipino") {
+        result.OVERSEAS_FILIPINOS += parsedCount;
       } else {
         result.NON_PHILIPPINE_RESIDENTS += parsedCount;
   
