@@ -23,6 +23,9 @@ const Signup = () => {
     barangay: "",
     dateEstablished: "",
   });
+  const [errors, setErrors] = useState({
+    numberOfRooms: "",
+  });
   const [regions, setRegions] = useState([]);
   const [provinces, setProvinces] = useState([]);
   const [municipalities, setMunicipalities] = useState([]);
@@ -162,6 +165,21 @@ const Signup = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    // Validate numberOfRooms
+    if (name === "numberOfRooms") {
+      if (value === "" || isNaN(value) || parseInt(value) <= 0) {
+        setErrors((prev) => ({
+          ...prev,
+          numberOfRooms: "Please enter a valid positive number.",
+        }));
+      } else {
+        setErrors((prev) => ({
+          ...prev,
+          numberOfRooms: "",
+        }));
+      }
+    }
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -171,6 +189,15 @@ const Signup = () => {
   const doPasswordsMatch = formData.password === formData.confirmPassword;
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Validate numberOfRooms
+    if (!formData.numberOfRooms || isNaN(formData.numberOfRooms) || parseInt(formData.numberOfRooms) <= 0) {
+      setErrors((prev) => ({
+        ...prev,
+        numberOfRooms: "Please enter a valid positive number.",
+      }));
+      return;
+    }
+
     if (!isPasswordValid) {
       alert("Please ensure password meets all requirements");
       return;
@@ -504,6 +531,9 @@ const Signup = () => {
                 required
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
               />
+              {errors.numberOfRooms && (
+                <p className="text-sm text-red-500 mt-1">{errors.numberOfRooms}</p>
+              )}
             </div>
           </div>
           <button

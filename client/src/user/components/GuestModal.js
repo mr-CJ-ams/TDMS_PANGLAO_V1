@@ -13,8 +13,13 @@ const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData
       return;
     }
 
-    if (guests.some((guest) => !guest.age)) {
-      setError("Please fill out the Age field for all guests.");
+    if (guests.some((guest) => !guest.age || isNaN(guest.age) || parseInt(guest.age) <= 0)) {
+      setError("Please enter a valid positive age for all guests.");
+      return;
+    }
+
+    if (!lengthOfStay || isNaN(lengthOfStay) || parseInt(lengthOfStay) <= 0) {
+      setError("Please enter a valid positive length of stay.");
       return;
     }
 
@@ -40,8 +45,21 @@ const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData
 
   const handleUpdateGuest = (index, field, value) => {
     const updatedGuests = [...guests];
-    updatedGuests[index][field] = value;
+    if (field === "age") {
+      if (/^\d*$/.test(value)) { // Only allow digits
+        updatedGuests[index][field] = value;
+      }
+    } else {
+      updatedGuests[index][field] = value;
+    }
     setGuests(updatedGuests);
+  };
+
+  const handleLengthOfStayChange = (e) => {
+    const value = e.target.value;
+    if (/^\d*$/.test(value)) { // Only allow digits
+      setLengthOfStay(value);
+    }
   };
 
   const handleRemoveAll = () => {
@@ -87,7 +105,8 @@ const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData
                 type="number"
                 className="form-control"
                 value={lengthOfStay}
-                onChange={(e) => setLengthOfStay(e.target.value)}
+                onChange={handleLengthOfStayChange}
+                min="1"
                 disabled={disabled}
               />
             </div>
@@ -111,13 +130,14 @@ const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData
                   </div>
                   <div className="col">
                     <input
-                      type="text"
+                      type="number"
                       className="form-control"
                       placeholder="Age"
                       value={guest.age}
                       onChange={(e) =>
                         handleUpdateGuest(index, "age", e.target.value)
                       }
+                      min="1"
                       disabled={disabled}
                     />
                   </div>
@@ -167,7 +187,7 @@ const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData
             </button>
           </div>
           <div className="modal-footer">
-          <button className="btn btn-danger" onClick={handleRemoveAll} disabled={disabled || isCurrentMonth}>
+            <button className="btn btn-danger" onClick={handleRemoveAll} disabled={disabled || isCurrentMonth}>
               Remove All Guest Data
             </button>
             <button className="btn btn-secondary" onClick={onClose}>
