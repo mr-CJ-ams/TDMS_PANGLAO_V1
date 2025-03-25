@@ -8,12 +8,12 @@ const MonthlyMetrics = ({ monthlyMetrics, selectedYear, formatMonth, toNumber })
     const worksheet = XLSX.utils.json_to_sheet(
       monthlyMetrics.map((metrics) => ({
         Month: formatMonth(metrics.month),
-        "Total Check-Ins": toNumber(metrics.total_check_ins),
-        "Total Overnight": toNumber(metrics.total_overnight),
-        "Total Occupied": toNumber(metrics.total_occupied),
-        "Average Guest-Nights": toNumber(metrics.average_guest_nights).toFixed(2),
-        "Average Room Occupancy Rate": `${toNumber(metrics.average_room_occupancy_rate).toFixed(2)}%`,
-        "Average Guests per Room": toNumber(metrics.average_guests_per_room).toFixed(2),
+        "Total No. Guest Check-Ins": toNumber(metrics.total_check_ins),
+        "Total No. of Guest Staying Overnight": toNumber(metrics.total_overnight),
+        "Total No. Rooms Occupied": toNumber(metrics.total_occupied),
+        "Ave. Guest-Nights": toNumber(metrics.average_guest_nights).toFixed(2),
+        "Ave. Room Occupancy Rate": `${toNumber(metrics.average_room_occupancy_rate).toFixed(2)}%`,
+        "Ave. Guests per Room": toNumber(metrics.average_guests_per_room).toFixed(2),
         "Total Rooms": toNumber(metrics.total_rooms), // Add this line
         "Total Submissions": toNumber(metrics.total_submissions),
         "Submission Rate": `${toNumber(metrics.submission_rate).toFixed(2)}%`,
@@ -58,12 +58,12 @@ const MonthlyMetrics = ({ monthlyMetrics, selectedYear, formatMonth, toNumber })
           <thead>
             <tr style={{ backgroundColor: "#00BCD4", color: "#FFFFFF" }}>
               <th style={{ padding: "12px", textAlign: "left" }}>Month</th>
-              <th style={{ padding: "12px", textAlign: "left" }}>Total Check-Ins</th>
-              <th style={{ padding: "12px", textAlign: "left" }}>Total Overnight</th>
+              <th style={{ padding: "12px", textAlign: "left" }}>Total No. of Guests Check-In</th>
+              <th style={{ padding: "12px", textAlign: "left" }}>Total No. Guests Staying Overnight</th>
               <th style={{ padding: "12px", textAlign: "left" }}>Total Occupied</th>
-              <th style={{ padding: "12px", textAlign: "left" }}>Average Guest-Nights</th>
-              <th style={{ padding: "12px", textAlign: "left" }}>Average Room Occupancy Rate</th>
-              <th style={{ padding: "12px", textAlign: "left" }}>Average Guests per Room</th>
+              <th style={{ padding: "12px", textAlign: "left" }}>Ave. Guest-Nights</th>
+              <th style={{ padding: "12px", textAlign: "left" }}>Ave. Room Occupancy Rate</th>
+              <th style={{ padding: "12px", textAlign: "left" }}>Ave. Guests per Room</th>
               <th style={{ padding: "12px", textAlign: "left" }}>Total Rooms</th> {/* Add this line */}
               <th style={{ padding: "12px", textAlign: "left" }}>Total Submissions</th>
               <th style={{ padding: "12px", textAlign: "left" }}>Submission Rate</th>

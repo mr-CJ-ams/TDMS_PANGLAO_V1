@@ -74,13 +74,13 @@ const SubmissionHistory = ({ user }) => {
                   </th>
                   <th className="px-4 py-3 text-left font-medium">Status</th>
                   <th className="px-4 py-3 text-left font-medium">
-                    Guest-Nights
+                    Ave. Guest-Nights
                   </th>
                   <th className="px-4 py-3 text-left font-medium">
-                    Occupancy Rate
+                    Ave. Room Occupancy Rate
                   </th>
                   <th className="px-4 py-3 text-left font-medium">
-                    Guests/Room
+                    Ave. Guests/Room
                   </th>
                   <th className="px-4 py-3 text-left font-medium">Note</th>
                   <th className="px-4 py-3 text-left font-medium">Actions</th>

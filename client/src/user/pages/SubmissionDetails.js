@@ -242,24 +242,24 @@ const SubmissionDetails = ({ submissionId }) => {
           </ActionButton>
           <ActionButton onClick={() => setShowNationalityModal(true)} variant="outline">
             <Users className="w-4 h-4 inline mr-2" />
-            View Nationality Counts
+            Top Markets Ranking
           </ActionButton>
           <ActionButton onClick={exportNationalityCountsToExcel}>
             <FileSpreadsheet className="w-4 h-4 inline mr-2" />
-            Export Nationality Counts
+            Export Top Markets Ranking
           </ActionButton>
         </div>
         {/* Metrics Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <MetricsCard title="Total Check-Ins" value={totalCheckIns} />
+          <MetricsCard title="Total No. of Guest Check-Ins" value={totalCheckIns} />
           <MetricsCard title="Total Rooms" value={submission.number_of_rooms} />
-          <MetricsCard title="Total Overnight" value={totalOvernight} />
-          <MetricsCard title="Total Occupied" value={totalOccupied} />
+          <MetricsCard title="Total No. of Guest Staying Overnight" value={totalOvernight} />
+          <MetricsCard title="Total No. of Rooms Occupied" value={totalOccupied} />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <MetricsCard title="Average Guest-Nights" value={`${averageGuestNights}`} />
-          <MetricsCard title="Room Occupancy Rate" value={`${averageRoomOccupancyRate}%`} />
-          <MetricsCard title="Guests per Room" value={averageGuestsPerRoom} />
+          <MetricsCard title="Ave. Guest-Nights" value={`${averageGuestNights}`} />
+          <MetricsCard title="Ave. Room Occupancy Rate" value={`${averageRoomOccupancyRate}%`} />
+          <MetricsCard title="Ave. Guests per Room" value={averageGuestsPerRoom} />
         </div>
         {/* Daily Metrics Table */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-8">

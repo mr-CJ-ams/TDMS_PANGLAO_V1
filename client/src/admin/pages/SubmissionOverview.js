@@ -325,7 +325,7 @@ const SubmissionOverview = ({
                   <div className="space-y-3">
                     <div>
                       <div className="text-sm text-sky-700">
-                        Total Check-Ins
+                        Total No. of Guest Check-Ins
                       </div>
                       <div className="text-2xl font-medium">
                         {calculateMetrics(selectedSubmission).totalCheckIns}
@@ -333,14 +333,14 @@ const SubmissionOverview = ({
                     </div>
                     <div>
                       <div className="text-sm text-sky-700">
-                        Total Overnight
+                        Total No. Guest Staying Overnight
                       </div>
                       <div className="text-2xl font-medium">
                         {calculateMetrics(selectedSubmission).totalOvernight}
                       </div>
                     </div>
                     <div>
-                      <div className="text-sm text-sky-700">Total Occupied</div>
+                      <div className="text-sm text-sky-700">Total No. of Occupied Rooms</div>
                       <div className="text-2xl font-medium">
                         {calculateMetrics(selectedSubmission).totalOccupied}
                       </div>
@@ -355,7 +355,7 @@ const SubmissionOverview = ({
                   <div className="space-y-3">
                     <div>
                       <div className="text-sm text-emerald-700">
-                        Average Guest-Nights
+                        Ave. Guest-Nights
                       </div>
                       <div className="text-2xl font-medium">
                         {
@@ -366,7 +366,7 @@ const SubmissionOverview = ({
                     </div>
                     <div>
                       <div className="text-sm text-emerald-700">
-                        Room Occupancy Rate
+                        Ave. Room Occupancy Rate
                       </div>
                       <div className="text-2xl font-medium">
                         {
@@ -378,7 +378,7 @@ const SubmissionOverview = ({
                     </div>
                     <div>
                       <div className="text-sm text-emerald-700">
-                        Guests per Room
+                        Ave. Guests per Room
                       </div>
                       <div className="text-2xl font-medium">
                         {
@@ -392,7 +392,7 @@ const SubmissionOverview = ({
                 {/* Actions Section */}
                 <div className="bg-gradient-to-br from-amber-100 to-white p-6 rounded-xl shadow-sm">
                   <h5 className="text-lg font-semibold text-amber-900 mb-4">
-                    Quick Actions
+                    Top Markets Ranking
                   </h5>
                   <div className="space-y-3">
                     <button

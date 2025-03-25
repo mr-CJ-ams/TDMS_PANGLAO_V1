@@ -137,7 +137,7 @@ const GuestDemographics = ({ guestDemographics, selectedYear, selectedMonth, for
 
   return (
     <div style={{ padding: "20px", backgroundColor: "#E0F7FA"}}>
-      <h3 style={{ color: "#37474F", marginBottom: "20px" }}>Guest Demographics (Check-Ins Only)</h3>
+      <h3 style={{ color: "#37474F", marginBottom: "20px" }}>Guest Demographics of Guest Check-Ins</h3>
       <button
         style={{
           backgroundColor: "#00BCD4",
