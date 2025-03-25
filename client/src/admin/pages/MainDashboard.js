@@ -32,12 +32,12 @@ const MainDashboard = () => {
 
   // Predicted data for January 2025 to June 2025
   const predictedData = [
-    { month: 1, total_check_ins: 71680, isPredicted: true },
-    { month: 2, total_check_ins: 71274, isPredicted: true },
-    { month: 3, total_check_ins: 69351, isPredicted: true },
-    { month: 4, total_check_ins: 71232, isPredicted: true },
-    { month: 5, total_check_ins: 72463, isPredicted: true },
-    { month: 6, total_check_ins: 67578, isPredicted: true },
+    { month: 1, total_check_ins: 72807, isPredicted: true },
+    { month: 2, total_check_ins: 71334, isPredicted: true },
+    { month: 3, total_check_ins: 69434, isPredicted: true },
+    { month: 4, total_check_ins: 72970, isPredicted: true },
+    { month: 5, total_check_ins: 73620, isPredicted: true },
+    { month: 6, total_check_ins: 70163, isPredicted: true },
   ];
 
     // Fetch guest demographics data
