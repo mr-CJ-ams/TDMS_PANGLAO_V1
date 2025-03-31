@@ -3,7 +3,7 @@ const router = express.Router();
 const pool = require("../db");
 const { sendEmailNotification } = require("../utils/email");
 
-// Get all users
+// Should return all users with role 'user' regardless of status
 router.get("/users", async (req, res) => {
   try {
     const allUsers = await pool.query("SELECT * FROM users WHERE role = 'user'");

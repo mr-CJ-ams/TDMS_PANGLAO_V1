@@ -35,23 +35,24 @@ const AdminDashboard = () => {
   };
 
   // Fetch all users (for User Approval section)
-    useEffect(() => {
-    const fetchDrafts = async () => {
-      try {
-        const token = sessionStorage.getItem("token");
-        const response = await axios.get(`${API_BASE_URL}/api/submissions/drafts`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setDrafts(response.data);
-      } catch (err) {
-        console.error("Error fetching drafts:", err);
-      }
-    };
-
-    if (activeSection === "drafts") {
-      fetchDrafts();
+// In AdminDashboard.js
+useEffect(() => {
+  const fetchUsers = async () => {
+    try {
+      const token = sessionStorage.getItem("token");
+      const response = await axios.get(`${API_BASE_URL}/admin/users`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUsers(response.data);
+    } catch (err) {
+      console.error("Error fetching users:", err);
     }
-  }, [activeSection]);
+  };
+
+  if (activeSection === "user-approval") {
+    fetchUsers();
+  }
+}, [activeSection]);
 
   // View draft details
   const viewDraftDetails = async (draftId) => {

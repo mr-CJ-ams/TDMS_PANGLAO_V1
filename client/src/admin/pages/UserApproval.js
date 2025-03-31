@@ -9,7 +9,6 @@ const UserApproval = ({
   setSelectedUserId,
   declineUser,
   setDeclineMessage,
-
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState("all"); // "all", "pending", or "approved"
@@ -18,34 +17,33 @@ const UserApproval = ({
   const [userToDeactivate, setUserToDeactivate] = useState(null);
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
-  // Separate active and deactivated users
-  const activeUsers = users.filter((user) => user.is_active);
-  const deactivatedUsers = users.filter((user) => !user.is_active);
-
-  // Filter and sort active users
-  const filteredAndSortedActiveUsers = useMemo(() => {
-    return activeUsers
+  // Filter and sort all users
+  const filteredAndSortedUsers = useMemo(() => {
+    return users
       .filter((user) => {
-        const companyName = user.company_name || ""; // Fallback to an empty string if null/undefined
+        const companyName = user.company_name || "";
         const matchesSearch = companyName
           .toLowerCase()
           .includes(searchTerm.toLowerCase());
+        
         const matchesFilter =
           activeFilter === "all" ||
           (activeFilter === "pending" && !user.is_approved) ||
           (activeFilter === "approved" && user.is_approved);
+        
         return matchesSearch && matchesFilter;
       })
       .sort((a, b) => {
-        const companyNameA = a.company_name || ""; // Fallback to an empty string if null/undefined
-        const companyNameB = b.company_name || ""; // Fallback to an empty string if null/undefined
+        const companyNameA = a.company_name || "";
+        const companyNameB = b.company_name || "";
         const comparison = companyNameA.localeCompare(companyNameB);
         return sortDirection === "asc" ? comparison : -comparison;
       });
-  }, [activeUsers, searchTerm, activeFilter, sortDirection]);
+  }, [users, searchTerm, activeFilter, sortDirection]);
 
-  // Calculate the number of active users matching the current filter and search
-  const activeUserCount = filteredAndSortedActiveUsers.length;
+  // Separate into active and deactivated for display
+  const activeUsers = filteredAndSortedUsers.filter(user => user.is_active);
+  const deactivatedUsers = filteredAndSortedUsers.filter(user => !user.is_active);
 
   const handleDeactivateClick = (userId) => {
     setUserToDeactivate(userId); // Set the user to deactivate
@@ -148,7 +146,12 @@ const formatDate = (dateString) => {
 
       {/* Display the number of active users */}
       <div className="mb-4 text-sky-900 font-medium">
-        Showing {activeUserCount} {activeUserCount === 1 ? "user" : "users"}
+        Showing {activeUsers.length} active {activeUsers.length === 1 ? "user" : "users"} 
+        {deactivatedUsers.length > 0 && (
+          <span className="text-gray-500 ml-2">
+            ({deactivatedUsers.length} deactivated)
+          </span>
+        )}
       </div>
 
       {/* Active Users Table */}
@@ -189,14 +192,14 @@ const formatDate = (dateString) => {
             </tr>
           </thead>
           <tbody className="divide-y divide-sky-100">
-            {filteredAndSortedActiveUsers.length === 0 ? (
+            {activeUsers.length === 0 ? (
               <tr>
                 <td colSpan={12} className="p-4 text-center text-gray-500">
                   No active users found matching your criteria
                 </td>
               </tr>
             ) : (
-              filteredAndSortedActiveUsers.map((user) => (
+              activeUsers.map((user) => (
                 <tr
                   key={user.user_id}
                   className="hover:bg-sky-50 transition-colors"
