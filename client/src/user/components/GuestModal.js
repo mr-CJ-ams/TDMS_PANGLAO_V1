@@ -187,7 +187,7 @@ const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData
             </button>
           </div>
           <div className="modal-footer">
-            <button className="btn btn-danger" onClick={handleRemoveAll} disabled={disabled || isCurrentMonth}>
+            <button className="btn btn-danger" onClick={handleRemoveAll} disabled={disabled}>
               Remove All Guest Data
             </button>
             <button className="btn btn-secondary" onClick={onClose}>
