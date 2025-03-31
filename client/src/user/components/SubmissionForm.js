@@ -226,6 +226,18 @@ useEffect(() => {
   const handleSaveGuests = (day, room, guestData) => {
     const { guests, lengthOfStay, isCheckIn } = guestData;
   
+    // Validate input
+    if (!guests || guests.length === 0) {
+      alert("Please add at least one guest");
+      return;
+    }
+  
+    // Check for room conflicts
+    if (hasRoomConflict(day, room, lengthOfStay, occupiedRooms)) {
+      alert(`This Length of Overnight Stay overlap with existing occupied rooms`);
+      return;
+    }
+  
     // Ensure we're working with an array
     const currentRooms = Array.isArray(occupiedRooms) ? occupiedRooms : [];
   
@@ -524,6 +536,26 @@ const isPastMonth = (selectedMonth, selectedYear) => {
 const isFutureMonthValue = isFutureMonth(selectedMonth, selectedYear);
 const isCurrentMonthValue = isCurrentMonth(selectedMonth, selectedYear);
 
+const hasRoomConflict = (day, room, lengthOfStay, currentOccupancies) => {
+  const newStayStart = day;
+  const newStayEnd = day + lengthOfStay - 1;
+
+  return currentOccupancies.some(occupancy => {
+    // Skip if it's a different room
+    if (occupancy.room !== room) return false;
+
+    const existingStayStart = occupancy.day;
+    const existingStayEnd = occupancy.day + (occupancy.lengthOfStay || 1) - 1;
+
+    // Check for overlap between the new stay and existing stay
+    return (
+      (newStayStart >= existingStayStart && newStayStart <= existingStayEnd) ||
+      (newStayEnd >= existingStayStart && newStayEnd <= existingStayEnd) ||
+      (newStayStart <= existingStayStart && newStayEnd >= existingStayEnd)
+    );
+  });
+};
+
   return (
     <div className="container mt-5">
       <h2>Monthly Recording Format</h2>
@@ -576,6 +608,8 @@ const isCurrentMonthValue = isCurrentMonth(selectedMonth, selectedYear);
           initialData={getGuestData(selectedDate, selectedRoom)}
           disabled={hasSubmitted}
           isCurrentMonth={isCurrentMonthValue}
+          hasRoomConflict={hasRoomConflict}
+          occupiedRooms={occupiedRooms} 
         />
       )}
 

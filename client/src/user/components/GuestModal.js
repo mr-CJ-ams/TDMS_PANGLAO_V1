@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import nationalities from "./Nationality";
 
-const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData, disabled, isCurrentMonth }) => {
+const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData, disabled, isCurrentMonth, hasRoomConflict, occupiedRooms }) => {
   const [lengthOfStay, setLengthOfStay] = useState(initialData?.lengthOfStay?.toString() || "");
   const [guests, setGuests] = useState(initialData?.guests || []);
   const [isCheckIn, setIsCheckIn] = useState(initialData?.isCheckIn || true);
@@ -14,12 +14,12 @@ const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData
     }
 
     if (guests.some((guest) => !guest.age || isNaN(guest.age) || parseInt(guest.age) <= 0)) {
-      setError("Please enter a valid positive age for all guests.");
+      setError("Please enter a valid age for all guests.");
       return;
     }
 
     if (!lengthOfStay || isNaN(lengthOfStay) || parseInt(lengthOfStay) <= 0) {
-      setError("Please enter a valid positive length of stay.");
+      setError("Please enter a valid length of stay.");
       return;
     }
 
@@ -67,6 +67,8 @@ const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData
     onClose();
   };
 
+  const isEditingExisting = initialData && initialData.day === day && initialData.room === room;
+
   return (
     <div className="modal" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
       <div className="modal-dialog">
@@ -110,6 +112,22 @@ const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData
                 disabled={disabled}
               />
             </div>
+
+            {/* Add this warning message */}
+            {lengthOfStay && hasRoomConflict && 
+              hasRoomConflict(day, room, parseInt(lengthOfStay), occupiedRooms) ? (
+              <div className="alert alert-warning mt-2">
+                {isEditingExisting ? 
+                  "⚠️ Occupied" :
+                  "⚠️ This Length of Overnight Stay overlap with existing occupied rooms"}
+              </div>
+            ) : (
+              !isEditingExisting && (
+                <div className="alert alert-info mt-2">
+                  ✅ These dates are available for booking
+                </div>
+              )
+            )}
 
             {/* Guest Information */}
             {guests.map((guest, index) => (
