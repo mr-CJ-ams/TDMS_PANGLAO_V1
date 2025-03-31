@@ -18,6 +18,9 @@ const AdminDashboard = () => {
   const [selectedSubmission, setSelectedSubmission] = useState(null); // State for selected submission details
   const [showSubmissionModal, setShowSubmissionModal] = useState(false); // State for submission modal
   const [showNationalityModal, setShowNationalityModal] = useState(false); // State for nationality modal
+  const [drafts, setDrafts] = useState([]);
+  const [selectedDraft, setSelectedDraft] = useState(null);
+  const [showDraftModal, setShowDraftModal] = useState(false);
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
   
@@ -32,23 +35,91 @@ const AdminDashboard = () => {
   };
 
   // Fetch all users (for User Approval section)
-  useEffect(() => {
-    const fetchUsers = async () => {
+    useEffect(() => {
+    const fetchDrafts = async () => {
       try {
         const token = sessionStorage.getItem("token");
-        const response = await axios.get(`${API_BASE_URL}/admin/users`, {
-          headers: { Authorization: `Bearer ${token}` },
+        const response = await axios.get(`${API_BASE_URL}/api/submissions/drafts`, {
+          headers: { Authorization: `Bearer ${token}` }
         });
-        setUsers(response.data);
+        setDrafts(response.data);
       } catch (err) {
-        console.error("Error fetching users:", err);
+        console.error("Error fetching drafts:", err);
       }
     };
 
-    if (activeSection === "user-approval") {
-      fetchUsers();
+    if (activeSection === "drafts") {
+      fetchDrafts();
     }
   }, [activeSection]);
+
+  // View draft details
+  const viewDraftDetails = async (draftId) => {
+    try {
+      const token = sessionStorage.getItem("token");
+      const response = await axios.get(
+        `${API_BASE_URL}/api/submissions/draft/${draftId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setSelectedDraft(response.data);
+      setShowDraftModal(true);
+    } catch (err) {
+      console.error("Error fetching draft details:", err);
+    }
+  };
+
+   // Calculate metrics for draft
+   const calculateDraftMetrics = (draft) => {
+    if (!draft || !draft.days) return {};
+    
+    const totalCheckIns = draft.days.reduce((sum, day) => sum + day.check_ins, 0);
+    const totalOvernight = draft.days.reduce((sum, day) => sum + day.overnight, 0);
+    const totalOccupied = draft.days.reduce((sum, day) => sum + day.occupied, 0);
+    
+    const averageGuestNights = totalCheckIns > 0 
+      ? (totalOvernight / totalCheckIns).toFixed(2) 
+      : 0;
+      
+    const averageRoomOccupancyRate = draft.number_of_rooms > 0
+      ? ((totalOccupied / (draft.number_of_rooms * draft.days.length))) * 100
+      : 0;
+      
+    const averageGuestsPerRoom = totalOccupied > 0
+      ? (totalOvernight / totalOccupied).toFixed(2)
+      : 0;
+
+    return {
+      totalCheckIns,
+      totalOvernight,
+      totalOccupied,
+      averageGuestNights,
+      averageRoomOccupancyRate,
+      averageGuestsPerRoom
+    };
+  };
+
+  // const navItems = [
+  //   {
+  //     title: "Main Dashboard",
+  //     section: "dashboard",
+  //     icon: <LayoutDashboard />
+  //   },
+  //   {
+  //     title: "User Approval",
+  //     section: "user-approval",
+  //     icon: <UserCheck />
+  //   },
+  //   {
+  //     title: "Submission Overview",
+  //     section: "submission-overview",
+  //     icon: <FileText />
+  //   },
+  //   {
+  //     title: "In-Progress Submissions",
+  //     section: "drafts",
+  //     icon: <ClipboardEdit />
+  //   }
+  // ];
 
   // Fetch all submissions (for Submission Overview section)
   useEffect(() => {
@@ -428,8 +499,133 @@ const AdminDashboard = () => {
                 activeSection={activeSection}
               />
             )}
+
+{activeSection === "drafts" && (
+        <div className="p-4">
+          <h3>In-Progress Submissions</h3>
+          <div className="table-responsive">
+            <table className="table table-striped">
+              <thead>
+                <tr>
+                  <th>Establishment</th>
+                  <th>Month/Year</th>
+                  <th>Last Updated</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {drafts.map(draft => (
+                  <tr key={draft.draft_id}>
+                    <td>{draft.company_name}</td>
+                    <td>{`${getMonthName(draft.month)} ${draft.year}`}</td>
+                    <td>{new Date(draft.last_updated).toLocaleString()}</td>
+                    <td>
+                      <button
+                        onClick={() => viewDraftDetails(draft.draft_id)}
+                        className="btn btn-info btn-sm"
+                      >
+                        View Details
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
+      )}
+
+            
+          </div>
+        </div>
+
+         {/* Draft Details Modal */}
+    <Modal 
+      show={showDraftModal} 
+      onHide={() => setShowDraftModal(false)}
+      size="lg"
+    >
+      <Modal.Header closeButton>
+        <Modal.Title>
+          Draft Submission - {selectedDraft?.company_name}
+        </Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        {selectedDraft && (
+          <div>
+            <h5>
+              {getMonthName(selectedDraft.month)} {selectedDraft.year}
+            </h5>
+            
+            <div className="row mb-4">
+              <div className="col-md-4">
+                <div className="card">
+                  <div className="card-body">
+                    <h6 className="card-title">Total Check-Ins</h6>
+                    <p className="card-text display-6">
+                      {calculateDraftMetrics(selectedDraft).totalCheckIns}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="col-md-4">
+                <div className="card">
+                  <div className="card-body">
+                    <h6 className="card-title">Total Overnight</h6>
+                    <p className="card-text display-6">
+                      {calculateDraftMetrics(selectedDraft).totalOvernight}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="col-md-4">
+                <div className="card">
+                  <div className="card-body">
+                    <h6 className="card-title">Occupied Rooms</h6>
+                    <p className="card-text display-6">
+                      {calculateDraftMetrics(selectedDraft).totalOccupied}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <h5>Daily Data</h5>
+            <div className="table-responsive">
+              <table className="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Day</th>
+                    <th>Check-Ins</th>
+                    <th>Overnight</th>
+                    <th>Occupied</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedDraft.days.map(day => (
+                    <tr key={day.day}>
+                      <td>{day.day}</td>
+                      <td>{day.check_ins}</td>
+                      <td>{day.overnight}</td>
+                      <td>{day.occupied}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </Modal.Body>
+      <Modal.Footer>
+        <Button 
+          variant="secondary" 
+          onClick={() => setShowDraftModal(false)}
+        >
+          Close
+        </Button>
+      </Modal.Footer>
+    </Modal>
+
       </div>
     </div>
   );

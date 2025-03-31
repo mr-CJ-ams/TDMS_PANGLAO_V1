@@ -22,6 +22,7 @@ const SubmissionForm = () => {
   const [user, setUser] = useState(null);
   const [numberOfRooms, setNumberOfRooms] = useState(0);
   const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
   const gridRef = useRef(null);
@@ -36,10 +37,6 @@ const SubmissionForm = () => {
         });
         setUser(response.data);
         setNumberOfRooms(response.data.number_of_rooms);
-
-        // Load cached data from localStorage after user data is fetched
-        const cachedData = loadDataFromLocalStorage(response.data.user_id);
-        setMonthlyData(cachedData);
       } catch (err) {
         console.error("Error fetching user profile:", err);
       }
@@ -69,42 +66,142 @@ const SubmissionForm = () => {
   }, [user, selectedMonth, selectedYear]);
 
   // Load data for the selected month/year
-  useEffect(() => {
-    if (user) {
-      const key = `${selectedYear}-${selectedMonth}`;
-      const cachedData = monthlyData[key] || [];
-      setOccupiedRooms(cachedData); // Set data for the current month
+ // Load data for the selected month/year
+useEffect(() => {
+  const loadData = async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    const key = `${selectedYear}-${selectedMonth}`;
+    
+    try {
+      // Try to load from server first
+      const token = sessionStorage.getItem("token");
+      const [serverResponse, localStorageData] = await Promise.all([
+        axios.get(`${API_BASE_URL}/api/submissions/draft/${user.user_id}/${selectedMonth}/${selectedYear}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        loadDataFromLocalStorage(user.user_id)
+      ]);
 
-      // Fetch data from the backend if not already cached
-      if (!monthlyData[key]) {
-        const fetchSubmissionData = async () => {
-          try {
-            const token = sessionStorage.getItem("token");
-            const response = await axios.get(
-              `${API_BASE_URL}/api/submissions/${user.user_id}/${selectedMonth}/${selectedYear}`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
-            if (response.data) {
-              setMonthlyData((prev) => ({
-                ...prev,
-                [key]: response.data.days || [],
-              }));
-            }
-          } catch (err) {
-            console.error("Error fetching submission data:", err);
-          }
-        };
-        fetchSubmissionData();
+      // Ensure we always have arrays
+      const serverData = Array.isArray(serverResponse.data?.days) 
+        ? serverResponse.data.days 
+        : [];
+      const localData = Array.isArray(localStorageData[key]) 
+        ? localStorageData[key] 
+        : [];
+
+      // Create a function to uniquely identify room entries
+      const getRoomKey = (room) => `${room.day}-${room.room}`;
+
+      // Create a map to store unique rooms (server data takes precedence)
+      const uniqueRooms = new Map();
+
+      // First add local data
+      localData.forEach(room => {
+        uniqueRooms.set(getRoomKey(room), room);
+      });
+
+      // Then add server data (will overwrite any local duplicates)
+      serverData.forEach(room => {
+        uniqueRooms.set(getRoomKey(room), room);
+      });
+
+      // Convert back to array
+      const mergedRooms = Array.from(uniqueRooms.values());
+
+      const mergedData = {
+        ...localStorageData,
+        [key]: mergedRooms
+      };
+
+      setMonthlyData(mergedData);
+      setOccupiedRooms(mergedRooms);
+      
+      // If no data loaded, check for submitted data
+      if (mergedRooms.length === 0) {
+        const submittedResponse = await axios.get(
+          `${API_BASE_URL}/api/submissions/${user.user_id}/${selectedMonth}/${selectedYear}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        
+        if (submittedResponse.data) {
+          const submittedData = Array.isArray(submittedResponse.data.days)
+            ? submittedResponse.data.days
+            : [];
+            
+          const updatedData = {
+            ...mergedData,
+            [key]: submittedData
+          };
+          setMonthlyData(updatedData);
+          setOccupiedRooms(submittedData);
+          saveDataToLocalStorage(user.user_id, updatedData);
+        }
       }
+    } catch (err) {
+      console.error("Error loading data:", err);
+      // Fallback to localStorage only
+      const cachedData = loadDataFromLocalStorage(user.user_id);
+      const fallbackData = Array.isArray(cachedData[key]) 
+        ? cachedData[key] 
+        : [];
+      setMonthlyData({...cachedData, [key]: fallbackData});
+      setOccupiedRooms(fallbackData);
+    } finally {
+      setIsLoading(false);
     }
-  }, [user, selectedMonth, selectedYear, monthlyData]);
+  };
+
+  loadData();
+}, [user, selectedMonth, selectedYear]);
 
   // Save data to localStorage whenever monthlyData changes
-  useEffect(() => {
-    if (user) {
+useEffect(() => {
+  if (!user || isLoading) return;
+
+  const saveData = async () => {
+    try {
       saveDataToLocalStorage(user.user_id, monthlyData);
+      
+      const key = `${selectedYear}-${selectedMonth}`;
+      const currentMonthData = monthlyData[key] || [];
+      
+      // Ensure data is properly serialized
+      const cleanData = currentMonthData.map(item => ({
+        ...item,
+        guests: item.guests.map(guest => ({
+          ...guest,
+          // Ensure all guest fields are properly typed
+          age: Number(guest.age) || 0,
+          isCheckIn: Boolean(guest.isCheckIn)
+        }))
+      }));
+
+      const token = sessionStorage.getItem("token");
+      await axios.post(`${API_BASE_URL}/api/submissions/draft`, {
+        userId: user.user_id,
+        month: selectedMonth,
+        year: selectedYear,
+        data: cleanData
+      }, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+    } catch (err) {
+      console.error("Background save failed:", err);
     }
-  }, [monthlyData, user]);
+  };
+
+  const debounceTimer = setTimeout(() => {
+    saveData();
+  }, 500);
+
+  return () => clearTimeout(debounceTimer);
+}, [monthlyData, user, selectedMonth, selectedYear, isLoading]);
 
   // Handle search for a specific room
   const handleSearch = (roomNumber) => {
@@ -128,26 +225,36 @@ const SubmissionForm = () => {
   // Save guest data for a specific day and room
   const handleSaveGuests = (day, room, guestData) => {
     const { guests, lengthOfStay, isCheckIn } = guestData;
-
-    // Mark the first day as a check-in
-    const updatedGuests = guests.map((guest) => ({
-      ...guest,
-      isCheckIn: isCheckIn,
-    }));
-
-    // Save the first day's data
-    const updatedRooms = [
-      ...(occupiedRooms || []).filter((r) => !(r.day === day && r.room === room)), // Remove existing entry
-      {
-        day,
-        room,
-        guests: updatedGuests,
-        lengthOfStay,
-        isCheckIn: isCheckIn,
-      },
-    ];
-
-    // Mark the remaining days as overnight stays (not check-ins)
+  
+    // Ensure we're working with an array
+    const currentRooms = Array.isArray(occupiedRooms) ? occupiedRooms : [];
+  
+    const updatedGuests = Array.isArray(guests)
+      ? guests.map((guest) => ({
+          ...guest,
+          isCheckIn: isCheckIn,
+        }))
+      : [];
+  
+    // Remove any existing entries for this day/room
+    const filteredRooms = currentRooms.filter((r) => 
+      !(r.day === day && r.room === room) && // Current entry
+      !(r.day >= day && r.day < day + lengthOfStay && r.room === room) // Future days in stay
+    );
+  
+    // Create new entries
+    const updatedRooms = [...filteredRooms];
+    
+    // Add the check-in day
+    updatedRooms.push({
+      day,
+      room,
+      guests: updatedGuests,
+      lengthOfStay,
+      isCheckIn: true
+    });
+  
+    // Add the subsequent days
     for (let i = 1; i < lengthOfStay; i++) {
       const nextDay = day + i;
       if (nextDay <= daysInMonth) {
@@ -159,12 +266,11 @@ const SubmissionForm = () => {
             isCheckIn: false,
           })),
           lengthOfStay,
-          isCheckIn: false,
+          isCheckIn: false
         });
       }
     }
-
-    // Update occupiedRooms and monthlyData
+  
     setOccupiedRooms(updatedRooms);
     const key = `${selectedYear}-${selectedMonth}`;
     setMonthlyData((prev) => ({
@@ -173,42 +279,60 @@ const SubmissionForm = () => {
     }));
   };
 
+  
+
   // Check if a room is occupied on a specific day
-  const isRoomOccupied = (day, room) => {
-    return occupiedRooms.some((r) => r.day === day && r.room === room);
-  };
+// Update isRoomOccupied
+const isRoomOccupied = (day, room) => {
+  return Array.isArray(occupiedRooms) 
+    ? occupiedRooms.some((r) => r.day === day && r.room === room)
+    : false;
+};
 
-  // Get the color for a room based on its status
-  const getRoomColor = (day, room) => {
-    const roomData = occupiedRooms.find((r) => r.day === day && r.room === room);
-    if (roomData) {
-      return roomData.isCheckIn ? "#FBBF24" : "#34D399";
-    }
-    return "white";
-  };
+// Update getRoomColor
+const getRoomColor = (day, room) => {
+  if (!Array.isArray(occupiedRooms)) return "white";
+  
+  const roomData = occupiedRooms.find((r) => r.day === day && r.room === room);
+  if (roomData) {
+    return roomData.isCheckIn ? "#FBBF24" : "#34D399";
+  }
+  return "white";
+};
 
-  // Get guest data for a specific day and room
-  const getGuestData = (day, room) => {
-    return occupiedRooms.find((r) => r.day === day && r.room === room);
-  };
+// Update getGuestData
+const getGuestData = (day, room) => {
+  return Array.isArray(occupiedRooms)
+    ? occupiedRooms.find((r) => r.day === day && r.room === room)
+    : null;
+};
 
   // Calculate daily totals for check-ins, overnight stays, and occupied rooms
   const calculateDailyTotals = (day) => {
-    if (!occupiedRooms || occupiedRooms.length === 0) {
+    // Ensure occupiedRooms is always treated as an array
+    const rooms = Array.isArray(occupiedRooms) ? occupiedRooms : [];
+    
+    if (rooms.length === 0) {
       return { checkIns: 0, overnight: 0, occupied: 0 };
     }
-
-    const dayRooms = occupiedRooms.filter((r) => r.day === day);
-
+  
+    // Filter for the specific day
+    const dayRooms = rooms.filter((r) => r.day === day);
+  
+    // Calculate check-ins (only rooms marked as check-in)
     const checkIns = dayRooms
       .filter((r) => r.isCheckIn)
-      .reduce((acc, room) => acc + room.guests.length, 0);
+      .reduce((acc, room) => acc + (room.guests?.length || 0), 0);
+      
+    // Calculate overnight stays (all guests for the day)
     const overnight = dayRooms.reduce(
-      (acc, room) => acc + room.guests.length,
+      (acc, room) => acc + (room.guests?.length || 0),
       0
     );
+    
+    // Calculate unique occupied rooms
     const occupied = new Set(dayRooms.map((r) => r.room)).size;
-
+  
     return {
       checkIns,
       overnight,
@@ -249,9 +373,9 @@ const SubmissionForm = () => {
   };
 
   // Handle form submission
+  // Modified handleSaveForm to clear draft after submission
   const handleSaveForm = async () => {
     const isConfirmed = window.confirm("Are you sure you want to submit the form? This action cannot be undone.");
-
     if (!isConfirmed) return;
 
     if (hasSubmitted) {
@@ -263,7 +387,6 @@ const SubmissionForm = () => {
       const token = sessionStorage.getItem("token");
       const user = JSON.parse(sessionStorage.getItem("user"));
 
-      // Transform data for backend
       const submissionData = {
         user_id: user.user_id,
         month: selectedMonth,
@@ -284,12 +407,16 @@ const SubmissionForm = () => {
         })),
       };
 
-      // Send to backend
       await axios.post(`${API_BASE_URL}/api/submissions/submit`, submissionData, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      // Calculate and show metrics
+      // Clear draft after successful submission
+      await axios.delete(
+        `${API_BASE_URL}/api/submissions/draft/${user.user_id}/${selectedMonth}/${selectedYear}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
       const metrics = calculateOverallTotals();
       setAverageGuestNights(metrics.averageGuestNights);
       setAverageRoomOccupancyRate(metrics.averageRoomOccupancyRate);
@@ -341,15 +468,24 @@ const SubmissionForm = () => {
 
   // Save data to localStorage
   const saveDataToLocalStorage = (userId, data) => {
-    const key = `submission_${userId}`;
-    localStorage.setItem(key, JSON.stringify(data));
+    try {
+      const key = `submission_${userId}`;
+      localStorage.setItem(key, JSON.stringify(data));
+    } catch (err) {
+      console.error("Error saving to localStorage:", err);
+    }
   };
 
   // Load data from localStorage
   const loadDataFromLocalStorage = (userId) => {
-    const key = `submission_${userId}`;
-    const data = localStorage.getItem(key);
-    return data ? JSON.parse(data) : {};
+    try {
+      const key = `submission_${userId}`;
+      const data = localStorage.getItem(key);
+      return data ? JSON.parse(data) : {};
+    } catch (err) {
+      console.error("Error loading from localStorage:", err);
+      return {};
+    }
   };
 
   // Helper function to check if the selected month is the current month

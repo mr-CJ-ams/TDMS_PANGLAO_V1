@@ -320,6 +320,171 @@ router.get("/:userId/:month/:year", async (req, res) => {
   }
 });
 
+// New endpoint for saving draft data
+// Updated draft submission endpoint
+router.post("/draft", async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { userId, month, year, data } = req.body;
+
+    // Validate and sanitize the data
+    if (!Array.isArray(data)) {
+      throw new Error("Invalid data format - expected array");
+    }
+
+    // Create a clean copy of the data
+    const cleanData = data.map(item => ({
+      day: Number(item.day) || 0,
+      room: Number(item.room) || 0,
+      guests: Array.isArray(item.guests) ? item.guests.map(guest => ({
+        gender: String(guest.gender || ''),
+        age: Number(guest.age) || 0,
+        status: String(guest.status || ''),
+        nationality: String(guest.nationality || ''),
+        isCheckIn: Boolean(guest.isCheckIn)
+      })) : [],
+      lengthOfStay: Number(item.lengthOfStay) || 0,
+      isCheckIn: Boolean(item.isCheckIn)
+    }));
+
+    await client.query("BEGIN");
+
+    // Use JSON.stringify to ensure proper JSON formatting
+    await client.query(
+      `INSERT INTO draft_submissions (user_id, month, year, data)
+       VALUES ($1, $2, $3, $4::jsonb)
+       ON CONFLICT (user_id, month, year) 
+       DO UPDATE SET data = $4::jsonb, last_updated = CURRENT_TIMESTAMP`,
+      [userId, month, year, JSON.stringify(cleanData)]
+    );
+
+    await client.query("COMMIT");
+    res.status(200).json({ message: "Draft saved successfully" });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("Error saving draft:", err);
+    res.status(500).json({ 
+      error: "Failed to save draft",
+      details: err.message
+    });
+  } finally {
+    client.release();
+  }
+});
+
+// Get draft data
+router.get("/draft/:userId/:month/:year", async (req, res) => {
+  try {
+    const { userId, month, year } = req.params;
+
+    const result = await pool.query(
+      `SELECT data FROM draft_submissions 
+       WHERE user_id = $1 AND month = $2 AND year = $3`,
+      [userId, month, year]
+    );
+
+    if (result.rows.length > 0) {
+      res.json({ 
+        days: result.rows[0].data,
+        isDraft: true 
+      });
+    } else {
+      res.json({ days: [], isDraft: false });
+    }
+  } catch (err) {
+    console.error("Error fetching draft:", err);
+    res.status(500).json({ error: "Failed to fetch draft" });
+  }
+});
+
+// Delete draft after submission
+router.delete("/draft/:userId/:month/:year", async (req, res) => {
+  try {
+    const { userId, month, year } = req.params;
+
+    await pool.query(
+      `DELETE FROM draft_submissions 
+       WHERE user_id = $1 AND month = $2 AND year = $3`,
+      [userId, month, year]
+    );
+
+    res.json({ message: "Draft deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting draft:", err);
+    res.status(500).json({ error: "Failed to delete draft" });
+  }
+});
+
+// Get all drafts for admin view
+router.get("/drafts", async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT 
+         ds.draft_id, ds.user_id, ds.month, ds.year, 
+         ds.last_updated, u.company_name
+       FROM draft_submissions ds
+       JOIN users u ON ds.user_id = u.user_id
+       ORDER BY ds.last_updated DESC`
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Error fetching drafts:", err);
+    res.status(500).json({ error: "Failed to fetch drafts" });
+  }
+});
+
+// Get draft details for admin
+router.get("/draft/:draftId", async (req, res) => {
+  try {
+    const { draftId } = req.params;
+
+    const result = await pool.query(
+      `SELECT 
+         ds.data, ds.month, ds.year,
+         u.company_name, u.number_of_rooms
+       FROM draft_submissions ds
+       JOIN users u ON ds.user_id = u.user_id
+       WHERE ds.draft_id = $1`,
+      [draftId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Draft not found" });
+    }
+
+    const draft = result.rows[0];
+    const daysInMonth = new Date(draft.year, draft.month, 0).getDate();
+
+    // Calculate metrics similar to regular submissions
+    const days = Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
+      const dayData = draft.data.find((d) => d.day === day) || { day, guests: [] };
+      
+      const checkIns = dayData.guests.filter(g => g.isCheckIn).length;
+      const overnight = dayData.guests.length;
+      const occupied = new Set(dayData.guests.map(g => g.room)).size;
+
+      return {
+        day,
+        check_ins: checkIns,
+        overnight: overnight,
+        occupied: occupied,
+        guests: dayData.guests
+      };
+    });
+
+    res.json({
+      month: draft.month,
+      year: draft.year,
+      company_name: draft.company_name,
+      number_of_rooms: draft.number_of_rooms,
+      days: days
+    });
+  } catch (err) {
+    console.error("Error fetching draft details:", err);
+    res.status(500).json({ error: "Failed to fetch draft details" });
+  }
+});
 
 
 module.exports = router;
