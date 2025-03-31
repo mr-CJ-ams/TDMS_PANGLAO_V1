@@ -1,136 +1,279 @@
-const AdminDashboard = () => {
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { useNavigate, Link } from "react-router-dom";
+import { Eye, EyeOff, Check, X } from "lucide-react";
+import TourismLogo from "../components/img/Tourism_logo.png";
+import places from "../../components/places.json";
+import DolphinSpinner from "./DolphinSpinner"; // Import the spinner
+
+const Signup = () => {
+  const [formData, setFormData] = useState({
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    phoneNumber: "",
+    registeredOwner: "",
+    tin: "",
+    companyName: "",
+    companyAddress: "",
+    accommodationType: "",
+    numberOfRooms: "",
+    region: "",
+    province: "",
+    municipality: "",
+    barangay: "",
+    dateEstablished: "",
+  });
+  const [errors, setErrors] = useState({
+    numberOfRooms: "",
+  });
+  const [regions, setRegions] = useState([]);
+  const [provinces, setProvinces] = useState([]);
+  const [municipalities, setMunicipalities] = useState([]);
+  const [barangays, setBarangays] = useState([]);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordValidation, setPasswordValidation] = useState({
+    hasLength: false,
+    hasUpperCase: false,
+    hasLowerCase: false,
+    hasNumber: false,
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+  const navigate = useNavigate();
+  const API_BASE_URL =
+    process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
   
-  return (
-  <div className="container-fluid">
-    {/* ... your existing sidebar */}
+  // Standard timeout duration (30 seconds)
+  const SIGNUP_TIMEOUT = 30000;
+
+  const accommodationTypes = [
+    { name: "Hotel", code: "HTL" },
+    { name: "Condotel", code: "CON" },
+    { name: "Serviced Residence", code: "SER" },
+    { name: "Resort", code: "RES" },
+    { name: "Apartelle", code: "APA" },
+    { name: "Motel", code: "MOT" },
+    { name: "Pension House", code: "PEN" },
+    { name: "Home Stay Site", code: "HSS" },
+    { name: "Tourist Inn", code: "TIN" },
+    { name: "Other", code: "OTH" },
+  ];
+
+  useEffect(() => {
+    const regionsList = Object.keys(places).map((regionCode) => ({
+      code: regionCode,
+      name: places[regionCode].region_name,
+    }));
+    setRegions(regionsList);
+  }, []);
+
+  const handleRegionChange = (e) => {
+    const regionCode = e.target.value;
+    const selectedRegion = places[regionCode];
+    const provincesList = Object.keys(selectedRegion.province_list).map((province) => ({
+      name: province,
+    }));
+    setProvinces(provincesList);
+    setFormData((prev) => ({
+      ...prev,
+      region: regionCode,
+      province: "",
+      municipality: "",
+      barangay: "",
+    }));
+  };
+
+  const handleProvinceChange = (e) => {
+    const provinceName = e.target.value;
+    const selectedProvince = places[formData.region].province_list[provinceName];
+    const municipalitiesList = Object.keys(selectedProvince.municipality_list).map((municipality) => ({
+      name: municipality,
+    }));
+    setMunicipalities(municipalitiesList);
+    setFormData((prev) => ({
+      ...prev,
+      province: provinceName,
+      municipality: "",
+      barangay: "",
+    }));
+  };
+
+  const handleMunicipalityChange = (e) => {
+    const municipalityName = e.target.value;
+    const selectedMunicipality = places[formData.region].province_list[formData.province].municipality_list[municipalityName];
+    const barangaysList = selectedMunicipality.barangay_list;
+    setBarangays(barangaysList);
+    setFormData((prev) => ({
+      ...prev,
+      municipality: municipalityName,
+      barangay: "",
+    }));
+  };
+
+  useEffect(() => {
+    const validatePassword = (password) => {
+      setPasswordValidation({
+        hasLength: password.length >= 8,
+        hasUpperCase: /[A-Z]/.test(password),
+        hasLowerCase: /[a-z]/.test(password),
+        hasNumber: /[0-9]/.test(password),
+      });
+    };
+    validatePassword(formData.password);
+  }, [formData.password]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    if (name === "numberOfRooms") {
+      if (value === "" || isNaN(value) || parseInt(value) <= 0) {
+        setErrors((prev) => ({
+          ...prev,
+          numberOfRooms: "Please enter a valid positive number.",
+        }));
+      } else {
+        setErrors((prev) => ({
+          ...prev,
+          numberOfRooms: "",
+        }));
+      }
+    }
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const isPasswordValid = Object.values(passwordValidation).every(Boolean);
+  const doPasswordsMatch = formData.password === formData.confirmPassword;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     
-    <div className="col-md-9">
-      {/* ... your existing sections */}
+    if (isSubmitting) return;
+    
+    // Validate numberOfRooms
+    if (!formData.numberOfRooms || isNaN(formData.numberOfRooms) || parseInt(formData.numberOfRooms) <= 0) {
+      setErrors((prev) => ({
+        ...prev,
+        numberOfRooms: "Please enter a valid positive number.",
+      }));
+      return;
+    }
+
+    if (!isPasswordValid) {
+      setSubmitError("Please ensure password meets all requirements");
+      return;
+    }
+    if (!doPasswordsMatch) {
+      setSubmitError("Passwords do not match");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+    
+    // Set a timeout to automatically stop loading if the request hangs
+    const timeoutId = setTimeout(() => {
+      setIsSubmitting(false);
+      setSubmitError("Signup is taking longer than expected. Please try again.");
+    }, SIGNUP_TIMEOUT);
+
+    try {
+      const response = await axios.post(`${API_BASE_URL}/auth/signup`, {
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        phone_number: formData.phoneNumber,
+        registered_owner: formData.registeredOwner,
+        tin: formData.tin,
+        company_name: formData.companyName,
+        company_address: formData.companyAddress,
+        accommodation_type: formData.accommodationType,
+        number_of_rooms: formData.numberOfRooms,
+        region: formData.region,
+        province: formData.province,
+        municipality: formData.municipality,
+        barangay: formData.barangay,
+        dateEstablished: formData.dateEstablished,
+      });
+
+      clearTimeout(timeoutId);
       
-      {activeSection === "drafts" && (
-        <div className="p-4">
-          <h3>In-Progress Submissions</h3>
-          <div className="table-responsive">
-            <table className="table table-striped">
-              <thead>
-                <tr>
-                  <th>Establishment</th>
-                  <th>Month/Year</th>
-                  <th>Last Updated</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {drafts.map(draft => (
-                  <tr key={draft.draft_id}>
-                    <td>{draft.company_name}</td>
-                    <td>{`${getMonthName(draft.month)} ${draft.year}`}</td>
-                    <td>{new Date(draft.last_updated).toLocaleString()}</td>
-                    <td>
-                      <button
-                        onClick={() => viewDraftDetails(draft.draft_id)}
-                        className="btn btn-info btn-sm"
-                      >
-                        View Details
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      alert("Signup successful! Waiting for admin approval.");
+      navigate("/login");
+    } catch (err) {
+      console.error(err);
+      setSubmitError(err.response?.data?.message || "Signup failed. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const ValidationIcon = ({ isValid }) =>
+    isValid ? (
+      <Check className="w-4 h-4 text-green-500" />
+    ) : (
+      <X className="w-4 h-4 text-red-500" />
+    );
+
+  return (
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-cyan-400 to-teal-500 p-4">
+      <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-2xl my-8">
+        <div className="flex flex-col items-center mb-8">
+          <div className="flex items-center gap-4 mb-4">
+            <img
+              src={TourismLogo}
+              alt="Panglao Logo 2"
+              className="w-20 h-20 object-contain"
+            />
           </div>
+          <h1 className="text-xl font-semibold text-center text-gray-800">
+            Panglao Tourist Data Management System
+          </h1>
         </div>
-      )}
-    </div>
-
-    {/* Draft Details Modal */}
-    <Modal 
-      show={showDraftModal} 
-      onHide={() => setShowDraftModal(false)}
-      size="lg"
-    >
-      <Modal.Header closeButton>
-        <Modal.Title>
-          Draft Submission - {selectedDraft?.company_name}
-        </Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        {selectedDraft && (
-          <div>
-            <h5>
-              {getMonthName(selectedDraft.month)} {selectedDraft.year}
-            </h5>
-            
-            <div className="row mb-4">
-              <div className="col-md-4">
-                <div className="card">
-                  <div className="card-body">
-                    <h6 className="card-title">Total Check-Ins</h6>
-                    <p className="card-text display-6">
-                      {calculateDraftMetrics(selectedDraft).totalCheckIns}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="col-md-4">
-                <div className="card">
-                  <div className="card-body">
-                    <h6 className="card-title">Total Overnight</h6>
-                    <p className="card-text display-6">
-                      {calculateDraftMetrics(selectedDraft).totalOvernight}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="col-md-4">
-                <div className="card">
-                  <div className="card-body">
-                    <h6 className="card-title">Occupied Rooms</h6>
-                    <p className="card-text display-6">
-                      {calculateDraftMetrics(selectedDraft).totalOccupied}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <h5>Daily Data</h5>
-            <div className="table-responsive">
-              <table className="table table-bordered">
-                <thead>
-                  <tr>
-                    <th>Day</th>
-                    <th>Check-Ins</th>
-                    <th>Overnight</th>
-                    <th>Occupied</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedDraft.days.map(day => (
-                    <tr key={day.day}>
-                      <td>{day.day}</td>
-                      <td>{day.check_ins}</td>
-                      <td>{day.overnight}</td>
-                      <td>{day.occupied}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+        
+        {submitError && (
+          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-center">
+            {submitError}
           </div>
         )}
-      </Modal.Body>
-      <Modal.Footer>
-        <Button 
-          variant="secondary" 
-          onClick={() => setShowDraftModal(false)}
-        >
-          Close
-        </Button>
-      </Modal.Footer>
-    </Modal>
-  </div>
-);
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* ... (all your existing form fields remain the same) ... */}
+          
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className={`w-full bg-gradient-to-r from-cyan-400 to-teal-500 text-white py-2 rounded-lg font-medium flex items-center justify-center gap-2 mt-6 ${
+              isSubmitting ? "opacity-75 cursor-not-allowed" : "hover:opacity-90"
+            }`}
+          >
+            {isSubmitting ? (
+              <>
+                <DolphinSpinner size="sm" />
+                Creating Account...
+              </>
+            ) : (
+              "Sign Up"
+            )}
+          </button>
+        </form>
+        
+        <div className="mt-6 text-center">
+          <p className="text-gray-600">
+            Already have an account?{" "}
+            <Link to="/login" className="text-cyan-600 hover:text-cyan-700">
+              Login
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 };
 
-export default AdminDashboard;
+export default Signup;

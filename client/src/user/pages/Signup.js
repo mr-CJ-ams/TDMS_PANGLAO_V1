@@ -2,8 +2,10 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff, Check, X } from "lucide-react";
-import TourismLogo from "../components/img/Tourism_logo.png"
-import places from "../../components/places.json"
+import TourismLogo from "../components/img/Tourism_logo.png";
+import places from "../../components/places.json";
+import DolphinSpinner from "../components/DolphinSpinner"; // Import the spinner
+
 const Signup = () => {
   const [formData, setFormData] = useState({
     username: "",
@@ -38,66 +40,29 @@ const Signup = () => {
     hasLowerCase: false,
     hasNumber: false,
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
   const navigate = useNavigate();
   const API_BASE_URL =
     process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
-  // const barangays = [
-  //   "Bil‑isan",
-  //   "Bolod",
-  //   "Danao",
-  //   "Doljo",
-  //   "Libaong",
-  //   "Looc",
-  //   "Lourdes",
-  //   "Poblacion",
-  //   "Tangnan",
-  //   "Tawala",
-  // ];
+  
+  // Standard timeout duration (30 seconds)
+  const SIGNUP_TIMEOUT = 30000;
+
   const accommodationTypes = [
-    {
-      name: "Hotel",
-      code: "HTL",
-    },
-    {
-      name: "Condotel",
-      code: "CON",
-    },
-    {
-      name: "Serviced Residence",
-      code: "SER",
-    },
-    {
-      name: "Resort",
-      code: "RES",
-    },
-    {
-      name: "Apartelle",
-      code: "APA",
-    },
-    {
-      name: "Motel",
-      code: "MOT",
-    },
-    {
-      name: "Pension House",
-      code: "PEN",
-    },
-    {
-      name: "Home Stay Site",
-      code: "HSS",
-    },
-    {
-      name: "Tourist Inn",
-      code: "TIN",
-    },
-    {
-      name: "Other",
-      code: "OTH",
-    },
+    { name: "Hotel", code: "HTL" },
+    { name: "Condotel", code: "CON" },
+    { name: "Serviced Residence", code: "SER" },
+    { name: "Resort", code: "RES" },
+    { name: "Apartelle", code: "APA" },
+    { name: "Motel", code: "MOT" },
+    { name: "Pension House", code: "PEN" },
+    { name: "Home Stay Site", code: "HSS" },
+    { name: "Tourist Inn", code: "TIN" },
+    { name: "Other", code: "OTH" },
   ];
 
   useEffect(() => {
-    // Extract regions from places.json
     const regionsList = Object.keys(places).map((regionCode) => ({
       code: regionCode,
       name: places[regionCode].region_name,
@@ -148,10 +113,7 @@ const Signup = () => {
     }));
   };
 
-
-
   useEffect(() => {
-
     const validatePassword = (password) => {
       setPasswordValidation({
         hasLength: password.length >= 8,
@@ -166,7 +128,6 @@ const Signup = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // Validate numberOfRooms
     if (name === "numberOfRooms") {
       if (value === "" || isNaN(value) || parseInt(value) <= 0) {
         setErrors((prev) => ({
@@ -185,10 +146,15 @@ const Signup = () => {
       [name]: value,
     }));
   };
+
   const isPasswordValid = Object.values(passwordValidation).every(Boolean);
   const doPasswordsMatch = formData.password === formData.confirmPassword;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (isSubmitting) return;
+    
     // Validate numberOfRooms
     if (!formData.numberOfRooms || isNaN(formData.numberOfRooms) || parseInt(formData.numberOfRooms) <= 0) {
       setErrors((prev) => ({
@@ -199,15 +165,25 @@ const Signup = () => {
     }
 
     if (!isPasswordValid) {
-      alert("Please ensure password meets all requirements");
+      setSubmitError("Please ensure password meets all requirements");
       return;
     }
     if (!doPasswordsMatch) {
-      alert("Passwords do not match");
+      setSubmitError("Passwords do not match");
       return;
     }
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+    
+    // Set a timeout to automatically stop loading if the request hangs
+    const timeoutId = setTimeout(() => {
+      setIsSubmitting(false);
+      setSubmitError("Signup is taking longer than expected. Please try again.");
+    }, SIGNUP_TIMEOUT);
+
     try {
-      await axios.post(`${API_BASE_URL}/auth/signup`, {
+      const response = await axios.post(`${API_BASE_URL}/auth/signup`, {
         username: formData.username,
         email: formData.email,
         password: formData.password,
@@ -224,25 +200,31 @@ const Signup = () => {
         barangay: formData.barangay,
         dateEstablished: formData.dateEstablished,
       });
+
+      clearTimeout(timeoutId);
+      
       alert("Signup successful! Waiting for admin approval.");
       navigate("/login");
     } catch (err) {
       console.error(err);
-      alert("Signup failed. Please try again.");
+      setSubmitError(err.response?.data?.message || "Signup failed. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
   const ValidationIcon = ({ isValid }) =>
     isValid ? (
       <Check className="w-4 h-4 text-green-500" />
     ) : (
       <X className="w-4 h-4 text-red-500" />
     );
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-cyan-400 to-teal-500 p-4">
       <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-2xl my-8">
         <div className="flex flex-col items-center mb-8">
           <div className="flex items-center gap-4 mb-4">
-        
             <img
               src={TourismLogo}
               alt="Panglao Logo 2"
@@ -253,6 +235,13 @@ const Signup = () => {
             Panglao Tourist Data Management System
           </h1>
         </div>
+        
+        {submitError && (
+          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-center">
+            {submitError}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -538,9 +527,19 @@ const Signup = () => {
           </div>
           <button
             type="submit"
-            className="w-full bg-gradient-to-r from-cyan-400 to-teal-500 text-white py-2 rounded-lg hover:opacity-90 transition-opacity font-medium mt-6"
+            disabled={isSubmitting}
+            className={`w-full bg-gradient-to-r from-cyan-400 to-teal-500 text-white py-2 rounded-lg font-medium flex items-center justify-center gap-2 mt-6 ${
+              isSubmitting ? "opacity-75 cursor-not-allowed" : "hover:opacity-90"
+            }`}
           >
-            Sign Up
+            {isSubmitting ? (
+              <>
+                <DolphinSpinner size="sm" />
+                Creating Account...
+              </>
+            ) : (
+              "Sign Up"
+            )}
           </button>
         </form>
         <div className="mt-6 text-center">

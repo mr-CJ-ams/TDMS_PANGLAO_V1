@@ -2,36 +2,58 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Eye, EyeOff, ShieldAlert } from "lucide-react";
-import TourismLogo from "../components/img/1738398998646-Tourism_logo.png"
+import TourismLogo from "../components/img/1738398998646-Tourism_logo.png";
+import DolphinSpinner from "../../user/components/DolphinSpinner"; // Import the spinner
+
 const AdminLogin = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+  
+  // Standard timeout duration (30 seconds)
+  const LOGIN_TIMEOUT = 30000;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    
     setError("");
+    setIsSubmitting(true);
+    
+    // Set a timeout to automatically stop loading if the request hangs
+    const timeoutId = setTimeout(() => {
+      setIsSubmitting(false);
+      setError("Login is taking longer than expected. Please try again.");
+    }, LOGIN_TIMEOUT);
+
     try {
       const res = await axios.post(`${API_BASE_URL}/auth/admin/login`, {
         username,
         password,
       });
+      
+      clearTimeout(timeoutId);
+      
       sessionStorage.setItem("token", res.data.token);
       sessionStorage.setItem("user", JSON.stringify(res.data.user));
       navigate("/admin/dashboard");
     } catch (err) {
       console.error(err);
-      setError("Invalid credentials. Please try again.");
+      setError(err.response?.data?.message || "Invalid credentials. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-cyan-400 to-teal-500 p-4">
       <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
           <div className="flex items-center gap-4 mb-4">
-            
             <img
               src={TourismLogo}
               alt="Panglao Logo 2"
@@ -46,11 +68,13 @@ const AdminLogin = () => {
             <span className="font-medium">Administrator Access</span>
           </div>
         </div>
+        
         {error && (
           <div className="mb-6 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm text-center">
             {error}
           </div>
         )}
+        
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -87,13 +111,24 @@ const AdminLogin = () => {
           </div>
           <button
             type="submit"
-            className="w-full bg-gradient-to-r from-cyan-400 to-teal-500 text-white py-2 rounded-lg hover:opacity-90 transition-opacity font-medium"
+            disabled={isSubmitting}
+            className={`w-full bg-gradient-to-r from-cyan-400 to-teal-500 text-white py-2 rounded-lg font-medium flex items-center justify-center gap-2 ${
+              isSubmitting ? "opacity-75 cursor-not-allowed" : "hover:opacity-90"
+            }`}
           >
-            Login as Administrator
+            {isSubmitting ? (
+              <>
+                <DolphinSpinner size="sm" />
+                Authenticating...
+              </>
+            ) : (
+              "Login as Administrator"
+            )}
           </button>
         </form>
       </div>
     </div>
   );
 };
+
 export default AdminLogin;

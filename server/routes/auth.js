@@ -103,7 +103,7 @@ router.post("/login", async (req, res) => {
     // Check if the user is active
     if (!user.rows[0].is_active) return res.status(400).json("Account is deactivated");
 
-    const token = jwt.sign({ user_id: user.rows[0].user_id, role: user.rows[0].role }, "tourismSecretKey");
+    const token = jwt.sign({ user_id: user.rows[0].user_id, role: user.rows[0].role }, process.env.JWT_SECRET);
 
     res.json({ token, user: user.rows[0] }); // Include user details in the response
   } catch (err) {
@@ -125,7 +125,7 @@ router.post("/admin/login", async (req, res) => {
 
     if (user.rows[0].role !== "admin") return res.status(400).json("Unauthorized access");
 
-    const token = jwt.sign({ user_id: user.rows[0].user_id, role: user.rows[0].role }, "tourismSecretKey");
+    const token = jwt.sign({ user_id: user.rows[0].user_id, role: user.rows[0].role }, process.env.JWT_SECRET);
 
     res.json({ token, user: user.rows[0] }); // Include user details in the response
   } catch (err) {
@@ -138,7 +138,7 @@ router.post("/admin/login", async (req, res) => {
 router.get("/user", async (req, res) => {
   try {
     const token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, "tourismSecretKey");
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Fetch user details
     const user = await pool.query("SELECT * FROM users WHERE user_id = $1", [decoded.user_id]);
@@ -157,7 +157,7 @@ router.get("/user", async (req, res) => {
 // Upload Profile Picture
 router.post("/upload-profile-picture", upload.single("profile_picture"), async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
-  const decoded = jwt.verify(token, "tourismSecretKey");
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
   try {
     const profilePictureUrl = `/uploads/${req.file.filename}`; // URL to access the uploaded file
@@ -176,7 +176,7 @@ router.post("/upload-profile-picture", upload.single("profile_picture"), async (
 router.put("/update-rooms", async (req, res) => {
   const { number_of_rooms } = req.body;
   const token = req.headers.authorization.split(" ")[1];
-  const decoded = jwt.verify(token, "tourismSecretKey");
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
   try {
     await pool.query("UPDATE users SET number_of_rooms = $1 WHERE user_id = $2", [

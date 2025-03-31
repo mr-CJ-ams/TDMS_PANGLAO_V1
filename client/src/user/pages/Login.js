@@ -1,26 +1,45 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
-import { Eye, EyeOff, BarChart2 } from "lucide-react"; // Import BarChart2 icon
+import { Eye, EyeOff, BarChart2 } from "lucide-react";
 import TourismLogo from "../components/img/Tourism_logo.png";
+import DolphinSpinner from "../components/DolphinSpinner" // Import the spinner
 
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
+  // Standard timeout duration (30 seconds)
+  const LOGIN_TIMEOUT = 30000;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    setError(null);
+    
+    // Set a timeout to automatically stop loading if the request hangs
+    const timeoutId = setTimeout(() => {
+      setIsSubmitting(false);
+      setError("Login is taking longer than expected. Please try again.");
+    }, LOGIN_TIMEOUT);
+
     try {
       const res = await axios.post(`${API_BASE_URL}/auth/login`, {
         username,
         password,
       });
   
+      clearTimeout(timeoutId);
+
       if (res.data.message === "Account is deactivated") {
-        alert("Your account has been deactivated. Please contact the administrator.");
+        setError("Your account has been deactivated. Please contact the administrator.");
         return;
       }
   
@@ -29,12 +48,14 @@ const Login = () => {
       navigate("/user/dashboard");
     } catch (err) {
       console.error(err);
-      alert("Invalid credentials or account is deactivated");
+      setError("Invalid credentials or account is deactivated");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleDashboardClick = () => {
-    navigate("/main-dashboard"); // Navigate to MainDashboard
+    navigate("/main-dashboard");
   };
 
   return (
@@ -86,11 +107,26 @@ const Login = () => {
               </button>
             </div>
           </div>
+          {error && (
+            <div className="text-red-500 text-sm text-center">
+              {error}
+            </div>
+          )}
           <button
             type="submit"
-            className="w-full bg-gradient-to-r from-cyan-400 to-teal-500 text-white py-2 rounded-lg hover:opacity-90 transition-opacity font-medium"
+            disabled={isSubmitting}
+            className={`w-full bg-gradient-to-r from-cyan-400 to-teal-500 text-white py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-opacity ${
+              isSubmitting ? "opacity-75 cursor-not-allowed" : "hover:opacity-90"
+            }`}
           >
-            Login
+            {isSubmitting ? (
+              <>
+                <DolphinSpinner size="sm" />
+                Logging in...
+              </>
+            ) : (
+              "Login"
+            )}
           </button>
         </form>
         <div className="mt-6 space-y-2 text-center">
@@ -124,7 +160,7 @@ const Login = () => {
         onClick={handleDashboardClick}
         className="fixed bottom-6 right-6 text-amber-500 hover:text-amber-600 transition-colors"
       >
-        <BarChart2 size={32} /> {/* BarChart2 icon */}
+        <BarChart2 size={32} />
       </button>
     </div>
   );
