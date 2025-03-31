@@ -263,7 +263,7 @@ useEffect(() => {
       room,
       guests: updatedGuests,
       lengthOfStay,
-      isCheckIn: true
+      isCheckIn: isCheckIn
     });
   
     // Add the subsequent days
