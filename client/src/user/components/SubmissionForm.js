@@ -75,69 +75,108 @@ useEffect(() => {
     const key = `${selectedYear}-${selectedMonth}`;
     
     try {
-      // Try to load from server first
       const token = sessionStorage.getItem("token");
+      
+      // Load current month data
       const [serverResponse, localStorageData] = await Promise.all([
         axios.get(`${API_BASE_URL}/api/submissions/draft/${user.user_id}/${selectedMonth}/${selectedYear}`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
         loadDataFromLocalStorage(user.user_id)
       ]);
-
-      // Ensure we always have arrays
+  
+      // Process current month data
       const serverData = Array.isArray(serverResponse.data?.days) 
         ? serverResponse.data.days 
         : [];
       const localData = Array.isArray(localStorageData[key]) 
         ? localStorageData[key] 
         : [];
-
-      // Create a function to uniquely identify room entries
+  
+      // Merge data
       const getRoomKey = (room) => `${room.day}-${room.room}`;
-
-      // Create a map to store unique rooms (server data takes precedence)
       const uniqueRooms = new Map();
-
-      // First add local data
+  
       localData.forEach(room => {
         uniqueRooms.set(getRoomKey(room), room);
       });
-
-      // Then add server data (will overwrite any local duplicates)
+  
       serverData.forEach(room => {
         uniqueRooms.set(getRoomKey(room), room);
       });
-
-      // Convert back to array
-      const mergedRooms = Array.from(uniqueRooms.values());
-
+  
+      let mergedRooms = Array.from(uniqueRooms.values());
+  
+      // Load previous month's data to check for continuing stays
+      const prevMonth = selectedMonth === 1 ? 12 : selectedMonth - 1;
+      const prevYear = selectedMonth === 1 ? selectedYear - 1 : selectedYear;
+      
+      try {
+        const prevMonthResponse = await axios.get(
+          `${API_BASE_URL}/api/submissions/draft/${user.user_id}/${prevMonth}/${prevYear}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+  
+        const prevMonthData = Array.isArray(prevMonthResponse.data?.days) 
+          ? prevMonthResponse.data.days 
+          : [];
+  
+        // Find any stays that continue into current month
+        const continuingStays = prevMonthData.filter(room => {
+          if (!room.startDay || !room.lengthOfStay) return false;
+          const stayEndDay = room.startDay + room.lengthOfStay - 1;
+          const prevMonthDays = getDaysInMonth(prevMonth, prevYear);
+          return stayEndDay > prevMonthDays;
+        });
+  
+        // Add continuing stays to current month's data
+        if (continuingStays.length > 0) {
+          mergedRooms = [
+            ...mergedRooms,
+            ...continuingStays.map(stay => ({
+              ...stay,
+              day: 1, // Starts from first day of current month
+              isCheckIn: false // Not check-in day
+            }))
+          ];
+        }
+      } catch (prevMonthError) {
+        console.error("Error loading previous month data:", prevMonthError);
+        // Continue with current month data only
+      }
+  
+      // Rest of your existing loadData logic...
       const mergedData = {
         ...localStorageData,
         [key]: mergedRooms
       };
-
+  
       setMonthlyData(mergedData);
       setOccupiedRooms(mergedRooms);
       
-      // If no data loaded, check for submitted data
+      // Check for submitted data if no draft data exists
       if (mergedRooms.length === 0) {
-        const submittedResponse = await axios.get(
-          `${API_BASE_URL}/api/submissions/${user.user_id}/${selectedMonth}/${selectedYear}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        
-        if (submittedResponse.data) {
-          const submittedData = Array.isArray(submittedResponse.data.days)
-            ? submittedResponse.data.days
-            : [];
-            
-          const updatedData = {
-            ...mergedData,
-            [key]: submittedData
-          };
-          setMonthlyData(updatedData);
-          setOccupiedRooms(submittedData);
-          saveDataToLocalStorage(user.user_id, updatedData);
+        try {
+          const submittedResponse = await axios.get(
+            `${API_BASE_URL}/api/submissions/${user.user_id}/${selectedMonth}/${selectedYear}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          
+          if (submittedResponse.data) {
+            const submittedData = Array.isArray(submittedResponse.data.days)
+              ? submittedResponse.data.days
+              : [];
+              
+            const updatedData = {
+              ...mergedData,
+              [key]: submittedData
+            };
+            setMonthlyData(updatedData);
+            setOccupiedRooms(submittedData);
+            saveDataToLocalStorage(user.user_id, updatedData);
+          }
+        } catch (submittedError) {
+          console.error("Error loading submitted data:", submittedError);
         }
       }
     } catch (err) {
@@ -225,70 +264,61 @@ useEffect(() => {
   // Save guest data for a specific day and room
   const handleSaveGuests = (day, room, guestData) => {
     const { guests, lengthOfStay, isCheckIn } = guestData;
-  
-    // Validate input
+    
     if (!guests || guests.length === 0) {
       alert("Please add at least one guest");
       return;
     }
   
-    // Check for room conflicts
-    if (hasRoomConflict(day, room, lengthOfStay, occupiedRooms)) {
-      alert(`This Length of Overnight Stay overlap with existing occupied rooms`);
+    const stayLength = parseInt(lengthOfStay);
+    if (isNaN(stayLength) || stayLength <= 0) {
+      alert("Please enter a valid length of stay");
       return;
     }
   
-    // Ensure we're working with an array
-    const currentRooms = Array.isArray(occupiedRooms) ? occupiedRooms : [];
-  
-    const updatedGuests = Array.isArray(guests)
-      ? guests.map((guest) => ({
-          ...guest,
-          isCheckIn: isCheckIn,
-        }))
-      : [];
-  
-    // Remove any existing entries for this day/room
-    const filteredRooms = currentRooms.filter((r) => 
-      !(r.day === day && r.room === room) && // Current entry
-      !(r.day >= day && r.day < day + lengthOfStay && r.room === room) // Future days in stay
-    );
-  
-    // Create new entries
-    const updatedRooms = [...filteredRooms];
+    // Generate a unique stay ID for this booking
+    const currentStayId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
-    // Add the check-in day
-    updatedRooms.push({
-      day,
-      room,
-      guests: updatedGuests,
-      lengthOfStay,
-      isCheckIn: isCheckIn
-    });
-  
-    // Add the subsequent days
-    for (let i = 1; i < lengthOfStay; i++) {
-      const nextDay = day + i;
-      if (nextDay <= daysInMonth) {
-        updatedRooms.push({
-          day: nextDay,
-          room,
-          guests: guests.map((guest) => ({
-            ...guest,
-            isCheckIn: false,
-          })),
-          lengthOfStay,
-          isCheckIn: false
-        });
+    // Check room availability across all affected months
+    const conflictDetails = findRoomConflictAcrossMonths(day, room, stayLength, occupiedRooms, monthlyData);
+    
+    if (conflictDetails.hasConflict) {
+      // Try to find an alternative room
+      const availableRoom = findAvailableRoomAcrossMonths(day, stayLength, occupiedRooms, monthlyData, room);
+      if (!availableRoom) {
+        alert(`⚠️ This Length of Overnight Stay overlaps with existing occupied rooms. Conflict found in ${conflictDetails.month}/${conflictDetails.year}`);
+        return;
       }
+      // Auto-assign to available room
+      room = availableRoom;
+      alert(`Room ${room} is not available for the entire stay. Automatically assigned to Room ${availableRoom}`);
     }
   
-    setOccupiedRooms(updatedRooms);
-    const key = `${selectedYear}-${selectedMonth}`;
-    setMonthlyData((prev) => ({
-      ...prev,
-      [key]: updatedRooms,
+    const updatedGuests = guests.map(guest => ({
+      ...guest,
+      isCheckIn: isCheckIn,
     }));
+  
+    // Remove existing entries for this stay across all months
+    const updatedMonthlyData = removeExistingStay(currentStayId, monthlyData);
+  
+    // Create new entries for all affected months
+    const newMonthlyData = addStayToMonthlyData(
+      updatedMonthlyData,
+      day,
+      room,
+      stayLength,
+      updatedGuests,
+      isCheckIn,
+      currentStayId,
+      selectedMonth,
+      selectedYear
+    );
+  
+    // Update state
+    const currentMonthKey = `${selectedYear}-${selectedMonth}`;
+    setMonthlyData(newMonthlyData);
+    setOccupiedRooms(newMonthlyData[currentMonthKey] || []);
   };
 
   
@@ -509,17 +539,6 @@ const isCurrentMonth = (selectedMonth, selectedYear) => {
   return selectedYear === currentYear && selectedMonth === currentMonth;
 };
 
-// Helper function to check if the selected month is a past month
-const isPastMonth = (selectedMonth, selectedYear) => {
-  const currentDate = new Date();
-  const currentYear = currentDate.getFullYear();
-  const currentMonth = currentDate.getMonth() + 1; // getMonth() returns 0-based month
-
-  return (
-    selectedYear < currentYear ||
-    (selectedYear === currentYear && selectedMonth < currentMonth)
-  );
-};
 
 
   const isFutureMonth = (selectedMonth, selectedYear) => {
@@ -536,25 +555,131 @@ const isPastMonth = (selectedMonth, selectedYear) => {
 const isFutureMonthValue = isFutureMonth(selectedMonth, selectedYear);
 const isCurrentMonthValue = isCurrentMonth(selectedMonth, selectedYear);
 
-const hasRoomConflict = (day, room, lengthOfStay, currentOccupancies) => {
-  const newStayStart = day;
-  const newStayEnd = day + lengthOfStay - 1;
-
-  return currentOccupancies.some(occupancy => {
-    // Skip if it's a different room
-    if (occupancy.room !== room) return false;
-
-    const existingStayStart = occupancy.day;
-    const existingStayEnd = occupancy.day + (occupancy.lengthOfStay || 1) - 1;
-
-    // Check for overlap between the new stay and existing stay
-    return (
-      (newStayStart >= existingStayStart && newStayStart <= existingStayEnd) ||
-      (newStayEnd >= existingStayStart && newStayEnd <= existingStayEnd) ||
-      (newStayStart <= existingStayStart && newStayEnd >= existingStayEnd)
-    );
-  });
+const hasRoomConflict = (startDay, room, lengthOfStay, currentOccupancies) => {
+  const conflict = findRoomConflictAcrossMonths(startDay, room, lengthOfStay, currentOccupancies, monthlyData);
+  return conflict.hasConflict;
 };
+
+
+// Helper function to find conflicts across multiple months
+const findRoomConflictAcrossMonths = (startDay, room, lengthOfStay, currentOccupancies, allMonthlyData, currentStayId) => {
+  let remainingDays = lengthOfStay;
+  let currentDay = startDay;
+  let currentMonth = selectedMonth;
+  let currentYear = selectedYear;
+  let daysInCurrentMonth = getDaysInMonth(currentMonth, currentYear);
+
+  while (remainingDays > 0) {
+    const daysToCheck = Math.min(remainingDays, daysInCurrentMonth - currentDay + 1);
+    const endDay = currentDay + daysToCheck - 1;
+
+    // Get data for current month
+    const monthKey = `${currentYear}-${currentMonth}`;
+    const monthData = currentMonth === selectedMonth && currentYear === selectedYear 
+      ? currentOccupancies 
+      : allMonthlyData[monthKey] || [];
+
+    // Check for conflicts in current month
+    const hasConflict = monthData.some(occupancy => {
+      if (occupancy.room !== room) return false;
+      if (occupancy.day < currentDay || occupancy.day > endDay) return false;
+      return !currentStayId || occupancy.stayId !== currentStayId; // Ignore conflicts with same stay
+    });
+
+    if (hasConflict) {
+      return {
+        hasConflict: true,
+        month: currentMonth,
+        year: currentYear,
+        day: currentDay
+      };
+    }
+
+    // Move to next month
+    remainingDays -= daysToCheck;
+    currentDay = 1;
+    if (currentMonth === 12) {
+      currentMonth = 1;
+      currentYear++;
+    } else {
+      currentMonth++;
+    }
+    daysInCurrentMonth = getDaysInMonth(currentMonth, currentYear);
+  }
+
+  return { hasConflict: false };
+};
+
+// Helper function to find available room across months
+const findAvailableRoomAcrossMonths = (startDay, lengthOfStay, currentOccupancies, allMonthlyData, excludedRoom = null) => {
+  for (let room = 1; room <= numberOfRooms; room++) {
+    if (room === excludedRoom) continue;
+    
+    const conflict = findRoomConflictAcrossMonths(startDay, room, lengthOfStay, currentOccupancies, allMonthlyData);
+    if (!conflict.hasConflict) {
+      return room;
+    }
+  }
+  return null;
+};
+
+// Helper function to remove existing stay data
+const removeExistingStay = (stayId, monthlyData) => {
+  const updatedData = { ...monthlyData };
+  for (const monthKey in updatedData) {
+    if (Array.isArray(updatedData[monthKey])) {
+      updatedData[monthKey] = updatedData[monthKey].filter(room => room.stayId !== stayId);
+    }
+  }
+  return updatedData;
+};
+
+// Helper function to add stay to monthly data
+const addStayToMonthlyData = (monthlyData, startDay, room, lengthOfStay, guests, isCheckIn, stayId, startMonth, startYear) => {
+  const updatedData = { ...monthlyData };
+  let remainingDays = lengthOfStay;
+  let currentDay = startDay;
+  let currentMonth = startMonth;
+  let currentYear = startYear;
+  let isFirstDay = true;
+
+  while (remainingDays > 0) {
+    const daysInCurrentMonth = getDaysInMonth(currentMonth, currentYear);
+    const daysToAdd = Math.min(remainingDays, daysInCurrentMonth - currentDay + 1);
+    
+    const monthKey = `${currentYear}-${currentMonth}`;
+    const monthData = updatedData[monthKey] || [];
+
+    for (let day = currentDay; day < currentDay + daysToAdd; day++) {
+      monthData.push({
+        day,
+        room,
+        guests: guests.map(g => ({ ...g, isCheckIn: isFirstDay && isCheckIn })),
+        lengthOfStay,
+        isCheckIn: isFirstDay && isCheckIn,
+        stayId,
+        startDay: startDay,
+        startMonth: startMonth,
+        startYear: startYear
+      });
+      isFirstDay = false;
+    }
+
+    updatedData[monthKey] = monthData;
+    remainingDays -= daysToAdd;
+    currentDay = 1;
+    if (currentMonth === 12) {
+      currentMonth = 1;
+      currentYear++;
+    } else {
+      currentMonth++;
+    }
+  }
+
+  return updatedData;
+};
+
+
 
   return (
     <div className="container mt-5">
@@ -609,7 +734,9 @@ const hasRoomConflict = (day, room, lengthOfStay, currentOccupancies) => {
           disabled={hasSubmitted}
           isCurrentMonth={isCurrentMonthValue}
           hasRoomConflict={hasRoomConflict}
-          occupiedRooms={occupiedRooms} 
+          occupiedRooms={occupiedRooms}
+          selectedYear={selectedYear} // Add this
+          selectedMonth={selectedMonth} // Add this
         />
       )}
 

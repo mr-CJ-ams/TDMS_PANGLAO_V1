@@ -1,36 +1,71 @@
 import React, { useState } from "react";
 import nationalities from "./Nationality";
 
-const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData, disabled, isCurrentMonth, hasRoomConflict, occupiedRooms }) => {
+const GuestModal = ({
+  day, 
+  room, 
+  onClose, 
+  onSave, 
+  onRemoveAllGuests, 
+  initialData, 
+  disabled, 
+  isCurrentMonth, 
+  hasRoomConflict, 
+  occupiedRooms,
+  selectedYear, // Add this
+  selectedMonth // Add this
+ }) => {
   const [lengthOfStay, setLengthOfStay] = useState(initialData?.lengthOfStay?.toString() || "");
   const [guests, setGuests] = useState(initialData?.guests || []);
   const [isCheckIn, setIsCheckIn] = useState(initialData?.isCheckIn || true);
   const [error, setError] = useState("");
 
-  const handleSave = () => {
-    if (guests.length === 0) {
-      setError("Please add at least one guest before saving.");
-      return;
-    }
+// Add this to the handleSave function in GuestModal.js
+// In GuestModal.js, update the handleSave function to:
+const handleSave = () => {
+  if (guests.length === 0) {
+    setError("Please add at least one guest before saving.");
+    return;
+  }
 
-    if (guests.some((guest) => !guest.age || isNaN(guest.age) || parseInt(guest.age) <= 0)) {
-      setError("Please enter a valid age for all guests.");
-      return;
-    }
+  if (guests.some((guest) => !guest.age || isNaN(guest.age) || parseInt(guest.age) <= 0)) {
+    setError("Please enter a valid age for all guests.");
+    return;
+  }
 
-    if (!lengthOfStay || isNaN(lengthOfStay) || parseInt(lengthOfStay) <= 0) {
-      setError("Please enter a valid length of stay.");
-      return;
-    }
+  if (!lengthOfStay || isNaN(lengthOfStay) || parseInt(lengthOfStay) <= 0) {
+    setError("Please enter a valid length of stay.");
+    return;
+  }
 
-    setError("");
-    onSave(day, room, {
-      guests: guests.map((guest) => ({ ...guest, roomNumber: room })),
-      lengthOfStay: parseInt(lengthOfStay),
-      isCheckIn,
-    });
-    onClose();
-  };
+  // Calculate the end date
+  const startDate = new Date(selectedYear, selectedMonth - 1, day);
+  const endDate = new Date(startDate);
+  endDate.setDate(startDate.getDate() + parseInt(lengthOfStay) - 1);
+
+  // Check if the stay crosses year boundaries
+  if (endDate.getFullYear() !== startDate.getFullYear()) {
+    const confirmCrossYear = window.confirm(
+      `This stay crosses into the next year (ending ${endDate.toLocaleDateString()}). Continue?`
+    );
+    if (!confirmCrossYear) return;
+  }
+  // Check if the stay crosses month boundaries
+  else if (endDate.getMonth() !== startDate.getMonth()) {
+    const confirmCrossMonth = window.confirm(
+      `This stay crosses into ${endDate.toLocaleString('default', { month: 'long' })}. Continue?`
+    );
+    if (!confirmCrossMonth) return;
+  }
+
+  setError("");
+  onSave(day, room, {
+    guests: guests.map((guest) => ({ ...guest, roomNumber: room })),
+    lengthOfStay: parseInt(lengthOfStay),
+    isCheckIn,
+  });
+  onClose();
+};
 
   const handleAddGuest = () => {
     setGuests([
@@ -119,7 +154,7 @@ const GuestModal = ({ day, room, onClose, onSave, onRemoveAllGuests, initialData
               <div className="alert alert-warning mt-2">
                 {isEditingExisting ? 
                   "⚠️ Occupied" :
-                  "⚠️ This Length of Overnight Stay overlap with existing occupied rooms"}
+                  "⚠️ This Length of Overnight Stay overlaps with existing occupied rooms"}
               </div>
             ) : (
               !isEditingExisting && (
