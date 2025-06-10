@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import nationalities from "./Nationality";
 
 const GuestModal = ({
@@ -16,6 +16,7 @@ const GuestModal = ({
 }) => {
   const [lengthOfStay, setLengthOfStay] = useState(initialData?.lengthOfStay?.toString() || "");
   const [guests, setGuests] = useState(initialData?.guests || []);
+  const [isCheckIn, setIsCheckIn] = useState(initialData?.isCheckIn ?? true);
   const [error, setError] = useState("");
 
   const handleSave = () => {
@@ -39,6 +40,7 @@ const GuestModal = ({
     onSave(day, room, {
       guests: guests.map(g => ({ ...g, roomNumber: room })),
       lengthOfStay: parseInt(lengthOfStay),
+      isCheckIn,
     });
     onClose();
   };
@@ -64,6 +66,13 @@ const GuestModal = ({
           </div>
           <div className="modal-body">
             {error && <div className="alert alert-danger">{error}</div>}
+            <div className="form-group">
+              <label>Guest Checked In Today?</label>
+              <div className="d-flex gap-2">
+                <button onClick={() => setIsCheckIn(true)} className={`btn ${isCheckIn ? "btn-warning" : "btn-light"}`} disabled={disabled}>Yes</button>
+                <button onClick={() => setIsCheckIn(false)} className={`btn ${!isCheckIn ? "btn-success" : "btn-light"}`} disabled={disabled}>No</button>
+              </div>
+            </div>
             <div className="form-group">
               <label>Length of Overnight Stay</label>
               <input
