@@ -1,4 +1,3 @@
-
 import React from "react";
 
 const Filters = ({ selectedYear, setSelectedYear, selectedMonth, setSelectedMonth, formatMonth }) => {

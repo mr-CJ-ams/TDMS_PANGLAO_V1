@@ -122,7 +122,7 @@ router.put("/update-accommodation/:id", async (req, res) => {
   }
 });
 
-// Inside server/routes/admin.js
+
 // Inside server/routes/admin.js
 router.get("/submissions", async (req, res) => {
   try {

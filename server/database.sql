@@ -1,146 +1,104 @@
-CREATE DATABASE rbac;
-
--- Drop the table if it exists
-IF OBJECT_ID('users', 'U') IS NOT NULL
-    DROP TABLE users;
-
--- Create the table
-CREATE TABLE users
-(
-    user_id INT NOT NULL IDENTITY(1,1),
-    username NVARCHAR(255) NOT NULL,
-    email NVARCHAR(255) NOT NULL,
-    password NVARCHAR(255) NOT NULL,
-    role NVARCHAR(50) DEFAULT 'user',
-    is_approved BIT DEFAULT 0,
-    phone_number NVARCHAR(15),
-    registered_owner NVARCHAR(255),
-    tin NVARCHAR(20),
-    company_address NVARCHAR(255),
-    accommodation_type NVARCHAR(50),
-    number_of_rooms INT,
-    company_name NVARCHAR(255),
-    accommodation_code NVARCHAR(3),
+-- Create all tables
+CREATE TABLE users (
+    user_id SERIAL PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    role VARCHAR(50) DEFAULT 'user',
+    is_approved BOOLEAN DEFAULT FALSE,
+    phone_number VARCHAR(15),
+    registered_owner VARCHAR(255),
+    tin VARCHAR(20),
+    company_address TEXT,
+    accommodation_type VARCHAR(50),
+    number_of_rooms INTEGER,
+    company_name VARCHAR(255),
+    accommodation_code VARCHAR(3),
+    reset_token VARCHAR(255),
     reset_token_expiry BIGINT,
-    profile_picture NVARCHAR(MAX),
-    region NVARCHAR(255),
-    province NVARCHAR(255),
-    municipality NVARCHAR(255),
-    barangay NVARCHAR(255),
-    reset_token NVARCHAR(255),
-    is_active BIT DEFAULT 1,
-    CONSTRAINT users_pkey PRIMARY KEY (user_id),
-    CONSTRAINT users_email_key UNIQUE (email),
-    CONSTRAINT users_username_key UNIQUE (username)
+    profile_picture TEXT,
+    region VARCHAR(255),
+    province VARCHAR(255),
+    municipality VARCHAR(255),
+    barangay VARCHAR(255),
+    is_active BOOLEAN DEFAULT TRUE,
+    date_established DATE
 );
 
-
--- Drop the table if it exists
-IF OBJECT_ID('submissions', 'U') IS NOT NULL
-    DROP TABLE submissions;
-
--- Create the table
-CREATE TABLE submissions
-(
-    submission_id INT NOT NULL IDENTITY(1,1),
-    user_id INT,
-    month INT NOT NULL,
-    year INT NOT NULL,
-    penalty_paid BIT DEFAULT 0,
-    deadline DATETIMEOFFSET,
-    is_late BIT DEFAULT 0,
-    submitted_at DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET(),
+CREATE TABLE submissions (
+    submission_id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    month INTEGER NOT NULL,
+    year INTEGER NOT NULL,
+    penalty_paid BOOLEAN DEFAULT FALSE,
+    deadline TIMESTAMPTZ,  -- Changed from TIMESTAMP WITH TIME ZONE
+    is_late BOOLEAN DEFAULT FALSE,
+    submitted_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     penalty_amount DECIMAL(10,2) DEFAULT 0.0,
     average_guest_nights DECIMAL(10,2),
     average_room_occupancy_rate DECIMAL(10,2),
     average_guests_per_room DECIMAL(10,2),
-    penalty BIT DEFAULT 0,
-    number_of_rooms INT,
-    CONSTRAINT submissions_pkey PRIMARY KEY (submission_id),
-    CONSTRAINT submissions_user_id_fkey FOREIGN KEY (user_id)
-        REFERENCES users (user_id)
-        ON UPDATE NO ACTION
-        ON DELETE CASCADE
+    penalty BOOLEAN DEFAULT FALSE,
+    number_of_rooms INTEGER
 );
 
--- Drop indexes if they exist
-IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_submissions_month_year' AND object_id = OBJECT_ID('submissions'))
-    DROP INDEX idx_submissions_month_year ON submissions;
+CREATE TABLE daily_metrics (
+    metric_id SERIAL PRIMARY KEY,
+    submission_id INTEGER REFERENCES submissions(submission_id) ON DELETE CASCADE,
+    day INTEGER NOT NULL,
+    check_ins INTEGER NOT NULL,
+    overnight INTEGER NOT NULL,
+    occupied INTEGER NOT NULL
+);
 
-IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_submissions_user' AND object_id = OBJECT_ID('submissions'))
-    DROP INDEX idx_submissions_user ON submissions;
+CREATE TABLE guests (
+    guest_id SERIAL PRIMARY KEY,
+    metric_id INTEGER REFERENCES daily_metrics(metric_id) ON DELETE CASCADE,
+    room_number INTEGER NOT NULL,
+    gender VARCHAR(50) NOT NULL,
+    age INTEGER NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    nationality VARCHAR(100) NOT NULL,
+    is_check_in BOOLEAN DEFAULT TRUE
+);
 
-IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_submissions_user_month_year' AND object_id = OBJECT_ID('submissions'))
-    DROP INDEX idx_submissions_user_month_year ON submissions;
+CREATE TABLE draft_submissions (
+    draft_id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    month INTEGER NOT NULL,
+    year INTEGER NOT NULL,
+    data JSONB NOT NULL,
+    last_updated TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (user_id, month, year)
+);
 
 -- Create indexes
-CREATE INDEX idx_submissions_month_year
-    ON submissions (month ASC, year ASC);
+CREATE INDEX idx_submissions_month_year ON submissions (month, year);
+CREATE INDEX idx_submissions_user ON submissions (user_id);
+CREATE INDEX idx_submissions_user_month_year ON submissions (user_id, month, year);
+CREATE INDEX idx_guests_metric ON guests (metric_id);
+CREATE INDEX idx_guests_metric_id ON guests (metric_id);
+CREATE INDEX idx_draft_submissions_user ON draft_submissions (user_id);
+CREATE INDEX idx_draft_submissions_month_year ON draft_submissions (month, year);
 
-CREATE INDEX idx_submissions_user
-    ON submissions (user_id ASC);
-
-CREATE INDEX idx_submissions_user_month_year
-    ON submissions (user_id ASC, month ASC, year ASC);
-
-
--- Drop the table if it exists
-IF OBJECT_ID('daily_metrics', 'U') IS NOT NULL
-    DROP TABLE daily_metrics;
-
--- Create the table
-CREATE TABLE daily_metrics
-(
-    metric_id INT NOT NULL IDENTITY(1,1), -- Use IDENTITY for auto-increment in SQL Server
-    submission_id INT,
-    day INT NOT NULL,
-    check_ins INT NOT NULL,
-    overnight INT NOT NULL,
-    occupied INT NOT NULL,
-    CONSTRAINT daily_metrics_pkey PRIMARY KEY (metric_id),
-    CONSTRAINT daily_metrics_submission_id_fkey FOREIGN KEY (submission_id)
-        REFERENCES submissions (submission_id)
-        ON UPDATE NO ACTION
-        ON DELETE CASCADE
+-- Optional tables
+CREATE TABLE audit_log (
+    log_id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id),
+    action VARCHAR(50) NOT NULL,
+    table_name VARCHAR(50) NOT NULL,
+    record_id INTEGER,
+    old_values JSONB,
+    new_values JSONB,
+    timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- Drop the table if it exists
-IF OBJECT_ID('guests', 'U') IS NOT NULL
-    DROP TABLE guests;
-
--- Create the table
-CREATE TABLE guests
-(
-    guest_id INT NOT NULL IDENTITY(1,1),
-    metric_id INT,
-    room_number INT NOT NULL,
-    gender NVARCHAR(50) NOT NULL,
-    age INT NOT NULL,
-    status NVARCHAR(50) NOT NULL,
-    nationality NVARCHAR(100) NOT NULL,
-    is_check_in BIT DEFAULT 1,
-    CONSTRAINT guests_pkey PRIMARY KEY (guest_id),
-    CONSTRAINT guests_metric_id_fkey FOREIGN KEY (metric_id)
-        REFERENCES daily_metrics (metric_id)
-        ON UPDATE NO ACTION
-        ON DELETE CASCADE
+CREATE TABLE notifications (
+    notification_id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    link VARCHAR(255)
 );
-
--- Drop indexes if they exist
-IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_guests_metric' AND object_id = OBJECT_ID('guests'))
-    DROP INDEX idx_guests_metric ON guests;
-
-IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_guests_metric_id' AND object_id = OBJECT_ID('guests'))
-    DROP INDEX idx_guests_metric_id ON guests;
-
--- Create indexes
-CREATE INDEX idx_guests_metric
-    ON guests (metric_id ASC);
-
-CREATE INDEX idx_guests_metric_id
-    ON guests (metric_id ASC);
-
--- ALTER TABLE submissions ADD COLUMN number_of_rooms INT;
-
-
-
