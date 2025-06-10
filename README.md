@@ -1,9 +1,82 @@
-# Tourism Data Management System (TDMS) - System Setup Guide
+# Tourism Data Management System (TDMS) with AI-Powered Forecasting Tourist Accommodation Demand for Panglao, Bohol
+
+
+[![System Tutorial Video](https://img.youtube.com/vi/tESZX530Av4/0.jpg)](https://youtu.be/tESZX530Av4)  
+*Click the thumbnail above to watch the system tutorial on YouTube.*
 
 ## Introduction
-Welcome to the Tourism Data Management System (TDMS). This guide will help you set up and run the system on your local machine or server.
+
+In today's era of digital transformation and artificial intelligence, many local government offices still rely on manual systems that slow down service delivery.  
+
+Panglao, Bohol—a leading tourist destination—manages its tourist accommodation data using paper forms and spreadsheets, leading to delays, inefficiencies, human error, and difficulty complying with the monthly reporting required by Municipal Ordinance No. 04, Series of 2020 also known as “Tourist Arrival Monitoring Ordinance of Panglao, Bohol.”  
+
+The **Integrated Tourist Data Management System (ITDMS)** is a web-based platform that automates data collection, consolidation, and reporting. What once took over 10 days of manual work by tourism personnel can now be done in minutes, resulting in a **92.6% improvement in processing time**.  
+
+The system features two main roles:  
+1. **Establishments** submit guest data.  
+2. The **Municipal Tourism Office** manages submissions and generates reports.  
+
+To support future planning, the system includes an **AI-powered forecasting feature** that analyzes past tourist data and predicts accommodation demand. The most accurate model achieved a **94.79% forecast accuracy**.  
+
+The ITDMS not only accelerates data handling but also enables smarter decisions, offering a model for other municipalities to modernize tourism data management in the Philippines.  
 
 ---
+
+## System Process Flowchart
+
+<p align="center">
+  <img src="img\System-Flowchart.png" alt="System Process Flowchart" width="180"/>
+</p>
+
+## Summary of Architecture Used
+
+| Layer/Scope      | Architecture Used            |
+|------------------|-----------------------------|
+| Whole System     | Client-Server               |
+| Frontend (client)| Component-based (React)     |
+| Backend (server) | Model-View-Controller (MVC) |
+
+### Client-Server Architecture used for the Whole System
+<p align="center">
+  <img src="img\Client-server.png" alt="Client-Server Arch" width="180"/>
+</p>
+
+### Component-based (React) Architecture in the Frontend(client) Side
+<p align="center">
+  <img src="img\Component-based.png" alt="Component-based arch" width="180"/>
+</p>
+
+### Model-View-Controller (MVC) Architecture in Backend(server) Side
+<p align="center">
+  <img src="img\MVC.jpg" alt="MVC Arch" width="180"/>
+</p>
+
+## Forecasting Model
+
+The Forecasting Model is a key component that predicts future accommodation demand based on historical data. The system utilized multiple machine learning models such as the XGBoost, Random Forest, Long short-term memory, and Facebook Prophet, combined with carefully engineered features to capture trends, seasonality, and external influences such as holidays.
+
+(https://colab.research.google.com/drive/1bu_JoysTvJXpopbX-EA9LscEXdfCl921#scrollTo=bk8J7IJiVnGG)
+*Click here to learn more about the Factors that can affect the prediction.*
+
+### Machine learning evaluation results
+
+<p align="center">
+  <img src="img\results1.png" alt="Results" width="180"/>
+</p>
+
+<p align="center">
+  <img src="img\results2.png" alt="Results" width="180"/>
+</p>
+
+### Graph Comparison of Best Performing Version of Each Machine Learning
+
+<p align="center">
+  <img src="img\results3.png" alt="Results" width="180"/>
+</p>
+
+Based on the results from different trained machine learning models namely XGBoost, Random Forest, Long Short-Term Memory, and Facebook Prophet, across three versions of features, XGBoost Version 3 demonstrated the highest accuracy of 94.92%. Compared to other models, XGBoost Version 3 was the most reliable in forecasting tourist accommodation demand as it consistently captured the upward and downward trends of actual tourist arrivals. 
+
+
 
 ## Prerequisites
 Ensure you have the following installed on your machine:
@@ -152,6 +225,8 @@ Want to contribute? Follow these steps:
 3. Submit a pull request with detailed changes.
 
 ---
+
+
 
 
 
