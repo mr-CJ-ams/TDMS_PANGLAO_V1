@@ -1,7 +1,8 @@
 # Tourism Data Management System (TDMS) with AI-Powered Forecasting Tourist Accommodation Demand for Panglao, Bohol
 
-
+### System Tutorial Video:👇Click here
 [![System Tutorial Video](https://img.youtube.com/vi/tESZX530Av4/0.jpg)](https://youtu.be/tESZX530Av4)  
+https://youtu.be/tESZX530Av4?si=NS_2cmn0w3i9ei4P
 *Click the thumbnail above to watch the system tutorial on YouTube.*
 
 ## Introduction
@@ -25,7 +26,7 @@ The ITDMS not only accelerates data handling but also enables smarter decisions,
 ## System Process Flowchart
 
 <p align="center">
-  <img src="img\System-Flowchart.png" alt="System Process Flowchart" width="180"/>
+  <img src="img\System-Flowchart.png" alt="System Process Flowchart" width="480"/>
 </p>
 
 ## Summary of Architecture Used
@@ -38,17 +39,17 @@ The ITDMS not only accelerates data handling but also enables smarter decisions,
 
 ### Client-Server Architecture used for the Whole System
 <p align="center">
-  <img src="img\Client-server.png" alt="Client-Server Arch" width="180"/>
+  <img src="img\Client-server.png" alt="Client-Server Arch" width="480"/>
 </p>
 
 ### Component-based (React) Architecture in the Frontend(client) Side
 <p align="center">
-  <img src="img\Component-based.png" alt="Component-based arch" width="180"/>
+  <img src="img\Component-based.png" alt="Component-based arch" width="480"/>
 </p>
 
 ### Model-View-Controller (MVC) Architecture in Backend(server) Side
 <p align="center">
-  <img src="img\MVC.jpg" alt="MVC Arch" width="180"/>
+  <img src="img\MVC.jpg" alt="MVC Arch" width="480"/>
 </p>
 
 ## Forecasting Model
@@ -61,17 +62,17 @@ The Forecasting Model is a key component that predicts future accommodation dema
 ### Machine learning evaluation results
 
 <p align="center">
-  <img src="img\results1.png" alt="Results" width="180"/>
+  <img src="img\results1.png" alt="Results" width="480"/>
 </p>
 
 <p align="center">
-  <img src="img\results2.png" alt="Results" width="180"/>
+  <img src="img\results2.png" alt="Results" width="480"/>
 </p>
 
 ### Graph Comparison of Best Performing Version of Each Machine Learning
 
 <p align="center">
-  <img src="img\results3.png" alt="Results" width="180"/>
+  <img src="img\results3.png" alt="Results" width="480"/>
 </p>
 
 Based on the results from different trained machine learning models namely XGBoost, Random Forest, Long Short-Term Memory, and Facebook Prophet, across three versions of features, XGBoost Version 3 demonstrated the highest accuracy of 94.92%. Compared to other models, XGBoost Version 3 was the most reliable in forecasting tourist accommodation demand as it consistently captured the upward and downward trends of actual tourist arrivals. 
