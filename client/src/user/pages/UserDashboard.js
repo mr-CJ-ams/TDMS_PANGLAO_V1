@@ -9,47 +9,35 @@ import HelpSupport from "../components/HelpSupport";
 import Ordinance from "../components/Ordinance";
 import MainDashboard from "../../admin/pages/MainDashboard";
 
-const UserDashboard = () => {
-  const [user, setUser] = useState(null);
-  const [activeSection, setActiveSection] = useState("dashboard");
-  const [profilePicture, setProfilePicture] = useState(null);
-  const navigate = useNavigate();
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
-  // Fetch user details
+const UserDashboard = () => {
+  const [user, setUser] = useState(null),
+    [activeSection, setActiveSection] = useState("dashboard");
+  const navigate = useNavigate();
+
   useEffect(() => {
-    const fetchUserDetails = async () => {
+    (async () => {
       try {
         const token = sessionStorage.getItem("token");
-        const response = await axios.get(`${API_BASE_URL}/auth/user`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setUser(response.data);
-        setProfilePicture(response.data.profile_picture);
+        const { data } = await axios.get(`${API_BASE_URL}/auth/user`, { headers: { Authorization: `Bearer ${token}` } });
+        setUser(data);
       } catch (err) {
         console.error("Error fetching user details:", err);
       }
-    };
-
-    fetchUserDetails();
+    })();
   }, []);
 
-  // Logout function
   const handleLogout = () => {
     sessionStorage.removeItem("token");
     navigate("/login");
   };
 
-  // Handle updating the number of rooms
-  const handleUpdateRooms = async (newNumberOfRooms) => {
+  const handleUpdateRooms = async newNumberOfRooms => {
     try {
       const token = sessionStorage.getItem("token");
-      await axios.put(
-        `${API_BASE_URL}/auth/update-rooms`,
-        { number_of_rooms: newNumberOfRooms },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setUser({ ...user, number_of_rooms: newNumberOfRooms });
+      await axios.put(`${API_BASE_URL}/auth/update-rooms`, { number_of_rooms: newNumberOfRooms }, { headers: { Authorization: `Bearer ${token}` } });
+      setUser(u => ({ ...u, number_of_rooms: newNumberOfRooms }));
     } catch (err) {
       console.error("Error updating number of rooms:", err);
     }
@@ -58,28 +46,14 @@ const UserDashboard = () => {
   return (
     <div className="container-fluid">
       <div className="row">
-        <Sidebar
-          activeSection={activeSection}
-          setActiveSection={setActiveSection}
-          handleLogout={handleLogout}
-          user={user}
-        />
-
+        <Sidebar activeSection={activeSection} setActiveSection={setActiveSection} handleLogout={handleLogout} user={user} />
         <div className="col-md-9">
           <div className="p-4">
-
-            {activeSection === "dashboard" && <Ordinance/> }
-
+            {activeSection === "dashboard" && <Ordinance />}
             {activeSection === "submission-input" && <SubmissionInput />}
-
             {activeSection === "submission-history" && <SubmissionHistory user={user} />}
-
-            {activeSection === "profile-management" && (
-              <ProfileSection user={user} onUpdateRooms={handleUpdateRooms} />
-            )}
-
-            {activeSection === "admin-dashboard" && <MainDashboard/>}
-
+            {activeSection === "profile-management" && <ProfileSection user={user} onUpdateRooms={handleUpdateRooms} />}
+            {activeSection === "admin-dashboard" && <MainDashboard />}
             {activeSection === "help-support" && <HelpSupport />}
           </div>
         </div>

@@ -1,23 +1,34 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { Modal, ListGroup } from "react-bootstrap";
-import { FileSpreadsheet, Users, ArrowLeft } from "lucide-react";
+import { FileSpreadsheet, Users } from "lucide-react";
 import { MetricsCard } from "../components/MetricsCard";
 import { ActionButton } from "../components/ActionButton";
-const SubmissionDetails = ({ submissionId }) => {
-  const [submission, setSubmission] = useState({ days: [] });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [showNationalityModal, setShowNationalityModal] = useState(false); // State for modal
-  const navigate = useNavigate();
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
-  // Function to calculate metrics and totals
-  const calculateMetrics = (submission) => {
-    if (!submission || !submission.days) {
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+
+const SubmissionDetails = ({ submissionId }) => {
+  const [submission, setSubmission] = useState({ days: [] }),
+    [loading, setLoading] = useState(true),
+    [error, setError] = useState(null),
+    [showNationalityModal, setShowNationalityModal] = useState(false);
+
+  useEffect(() => {
+    if (!submissionId) return;
+    setLoading(true);
+    axios
+      .get(`${API_BASE_URL}/api/submissions/details/${submissionId}`, {
+        headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` },
+      })
+      .then((res) => setSubmission(res.data))
+      .catch(() => setError("Failed to fetch submission details. Please try again."))
+      .finally(() => setLoading(false));
+  }, [submissionId]);
+
+  const calculateMetrics = (s) => {
+    if (!s || !s.days)
       return {
         totalCheckIns: 0,
         totalOvernight: 0,
@@ -26,108 +37,75 @@ const SubmissionDetails = ({ submissionId }) => {
         averageRoomOccupancyRate: 0,
         averageGuestsPerRoom: 0,
       };
-    }
-
-    const { days } = submission;
-    const numberOfRooms = submission.number_of_rooms || 1; // Fallback to 1 if not provided
-
-    // Calculate totals
-    const totalCheckIns = days.reduce((acc, day) => acc + (day.check_ins || 0), 0);
-    const totalOvernight = days.reduce((acc, day) => acc + (day.overnight || 0), 0);
-    const totalOccupied = days.reduce((acc, day) => acc + (day.occupied || 0), 0);
-
-    // Calculate averages 
-    const averageGuestNights = totalCheckIns > 0 ? (totalOvernight / totalCheckIns).toFixed(2) : 0;
-    const averageRoomOccupancyRate =
-      numberOfRooms > 0 ? ((totalOccupied / (numberOfRooms * days.length)) * 100).toFixed(2) : 0;
-    const averageGuestsPerRoom = totalOccupied > 0 ? (totalOvernight / totalOccupied).toFixed(2) : 0;
-
-    return {
-      totalCheckIns,
-      totalOvernight,
-      totalOccupied,
-      averageGuestNights,
-      averageRoomOccupancyRate,
-      averageGuestsPerRoom,
-    };
+    const { days } = s,
+      numberOfRooms = s.number_of_rooms || 1,
+      totalCheckIns = days.reduce((a, d) => a + (d.check_ins || 0), 0),
+      totalOvernight = days.reduce((a, d) => a + (d.overnight || 0), 0),
+      totalOccupied = days.reduce((a, d) => a + (d.occupied || 0), 0),
+      averageGuestNights = totalCheckIns > 0 ? (totalOvernight / totalCheckIns).toFixed(2) : 0,
+      averageRoomOccupancyRate = numberOfRooms > 0 ? ((totalOccupied / (numberOfRooms * days.length)) * 100).toFixed(2) : 0,
+      averageGuestsPerRoom = totalOccupied > 0 ? (totalOvernight / totalOccupied).toFixed(2) : 0;
+    return { totalCheckIns, totalOvernight, totalOccupied, averageGuestNights, averageRoomOccupancyRate, averageGuestsPerRoom };
   };
 
-  // Fetch submission details
-  useEffect(() => {
-    const fetchSubmissionDetails = async () => {
-      try {
-        const token = sessionStorage.getItem("token");
-        const response = await axios.get(
-          `${API_BASE_URL}/api/submissions/details/${submissionId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setSubmission(response.data);
-      } catch (err) {
-        console.error("Error fetching submission details:", err);
-        setError("Failed to fetch submission details. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
+  const nationalityCounts = React.useMemo(() => {
+    const counts = {};
+    submission.days?.forEach((day) =>
+      day.guests?.forEach((g) => {
+        if (g.isCheckIn) counts[g.nationality] = (counts[g.nationality] || 0) + 1;
+      })
+    );
+    return counts;
+  }, [submission]);
 
-    if (submissionId) {
-      fetchSubmissionDetails();
-    }
-  }, [submissionId]);
+  const sortedNationalities = React.useMemo(
+    () => Object.keys(nationalityCounts).sort((a, b) => a.localeCompare(b)),
+    [nationalityCounts]
+  );
 
-  // Calculate nationality counts
-  const calculateNationalityCounts = (submission) => {
-    if (!submission || !submission.days) {
-      return {};
-    }
-
-    const nationalityCounts = {};
-
-    // Loop through each day and guest to count nationalities for check-ins only
-    submission.days.forEach((day) => {
-      if (day.guests && day.guests.length > 0) {
-        day.guests.forEach((guest) => {
-          if (guest.isCheckIn) {
-            const nationality = guest.nationality;
-            nationalityCounts[nationality] = (nationalityCounts[nationality] || 0) + 1;
-          }
-        });
-      }
-    });
-
-    console.log("Nationality Counts:", nationalityCounts); // Debugging
-    return nationalityCounts;
+  const exportToExcel = () => {
+    const data = [
+      ["Day", "Check Ins", "Overnight", "Occupied", "Room Number", "Gender", "Age", "Status", "Nationality"],
+      ...submission.days.flatMap((day) =>
+        day.guests?.length
+          ? day.guests.map((guest) => [
+              day.day,
+              day.check_ins || 0,
+              day.overnight || 0,
+              day.occupied || 0,
+              guest.room_number,
+              guest.gender,
+              guest.age,
+              guest.status,
+              guest.nationality,
+            ])
+          : [[day.day, day.check_ins || 0, day.overnight || 0, day.occupied || 0, "", "", "", "", ""]]
+      ),
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(data),
+      wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Submission Details");
+    saveAs(
+      new Blob([XLSX.write(wb, { bookType: "xlsx", type: "array" })], { type: "application/octet-stream" }),
+      `Submission_Details_${submission.month}_${submission.year}.xlsx`
+    );
   };
 
-  // Sort nationalities alphabetically
-  const getSortedNationalities = (nationalityCounts) => {
-    return Object.keys(nationalityCounts).sort((a, b) => a.localeCompare(b));
+  const exportNationalityCountsToExcel = () => {
+    const data = [["Nationality", "Count"], ...sortedNationalities.map((n) => [n, nationalityCounts[n]])],
+      ws = XLSX.utils.aoa_to_sheet(data),
+      wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Nationality Counts");
+    saveAs(
+      new Blob([XLSX.write(wb, { bookType: "xlsx", type: "array" })], { type: "application/octet-stream" }),
+      `Nationality_Counts_Submission_${submissionId}.xlsx`
+    );
   };
 
-  // Calculate nationality counts
-  const nationalityCounts = calculateNationalityCounts(submission);
-  console.log("Nationality Counts:", nationalityCounts); // Debugging
+  if (loading) return <p>Loading submission details...</p>;
+  if (error) return <p className="text-danger">{error}</p>;
+  if (!submission || !submission.days) return <p>No submission details found.</p>;
 
-  // Sort nationalities alphabetically
-  const sortedNationalities = getSortedNationalities(nationalityCounts);
-  console.log("Sorted Nationalities:", sortedNationalities); // Debugging
-
-  // Loading state
-  if (loading) {
-    return <p>Loading submission details...</p>;
-  }
-
-  // Error state
-  if (error) {
-    return <p className="text-danger">{error}</p>;
-  }
-
-  // No data state
-  if (!submission || !submission.days) {
-    return <p>No submission details found.</p>;
-  }
-
-  // Calculate metrics and totals
   const {
     totalCheckIns,
     totalOvernight,
@@ -136,83 +114,6 @@ const SubmissionDetails = ({ submissionId }) => {
     averageRoomOccupancyRate,
     averageGuestsPerRoom,
   } = calculateMetrics(submission);
-
-  // Export submission details to Excel
-  const exportToExcel = (submission) => {
-    // Prepare data for the Excel sheet
-    const data = [];
-
-    // Add headers
-    data.push([
-      "Day",
-      "Check Ins",
-      "Overnight",
-      "Occupied",
-      "Room Number",
-      "Gender",
-      "Age",
-      "Status",
-      "Nationality",
-    ]);
-
-    // Add rows for each day
-    submission.days.forEach((day) => {
-      if (day.guests && day.guests.length > 0) {
-        day.guests.forEach((guest) => {
-          data.push([
-            day.day,
-            day.check_ins || 0,
-            day.overnight || 0,
-            day.occupied || 0,
-            guest.room_number,
-            guest.gender,
-            guest.age,
-            guest.status,
-            guest.nationality,
-          ]);
-        });
-      } else {
-        data.push([day.day, day.check_ins || 0, day.overnight || 0, day.occupied || 0, "", "", "", "", ""]);
-      }
-    });
-
-    // Create a worksheet
-    const worksheet = XLSX.utils.aoa_to_sheet(data);
-
-    // Create a workbook
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Submission Details");
-
-    // Generate Excel file
-    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
-
-    // Download the file
-    saveAs(blob, `Submission_Details_${submission.month}_${submission.year}.xlsx`);
-  };
-
-  // Export nationality counts to Excel
-  const exportNationalityCountsToExcel = () => {
-    // Prepare data for Excel
-    const data = [["Nationality", "Count"]];
-    sortedNationalities.forEach((nationality) => {
-      data.push([nationality, nationalityCounts[nationality]]);
-    });
-
-    // Create a worksheet
-    const worksheet = XLSX.utils.aoa_to_sheet(data);
-
-    // Create a workbook
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Nationality Counts");
-
-    // Generate Excel file
-    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
-
-    // Download the file
-    saveAs(blob, `Nationality_Counts_Submission_${submissionId}.xlsx`);
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -236,7 +137,7 @@ const SubmissionDetails = ({ submissionId }) => {
         </div>
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-3 mb-8">
-          <ActionButton onClick={() => exportToExcel(submission)}>
+          <ActionButton onClick={exportToExcel}>
             <FileSpreadsheet className="w-4 h-4 inline mr-2" />
             Export to Excel
           </ActionButton>
@@ -257,7 +158,7 @@ const SubmissionDetails = ({ submissionId }) => {
           <MetricsCard title="Total No. of Rooms Occupied" value={totalOccupied} />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <MetricsCard title="Ave. Guest-Nights" value={`${averageGuestNights}`} />
+          <MetricsCard title="Ave. Guest-Nights" value={averageGuestNights} />
           <MetricsCard title="Ave. Room Occupancy Rate" value={`${averageRoomOccupancyRate}%`} />
           <MetricsCard title="Ave. Guests per Room" value={averageGuestsPerRoom} />
         </div>
@@ -268,11 +169,11 @@ const SubmissionDetails = ({ submissionId }) => {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Day</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check Ins</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Overnight</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Occupied</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guests</th>
+                  {["Day", "Check Ins", "Overnight", "Occupied", "Guests"].map((h) => (
+                    <th key={h} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -283,10 +184,10 @@ const SubmissionDetails = ({ submissionId }) => {
                     <td className="px-6 py-4 whitespace-nowrap">{day.overnight || 0}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{day.occupied || 0}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {day.guests && day.guests.length > 0 ? (
+                      {day.guests?.length > 0 ? (
                         <ul className="list-none space-y-1">
-                          {day.guests.map((guest, index) => (
-                            <li key={index} className="text-sm text-gray-600 whitespace-nowrap">
+                          {day.guests.map((guest, i) => (
+                            <li key={i} className="text-sm text-gray-600 whitespace-nowrap">
                               Room {guest.room_number}, {guest.gender}, {guest.age}, {guest.status}, {guest.nationality}
                             </li>
                           ))}
@@ -301,7 +202,6 @@ const SubmissionDetails = ({ submissionId }) => {
             </table>
           </div>
         </div>
-        
         {/* Nationality Modal */}
         <Modal show={showNationalityModal} onHide={() => setShowNationalityModal(false)}>
           <Modal.Header closeButton>
@@ -327,4 +227,5 @@ const SubmissionDetails = ({ submissionId }) => {
     </div>
   );
 };
+
 export default SubmissionDetails;

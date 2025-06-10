@@ -1,4 +1,4 @@
-import React from "react";
+
 import { Modal } from "react-bootstrap";
 import SubmissionDetails from "../pages/SubmissionDetails"
 

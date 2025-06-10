@@ -1,11 +1,17 @@
-import React from "react";
+import { useMemo, useCallback } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 const LineChartComponent = ({ monthlyCheckIns, selectedYear, formatMonth }) => {
-  // Custom Tooltip to display month, actual arrivals, and prediction
-  const CustomTooltip = ({ active, payload, label }) => {
+  // Memoize predicted data to avoid filtering on every render
+  const predictedData = useMemo(
+    () => monthlyCheckIns.filter((d) => d.isPredicted),
+    [monthlyCheckIns]
+  );
+
+  // Memoize CustomTooltip to avoid recreation
+  const CustomTooltip = useCallback(({ active, payload, label }) => {
     if (active && payload && payload.length) {
-      const month = formatMonth(label); // Format the month
+      const month = formatMonth(label);
       const actualArrivals = payload.find((entry) => entry.name === "Actual Arrivals")?.value;
       const predictedArrivals = payload.find((entry) => entry.name === "Prediction of Arrivals")?.value;
 
@@ -26,7 +32,7 @@ const LineChartComponent = ({ monthlyCheckIns, selectedYear, formatMonth }) => {
       );
     }
     return null;
-  };
+  }, [formatMonth]);
 
   return (
     <div>
@@ -94,7 +100,7 @@ const LineChartComponent = ({ monthlyCheckIns, selectedYear, formatMonth }) => {
               strokeOpacity={0.8}
               dot={false}
               strokeWidth={2}
-              data={monthlyCheckIns.filter((d) => d.isPredicted)}
+              data={predictedData}
             />
           )}
         </LineChart>

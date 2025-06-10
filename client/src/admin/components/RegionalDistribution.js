@@ -1,5 +1,4 @@
-// src/admin/components/RegionalDistribution.js
-import React from "react";
+
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import processNationalityCounts from "../utils/processNationalityCounts";

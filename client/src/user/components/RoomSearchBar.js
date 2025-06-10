@@ -1,35 +1,27 @@
-import React, { useState } from "react";
+import { useState } from "react";
 
 const RoomSearchBar = ({ onSearch }) => {
   const [roomNumber, setRoomNumber] = useState("");
 
   const handleSearch = (e) => {
     e.preventDefault();
-    if (roomNumber > 0) {
-      onSearch(roomNumber);
-    } else {
-      alert("Please enter a valid positive room number.");
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const value = e.target.value;
-    // Allow only positive integers
-    if (/^\d*$/.test(value)) {
-      setRoomNumber(value);
-    }
+    const num = parseInt(roomNumber, 10);
+    if (num > 0) onSearch(num);
+    else alert("Please enter a valid positive room number.");
   };
 
   return (
     <form onSubmit={handleSearch} className="mb-4">
-        <label>Search Room</label>
+      <label>Search Room</label>
       <div className="input-group">
         <input
           type="text"
           className="form-control"
           placeholder="Enter Room Number"
           value={roomNumber}
-          onChange={handleInputChange}
+          onChange={(e) =>
+            /^\d*$/.test(e.target.value) && setRoomNumber(e.target.value)
+          }
           style={{
             border: "1px solid #52B3D0", // cyan-400 border
             borderRadius: "8px 0 0 8px",

@@ -1,108 +1,59 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import nationalities from "./Nationality";
 
 const GuestModal = ({
-  day, 
-  room, 
-  onClose, 
-  onSave, 
-  onRemoveAllGuests, 
-  initialData, 
-  disabled, 
-  isCurrentMonth, 
-  hasRoomConflict, 
+  day,
+  room,
+  onClose,
+  onSave,
+  onRemoveAllGuests,
+  initialData,
+  disabled,
+  hasRoomConflict,
   occupiedRooms,
-  selectedYear, // Add this
-  selectedMonth // Add this
- }) => {
+  selectedYear,
+  selectedMonth
+}) => {
   const [lengthOfStay, setLengthOfStay] = useState(initialData?.lengthOfStay?.toString() || "");
   const [guests, setGuests] = useState(initialData?.guests || []);
-  const [isCheckIn, setIsCheckIn] = useState(initialData?.isCheckIn || true);
   const [error, setError] = useState("");
 
-// Add this to the handleSave function in GuestModal.js
-// In GuestModal.js, update the handleSave function to:
-const handleSave = () => {
-  if (guests.length === 0) {
-    setError("Please add at least one guest before saving.");
-    return;
-  }
+  const handleSave = () => {
+    if (!guests.length) return setError("Please add at least one guest before saving.");
+    if (guests.some(g => !g.age || isNaN(g.age) || parseInt(g.age) <= 0))
+      return setError("Please enter a valid age for all guests.");
+    if (!lengthOfStay || isNaN(lengthOfStay) || parseInt(lengthOfStay) <= 0)
+      return setError("Please enter a valid length of stay.");
 
-  if (guests.some((guest) => !guest.age || isNaN(guest.age) || parseInt(guest.age) <= 0)) {
-    setError("Please enter a valid age for all guests.");
-    return;
-  }
+    const startDate = new Date(selectedYear, selectedMonth - 1, day);
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + parseInt(lengthOfStay) - 1);
 
-  if (!lengthOfStay || isNaN(lengthOfStay) || parseInt(lengthOfStay) <= 0) {
-    setError("Please enter a valid length of stay.");
-    return;
-  }
-
-  // Calculate the end date
-  const startDate = new Date(selectedYear, selectedMonth - 1, day);
-  const endDate = new Date(startDate);
-  endDate.setDate(startDate.getDate() + parseInt(lengthOfStay) - 1);
-
-  // Check if the stay crosses year boundaries
-  if (endDate.getFullYear() !== startDate.getFullYear()) {
-    const confirmCrossYear = window.confirm(
-      `This stay crosses into the next year (ending ${endDate.toLocaleDateString()}). Continue?`
-    );
-    if (!confirmCrossYear) return;
-  }
-  // Check if the stay crosses month boundaries
-  else if (endDate.getMonth() !== startDate.getMonth()) {
-    const confirmCrossMonth = window.confirm(
-      `This stay crosses into ${endDate.toLocaleString('default', { month: 'long' })}. Continue?`
-    );
-    if (!confirmCrossMonth) return;
-  }
-
-  setError("");
-  onSave(day, room, {
-    guests: guests.map((guest) => ({ ...guest, roomNumber: room })),
-    lengthOfStay: parseInt(lengthOfStay),
-    isCheckIn,
-  });
-  onClose();
-};
-
-  const handleAddGuest = () => {
-    setGuests([
-      ...guests,
-      { gender: "Male", age: "", status: "Single", nationality: "Philippines" },
-    ]);
-  };
-
-  const handleRemoveGuest = (index) => {
-    setGuests(guests.filter((_, i) => i !== index));
-  };
-
-  const handleUpdateGuest = (index, field, value) => {
-    const updatedGuests = [...guests];
-    if (field === "age") {
-      if (/^\d*$/.test(value)) { // Only allow digits
-        updatedGuests[index][field] = value;
-      }
-    } else {
-      updatedGuests[index][field] = value;
+    if (endDate.getFullYear() !== startDate.getFullYear()) {
+      if (!window.confirm(`This stay crosses into the next year (ending ${endDate.toLocaleDateString()}). Continue?`)) return;
+    } else if (endDate.getMonth() !== startDate.getMonth()) {
+      if (!window.confirm(`This stay crosses into ${endDate.toLocaleString('default', { month: 'long' })}. Continue?`)) return;
     }
-    setGuests(updatedGuests);
-  };
 
-  const handleLengthOfStayChange = (e) => {
-    const value = e.target.value;
-    if (/^\d*$/.test(value)) { // Only allow digits
-      setLengthOfStay(value);
-    }
-  };
-
-  const handleRemoveAll = () => {
-    onRemoveAllGuests(day, room);
+    setError("");
+    onSave(day, room, {
+      guests: guests.map(g => ({ ...g, roomNumber: room })),
+      lengthOfStay: parseInt(lengthOfStay),
+    });
     onClose();
   };
 
+  const handleAddGuest = () =>
+    setGuests([...guests, { gender: "Male", age: "", status: "Single", nationality: "Philippines" }]);
+  const handleRemoveGuest = idx => setGuests(guests.filter((_, i) => i !== idx));
+  const handleUpdateGuest = (idx, field, value) => {
+    setGuests(guests.map((g, i) => i === idx ? { ...g, [field]: field === "age" && !/^\d*$/.test(value) ? g.age : value } : g));
+  };
+  const handleLengthOfStayChange = e => /^\d*$/.test(e.target.value) && setLengthOfStay(e.target.value);
+  const handleRemoveAll = () => { onRemoveAllGuests(day, room); onClose(); };
+
   const isEditingExisting = initialData && initialData.day === day && initialData.room === room;
+  const showConflict = lengthOfStay && hasRoomConflict && hasRoomConflict(day, room, parseInt(lengthOfStay), occupiedRooms);
 
   return (
     <div className="modal" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
@@ -113,29 +64,6 @@ const handleSave = () => {
           </div>
           <div className="modal-body">
             {error && <div className="alert alert-danger">{error}</div>}
-
-            {/* Check In Prompt */}
-            <div className="form-group">
-              <label>Guest Checked In Today?</label>
-              <div className="d-flex gap-2">
-                <button
-                  onClick={() => setIsCheckIn(true)}
-                  className={`btn ${isCheckIn ? "btn-warning" : "btn-light"}`}
-                  disabled={disabled}
-                >
-                  Yes
-                </button>
-                <button
-                  onClick={() => setIsCheckIn(false)}
-                  className={`btn ${!isCheckIn ? "btn-success" : "btn-light"}`}
-                  disabled={disabled}
-                >
-                  No
-                </button>
-              </div>
-            </div>
-
-            {/* Length of Stay */}
             <div className="form-group">
               <label>Length of Overnight Stay</label>
               <input
@@ -147,36 +75,18 @@ const handleSave = () => {
                 disabled={disabled}
               />
             </div>
-
-            {/* Add this warning message */}
-            {lengthOfStay && hasRoomConflict && 
-              hasRoomConflict(day, room, parseInt(lengthOfStay), occupiedRooms) ? (
+            {lengthOfStay && hasRoomConflict && showConflict ? (
               <div className="alert alert-warning mt-2">
-                {isEditingExisting ? 
-                  "⚠️ Occupied" :
-                  "⚠️ This Length of Overnight Stay overlaps with existing occupied rooms"}
+                {isEditingExisting ? "⚠️ Occupied" : "⚠️ This Length of Overnight Stay overlaps with existing occupied rooms"}
               </div>
             ) : (
-              !isEditingExisting && (
-                <div className="alert alert-info mt-2">
-                  ✅ These dates are available for booking
-                </div>
-              )
+              !isEditingExisting && <div className="alert alert-info mt-2">✅ These dates are available for booking</div>
             )}
-
-            {/* Guest Information */}
-            {guests.map((guest, index) => (
-              <div key={index} className="mb-3">
+            {guests.map((guest, idx) => (
+              <div key={idx} className="mb-3">
                 <div className="row">
                   <div className="col">
-                    <select
-                      className="form-control"
-                      value={guest.gender}
-                      onChange={(e) =>
-                        handleUpdateGuest(index, "gender", e.target.value)
-                      }
-                      disabled={disabled}
-                    >
+                    <select className="form-control" value={guest.gender} onChange={e => handleUpdateGuest(idx, "gender", e.target.value)} disabled={disabled}>
                       <option>Male</option>
                       <option>Female</option>
                     </select>
@@ -187,9 +97,7 @@ const handleSave = () => {
                       className="form-control"
                       placeholder="Age"
                       value={guest.age}
-                      onChange={(e) =>
-                        handleUpdateGuest(index, "age", e.target.value)
-                      }
+                      onChange={e => handleUpdateGuest(idx, "age", e.target.value)}
                       min="1"
                       disabled={disabled}
                     />
@@ -197,58 +105,26 @@ const handleSave = () => {
                 </div>
                 <div className="row mt-2">
                   <div className="col">
-                    <select
-                      className="form-control"
-                      value={guest.status}
-                      onChange={(e) =>
-                        handleUpdateGuest(index, "status", e.target.value)
-                      }
-                      disabled={disabled}
-                    >
+                    <select className="form-control" value={guest.status} onChange={e => handleUpdateGuest(idx, "status", e.target.value)} disabled={disabled}>
                       <option>Single</option>
                       <option>Married</option>
                     </select>
                   </div>
                   <div className="col">
-                    <select
-                      className="form-control"
-                      value={guest.nationality}
-                      onChange={(e) =>
-                        handleUpdateGuest(index, "nationality", e.target.value)
-                      }
-                      disabled={disabled}
-                    >
-                      {nationalities.map((nationality) => (
-                        <option key={nationality} value={nationality}>
-                          {nationality}
-                        </option>
-                      ))}
+                    <select className="form-control" value={guest.nationality} onChange={e => handleUpdateGuest(idx, "nationality", e.target.value)} disabled={disabled}>
+                      {nationalities.map(n => <option key={n} value={n}>{n}</option>)}
                     </select>
                   </div>
                 </div>
-                <button
-                  className="btn btn-danger btn-sm mt-2"
-                  onClick={() => handleRemoveGuest(index)}
-                  disabled={disabled}
-                >
-                  Remove
-                </button>
+                <button className="btn btn-danger btn-sm mt-2" onClick={() => handleRemoveGuest(idx)} disabled={disabled}>Remove</button>
               </div>
             ))}
-            <button className="btn btn-primary" onClick={handleAddGuest} disabled={disabled}>
-              Add Guest
-            </button>
+            <button className="btn btn-primary" onClick={handleAddGuest} disabled={disabled}>Add Guest</button>
           </div>
           <div className="modal-footer">
-            <button className="btn btn-danger" onClick={handleRemoveAll} disabled={disabled}>
-              Remove All Guest Data
-            </button>
-            <button className="btn btn-secondary" onClick={onClose}>
-              Cancel
-            </button>
-            <button className="btn btn-primary" onClick={handleSave} disabled={disabled || guests.length === 0}>
-              Save
-            </button>
+            <button className="btn btn-danger" onClick={handleRemoveAll} disabled={disabled}>Remove All Guest Data</button>
+            <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+            <button className="btn btn-primary" onClick={handleSave} disabled={disabled || !guests.length}>Save</button>
           </div>
         </div>
       </div>

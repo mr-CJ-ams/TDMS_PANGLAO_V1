@@ -6,10 +6,9 @@ const MonthlyGrid = ({
   daysInMonth,
   numberOfRooms,
   onCellClick,
-  isRoomOccupied,
   getRoomColor,
   calculateDailyTotals,
-  disabled, // Add disabled prop
+  disabled,
 }) => {
   const rooms = Array.from({ length: numberOfRooms }, (_, i) => i + 1);
 
@@ -18,10 +17,10 @@ const MonthlyGrid = ({
       <table
         className="table text-center"
         style={{
-          minWidth: "900px",
+          minWidth: 900,
           borderCollapse: "separate",
           borderSpacing: "0 8px",
-          backgroundColor: "#f0f8ff", // Light ocean blue background
+          backgroundColor: "#f0f8ff",
         }}
       >
         <thead>
@@ -31,10 +30,10 @@ const MonthlyGrid = ({
                 position: "sticky",
                 left: 0,
                 zIndex: 2,
-                backgroundColor: "#06b6d4", // cyan-500
-                color: "white",
+                backgroundColor: "#06b6d4",
+                color: "#fff",
                 fontWeight: "bold",
-                padding: "12px",
+                padding: 12,
                 borderRadius: "12px 0 0 12px",
               }}
             >
@@ -45,50 +44,33 @@ const MonthlyGrid = ({
                 key={room}
                 data-room={room}
                 style={{
-                  backgroundColor: "#06b6d4", // cyan-500
-                  color: "white",
+                  backgroundColor: "#06b6d4",
+                  color: "#fff",
                   fontWeight: "bold",
-                  padding: "12px",
+                  padding: 12,
                 }}
               >
                 Room {room}
               </th>
             ))}
-            <th
-              style={{
-                backgroundColor: "#06b6d4", // cyan-500
-                color: "white",
-                fontWeight: "bold",
-                padding: "12px",
-              }}
-            >
-              Check In
-            </th>
-            <th
-              style={{
-                backgroundColor: "#06b6d4", // cyan-500
-                color: "white",
-                fontWeight: "bold",
-                padding: "12px",
-              }}
-            >
-              Overnight
-            </th>
-            <th
-              style={{
-                backgroundColor: "#06b6d4", // cyan-500
-                color: "white",
-                fontWeight: "bold",
-                padding: "12px",
-                borderRadius: "0 12px 12px 0",
-              }}
-            >
-              Occupied
-            </th>
+            {["Check In", "Overnight", "Occupied"].map((label, i) => (
+              <th
+                key={label}
+                style={{
+                  backgroundColor: "#06b6d4",
+                  color: "#fff",
+                  fontWeight: "bold",
+                  padding: 12,
+                  borderRadius: i === 2 ? "0 12px 12px 0" : undefined,
+                }}
+              >
+                {label}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
-          {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day, index) => {
+          {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
             const totals = calculateDailyTotals(day);
             return (
               <tr key={day}>
@@ -97,9 +79,9 @@ const MonthlyGrid = ({
                     position: "sticky",
                     left: 0,
                     zIndex: 1,
-                    backgroundColor: "#fffaf0", // Sandy beige
+                    backgroundColor: "#fffaf0",
                     fontWeight: "bold",
-                    padding: "12px",
+                    padding: 12,
                     borderRadius: "12px 0 0 12px",
                   }}
                 >
@@ -108,65 +90,49 @@ const MonthlyGrid = ({
                 {rooms.map((room) => (
                   <td key={`${day}-${room}`}>
                     <button
-                      onClick={() => !disabled && onCellClick(day, room)} // Disable onClick when disabled
+                      onClick={() => !disabled && onCellClick(day, room)}
                       className="btn w-100 d-flex align-items-center justify-content-center gap-2 px-2 py-1 border-0"
                       style={{
                         backgroundColor: getRoomColor(day, room),
-                        borderRadius: "12px",
-                        fontSize: "14px",
+                        borderRadius: 12,
+                        fontSize: 14,
                         color: "#333",
                         transition: "all 0.3s ease",
-                        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-                        cursor: disabled ? "not-allowed" : "pointer", // Disable cursor when disabled
-                        opacity: disabled ? 0.6 : 1, // Reduce opacity when disabled
+                        boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+                        cursor: disabled ? "not-allowed" : "pointer",
+                        opacity: disabled ? 0.6 : 1,
                       }}
                       onMouseEnter={(e) => {
                         if (!disabled) {
                           e.currentTarget.style.transform = "scale(1.05)";
-                          e.currentTarget.style.boxShadow = "0 6px 8px rgba(0, 0, 0, 0.15)";
+                          e.currentTarget.style.boxShadow = "0 6px 8px rgba(0,0,0,0.15)";
                         }
                       }}
                       onMouseLeave={(e) => {
                         if (!disabled) {
                           e.currentTarget.style.transform = "scale(1)";
-                          e.currentTarget.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.1)";
+                          e.currentTarget.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
                         }
                       }}
-                      disabled={disabled} // Disable the button when disabled is true
+                      disabled={disabled}
                     >
-                      <Hotel size={16} />
-                      Room {room}
+                      <Hotel size={16} />Room {room}
                     </button>
                   </td>
                 ))}
-                <td
-                  style={{
-                    backgroundColor: "#fffaf0", // Sandy beige
-                    fontWeight: "bold",
-                    padding: "12px",
-                  }}
-                >
-                  <strong>{totals.checkIns}</strong>
-                </td>
-                <td
-                  style={{
-                    backgroundColor: "#fffaf0", // Sandy beige
-                    fontWeight: "bold",
-                    padding: "12px",
-                  }}
-                >
-                  <strong>{totals.overnight}</strong>
-                </td>
-                <td
-                  style={{
-                    backgroundColor: "#fffaf0", // Sandy beige
-                    fontWeight: "bold",
-                    padding: "12px",
-                    borderRadius: "0 12px 12px 0",
-                  }}
-                >
-                  <strong>{totals.occupied}</strong>
-                </td>
+                {[totals.checkIns, totals.overnight, totals.occupied].map((val, i) => (
+                  <td
+                    key={i}
+                    style={{
+                      backgroundColor: "#fffaf0",
+                      fontWeight: "bold",
+                      padding: 12,
+                      borderRadius: i === 2 ? "0 12px 12px 0" : undefined,
+                    }}
+                  >
+                    <strong>{val}</strong>
+                  </td>
+                ))}
               </tr>
             );
           })}
