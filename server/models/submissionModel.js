@@ -1,0 +1,226 @@
+const pool = require("../db");
+
+class SubmissionModel {
+  // Helper function to calculate the deadline using native Date
+  static calculateDeadline(month, year) {
+    const nextMonth = month === 12 ? 1 : month + 1;
+    const nextYear = month === 12 ? year + 1 : year;
+    return new Date(Date.UTC(nextYear, nextMonth - 1, 10, 23, 59, 59));
+  }
+
+  // Helper function to get current time in Philippines
+  static getPhilippinesTime() {
+    const phTime = new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" });
+    return new Date(phTime);
+  }
+
+  static async getUserRoomCount(userId) {
+    const result = await pool.query(
+      "SELECT number_of_rooms FROM users WHERE user_id = $1",
+      [userId]
+    );
+    return result.rows[0].number_of_rooms;
+  }
+
+  static async createSubmission(client, submissionData) {
+    const {
+      user_id, month, year, deadline, currentTime, isLate, penaltyAmount,
+      averageGuestNights, averageRoomOccupancyRate, averageGuestsPerRoom, numberOfRooms
+    } = submissionData;
+
+    const result = await client.query(
+      `INSERT INTO submissions 
+       (user_id, month, year, deadline, submitted_at, is_late, penalty_amount,
+        average_guest_nights, average_room_occupancy_rate, average_guests_per_room, number_of_rooms)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       RETURNING submission_id`,
+      [
+        user_id, month, year, deadline.toISOString(), currentTime.toISOString(),
+        isLate, penaltyAmount, averageGuestNights, averageRoomOccupancyRate,
+        averageGuestsPerRoom, numberOfRooms
+      ]
+    );
+    return result.rows[0].submission_id;
+  }
+
+  static async createDailyMetric(client, submissionId, dayData) {
+    const result = await client.query(
+      `INSERT INTO daily_metrics 
+       (submission_id, day, check_ins, overnight, occupied)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING metric_id`,
+      [submissionId, dayData.day, dayData.checkIns, dayData.overnight, dayData.occupied]
+    );
+    return result.rows[0].metric_id;
+  }
+
+  static async createGuest(client, metricId, guest) {
+    await client.query(
+      `INSERT INTO guests 
+       (metric_id, room_number, gender, age, status, nationality, is_check_in)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        metricId,
+        guest.roomNumber,
+        guest.gender,
+        guest.age,
+        guest.status,
+        guest.nationality,
+        guest.isCheckIn,
+      ]
+    );
+  }
+
+  static async getSubmissionHistory(userId) {
+    const result = await pool.query(
+      `SELECT s.submission_id, s.month, s.year, s.submitted_at, s.is_late, s.penalty,
+              s.average_guest_nights, s.average_room_occupancy_rate, s.average_guests_per_room
+       FROM submissions s
+       WHERE s.user_id = $1
+       ORDER BY s.submitted_at DESC`,
+      [userId]
+    );
+    return result.rows;
+  }
+
+  static async getSubmissionDetails(submissionId) {
+    const result = await pool.query(
+      `SELECT s.submission_id, s.month, s.year, s.submitted_at, s.is_late, s.penalty,
+              s.average_guest_nights, s.average_room_occupancy_rate, s.average_guests_per_room,
+              s.number_of_rooms,
+              COALESCE(json_agg(json_build_object(
+                'day', dm.day,
+                'check_ins', dm.check_ins,
+                'overnight', dm.overnight,
+                'occupied', dm.occupied,
+                'guests', COALESCE((SELECT json_agg(json_build_object(
+                  'room_number', g.room_number,
+                  'gender', g.gender,
+                  'age', g.age,
+                  'status', g.status,
+                  'nationality', g.nationality,
+                  'isCheckIn', g.is_check_in
+                )) FROM guests g WHERE g.metric_id = dm.metric_id), '[]'::json)
+              )) FILTER (WHERE dm.metric_id IS NOT NULL), '[]'::json) AS days
+       FROM submissions s
+       LEFT JOIN daily_metrics dm ON s.submission_id = dm.submission_id
+       WHERE s.submission_id = $1
+       GROUP BY s.submission_id`,
+      [submissionId]
+    );
+    return result.rows[0];
+  }
+
+  static async updatePenaltyStatus(submissionId, penalty) {
+    await pool.query(
+      `UPDATE submissions SET penalty = $1 WHERE submission_id = $2`,
+      [penalty, submissionId]
+    );
+  }
+
+  static async deleteSubmission(client, submissionId) {
+    await client.query(
+      `DELETE FROM guests
+       WHERE metric_id IN (
+         SELECT metric_id FROM daily_metrics WHERE submission_id = $1
+       )`,
+      [submissionId]
+    );
+    await client.query(
+      `DELETE FROM daily_metrics WHERE submission_id = $1`,
+      [submissionId]
+    );
+    await client.query(
+      `DELETE FROM submissions WHERE submission_id = $1`,
+      [submissionId]
+    );
+  }
+
+  static async checkSubmissionExists(userId, month, year) {
+    const result = await pool.query(
+      `SELECT * FROM submissions WHERE user_id = $1 AND month = $2 AND year = $3`,
+      [userId, month, year]
+    );
+    return result.rows.length > 0;
+  }
+
+  static async getSubmissionByDate(userId, month, year) {
+    const result = await pool.query(
+      `SELECT * FROM submissions WHERE user_id = $1 AND month = $2 AND year = $3`,
+      [userId, month, year]
+    );
+    return result.rows[0] || null;
+  }
+
+  // Draft related methods
+  static async saveDraft(client, userId, month, year, data) {
+    const cleanData = data.map(item => ({
+      day: Number(item.day) || 0,
+      room: Number(item.room) || 0,
+      guests: Array.isArray(item.guests) ? item.guests.map(guest => ({
+        gender: String(guest.gender || ''),
+        age: Number(guest.age) || 0,
+        status: String(guest.status || ''),
+        nationality: String(guest.nationality || ''),
+        isCheckIn: Boolean(guest.isCheckIn)
+      })) : [],
+      lengthOfStay: Number(item.lengthOfStay) || 0,
+      isCheckIn: Boolean(item.isCheckIn)
+    }));
+
+    await client.query(
+      `INSERT INTO draft_submissions (user_id, month, year, data)
+       VALUES ($1, $2, $3, $4::jsonb)
+       ON CONFLICT (user_id, month, year) 
+       DO UPDATE SET data = $4::jsonb, last_updated = CURRENT_TIMESTAMP`,
+      [userId, month, year, JSON.stringify(cleanData)]
+    );
+  }
+
+  static async getDraft(userId, month, year) {
+    const result = await pool.query(
+      `SELECT data FROM draft_submissions 
+       WHERE user_id = $1 AND month = $2 AND year = $3`,
+      [userId, month, year]
+    );
+    return result.rows[0]?.data || [];
+  }
+
+  static async deleteDraft(userId, month, year) {
+    await pool.query(
+      `DELETE FROM draft_submissions 
+       WHERE user_id = $1 AND month = $2 AND year = $3`,
+      [userId, month, year]
+    );
+  }
+
+  static async getAllDrafts() {
+    const result = await pool.query(
+      `SELECT 
+         ds.draft_id, ds.user_id, ds.month, ds.year, 
+         ds.last_updated, u.company_name
+       FROM draft_submissions ds
+       JOIN users u ON ds.user_id = u.user_id
+       ORDER BY ds.last_updated DESC`
+    );
+    return result.rows;
+  }
+
+  static async getDraftDetails(draftId) {
+    const result = await pool.query(
+      `SELECT 
+         ds.data, ds.month, ds.year,
+         u.company_name, u.number_of_rooms
+       FROM draft_submissions ds
+       JOIN users u ON ds.user_id = u.user_id
+       WHERE ds.draft_id = $1`,
+      [draftId]
+    );
+    return result.rows[0];
+  }
+}
+// Export the pool along with the class
+module.exports = {
+  SubmissionModel,
+  pool
+};
