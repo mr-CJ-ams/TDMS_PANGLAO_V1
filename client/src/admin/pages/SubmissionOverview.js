@@ -30,7 +30,7 @@ const SubmissionOverview = ({
         setSubmissions(data.submissions); setTotal(data.total);
       } catch (err) { console.error("Error fetching submissions:", err); }
     })();
-  }, [filters, page, activeSection]);
+  }, [filters, page, activeSection, API_BASE_URL, setSubmissions]);
 
   const handleFilterChange = e => { setFilters(f => ({ ...f, [e.target.name]: e.target.value })); setPage(1); };
 

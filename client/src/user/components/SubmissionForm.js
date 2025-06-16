@@ -287,17 +287,32 @@ const SubmissionForm = () => {
     findRoomConflictAcrossMonths(startDay, room, lengthOfStay, currentOccupancies, monthlyData).hasConflict;
 
   function findRoomConflictAcrossMonths(startDay, room, lengthOfStay, currentOccupancies, allMonthlyData, currentStayId) {
-    let remainingDays = lengthOfStay, currentDay = startDay, currentMonth = selectedMonth, currentYear = selectedYear, daysInCurrentMonth = getDaysInMonth(currentMonth, currentYear);
+    let remainingDays = lengthOfStay;
+    let currentDay = startDay;
+    let currentMonth = selectedMonth;
+    let currentYear = selectedYear;
+    let daysInCurrentMonth = getDaysInMonth(currentMonth, currentYear);
+
+    const checkForConflict = (day, month, year) => {
+      const monthKey = `${year}-${month}`;
+      const monthData = month === selectedMonth && year === selectedYear ? currentOccupancies : allMonthlyData[monthKey] || [];
+      return monthData.some(occ =>
+        occ.room === room && occ.day >= day && occ.day <= day + Math.min(remainingDays, daysInCurrentMonth - day + 1) - 1 && 
+        (!currentStayId || occ.stayId !== currentStayId)
+      );
+    };
+
     while (remainingDays > 0) {
       const daysToCheck = Math.min(remainingDays, daysInCurrentMonth - currentDay + 1);
-      const monthKey = `${currentYear}-${currentMonth}`;
-      const monthData = currentMonth === selectedMonth && currentYear === selectedYear ? currentOccupancies : allMonthlyData[monthKey] || [];
-      const hasConflict = monthData.some(occ =>
-        occ.room === room && occ.day >= currentDay && occ.day <= currentDay + daysToCheck - 1 && (!currentStayId || occ.stayId !== currentStayId)
-      );
-      if (hasConflict) return { hasConflict: true, month: currentMonth, year: currentYear, day: currentDay };
-      remainingDays -= daysToCheck; currentDay = 1;
-      if (++currentMonth > 12) { currentMonth = 1; currentYear++; }
+      if (checkForConflict(currentDay, currentMonth, currentYear)) {
+        return { hasConflict: true, month: currentMonth, year: currentYear, day: currentDay };
+      }
+      remainingDays -= daysToCheck;
+      currentDay = 1;
+      if (++currentMonth > 12) {
+        currentMonth = 1;
+        currentYear++;
+      }
       daysInCurrentMonth = getDaysInMonth(currentMonth, currentYear);
     }
     return { hasConflict: false };
@@ -319,13 +334,18 @@ const SubmissionForm = () => {
 
   function addStayToMonthlyData(monthlyData, startDay, room, lengthOfStay, guests, isCheckIn, stayId, startMonth, startYear) {
     const updated = { ...monthlyData };
-    let remainingDays = lengthOfStay, currentDay = startDay, currentMonth = startMonth, currentYear = startYear, isFirstDay = true;
-    while (remainingDays > 0) {
-      const daysInCurrentMonth = getDaysInMonth(currentMonth, currentYear), daysToAdd = Math.min(remainingDays, daysInCurrentMonth - currentDay + 1);
-      const monthKey = `${currentYear}-${currentMonth}`, monthData = updated[monthKey] || [];
-      for (let day = currentDay; day < currentDay + daysToAdd; day++) {
+    let remainingDays = lengthOfStay;
+    let currentDay = startDay;
+    let currentMonth = startMonth;
+    let currentYear = startYear;
+    let isFirstDay = true;
+
+    const addDaysToMonth = (day, month, year, daysToAdd) => {
+      const monthKey = `${year}-${month}`;
+      const monthData = updated[monthKey] || [];
+      for (let d = day; d < day + daysToAdd; d++) {
         monthData.push({
-          day,
+          day: d,
           room,
           guests: guests.map(g => ({ ...g, isCheckIn: isFirstDay && isCheckIn })),
           lengthOfStay,
@@ -338,8 +358,18 @@ const SubmissionForm = () => {
         isFirstDay = false;
       }
       updated[monthKey] = monthData;
-      remainingDays -= daysToAdd; currentDay = 1;
-      if (++currentMonth > 12) { currentMonth = 1; currentYear++; }
+    };
+
+    while (remainingDays > 0) {
+      const daysInCurrentMonth = getDaysInMonth(currentMonth, currentYear);
+      const daysToAdd = Math.min(remainingDays, daysInCurrentMonth - currentDay + 1);
+      addDaysToMonth(currentDay, currentMonth, currentYear, daysToAdd);
+      remainingDays -= daysToAdd;
+      currentDay = 1;
+      if (++currentMonth > 12) {
+        currentMonth = 1;
+        currentYear++;
+      }
     }
     return updated;
   }
