@@ -6,7 +6,7 @@ import TourismLogo from "../components/img/Tourism_logo.png";
 import places from "../../components/places.json";
 import DolphinSpinner from "../components/DolphinSpinner";
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 const SIGNUP_TIMEOUT = 30000;
 const accommodationTypes = [
   { name: "Hotel", code: "HTL" }, { name: "Condotel", code: "CON" }, { name: "Serviced Residence", code: "SER" },

@@ -7,7 +7,7 @@ import GuestDemographics from "../components/GuestDemographics";
 import NationalityCounts from "../components/NationalityCounts";
 import RegionalDistribution from "../components/RegionalDistribution";
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 const predictedData2025 = [
   { month: 1, total_check_ins: 72807, isPredicted: true },
   { month: 2, total_check_ins: 71334, isPredicted: true },

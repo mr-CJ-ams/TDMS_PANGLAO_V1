@@ -7,7 +7,7 @@ import { FileSpreadsheet, Users } from "lucide-react";
 import { MetricsCard } from "../components/MetricsCard";
 import { ActionButton } from "../components/ActionButton";
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 const SubmissionDetails = ({ submissionId }) => {
   const [submission, setSubmission] = useState({ days: [] }),

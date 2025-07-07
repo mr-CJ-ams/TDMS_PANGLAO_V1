@@ -2,12 +2,12 @@
   "name": "client",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "dependencies": {
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@fortawesome/react-fontawesome": "^0.2.2",
     "axios": "^1.7.9",
     "bootstrap": "^5.3.3",
-    "cra-template": "1.2.0",
     "file-saver": "^2.0.5",
     "lucide-react": "^0.474.0",
     "moment-timezone": "^0.5.47",
@@ -17,39 +17,30 @@
     "react-dom": "^19.0.0",
     "react-icons": "^5.4.0",
     "react-router-dom": "^7.1.4",
-    "react-scripts": "5.0.1",
     "react-select": "^5.10.0",
     "react-toastify": "^11.0.3",
     "recharts": "^2.15.1",
     "xlsx": "^0.18.5"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0"
   },
   "devDependencies": {
+    "@types/node": "^24.0.10",
+    "@types/react": "^18.3.23",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.21",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react": "^7.34.1",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.6",
     "postcss": "^8.5.3",
-    "tailwindcss": "^4.1.7"
+    "tailwindcss": "^4.1.7",
+    "typescript": "^5.8.3",
+    "vite": "^5.2.0"
   }
 }

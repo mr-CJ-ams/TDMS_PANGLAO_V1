@@ -1,6 +1,14 @@
 import React from "react";
 
-const MonthYearSelector = ({ selectedMonth, selectedYear, onMonthChange, onYearChange }) => {
+// Add type annotations for props
+interface MonthYearSelectorProps {
+  selectedMonth: number;
+  selectedYear: number;
+  onMonthChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  onYearChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+}
+
+const MonthYearSelector = ({ selectedMonth, selectedYear, onMonthChange, onYearChange }: MonthYearSelectorProps) => {
   return (
     <div className="mt-4">
       <div className="row">

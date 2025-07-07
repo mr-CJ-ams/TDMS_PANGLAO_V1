@@ -1,5 +1,19 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import nationalities from "./Nationality";
+
+interface GuestModalProps {
+  day: number;
+  room: number;
+  onClose: () => void;
+  onSave: (day: number, room: number, data: any) => void;
+  onRemoveAllGuests: (day: number, room: number) => void;
+  initialData?: any;
+  disabled: boolean;
+  hasRoomConflict: (day: number, room: number, lengthOfStay: number, occupiedRooms: any[]) => boolean;
+  occupiedRooms: any[];
+  selectedYear: number;
+  selectedMonth: number;
+}
 
 const GuestModal = ({
   day,
@@ -13,7 +27,7 @@ const GuestModal = ({
   occupiedRooms,
   selectedYear,
   selectedMonth
-}) => {
+}: GuestModalProps) => {
   const [lengthOfStay, setLengthOfStay] = useState(initialData?.lengthOfStay?.toString() || "");
   const [guests, setGuests] = useState(initialData?.guests || []);
   const [isCheckIn] = useState(true);

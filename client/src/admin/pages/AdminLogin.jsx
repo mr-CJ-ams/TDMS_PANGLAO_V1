@@ -5,7 +5,7 @@ import { Eye, EyeOff, ShieldAlert } from "lucide-react";
 import TourismLogo from "../components/img/1738398998646-Tourism_logo.png";
 import DolphinSpinner from "../../user/components/DolphinSpinner";
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 const LOGIN_TIMEOUT = 30000;
 
 const AdminLogin = () => {

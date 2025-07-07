@@ -5,7 +5,7 @@ import { Eye, EyeOff, BarChart2 } from "lucide-react";
 import TourismLogo from "../components/img/Tourism_logo.png";
 import DolphinSpinner from "../components/DolphinSpinner";
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 const LOGIN_TIMEOUT = 30000;
 
 const Login = () => {

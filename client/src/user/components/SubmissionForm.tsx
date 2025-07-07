@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import MonthYearSelector from "./MonthYearSelector";
 import MonthlyGrid from "./MonthlyGrid";
@@ -7,25 +7,25 @@ import MetricsDisplay from "./MetricsDisplay";
 import SaveButton from "./SaveButton";
 import RoomSearchBar from "./RoomSearchBar";
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 const SubmissionForm = () => {
-  const [selectedDate, setSelectedDate] = useState(null),
-    [selectedRoom, setSelectedRoom] = useState(null),
+  const [selectedDate, setSelectedDate] = useState<number | null>(null),
+    [selectedRoom, setSelectedRoom] = useState<number | null>(null),
     [isModalOpen, setIsModalOpen] = useState(false),
-    [occupiedRooms, setOccupiedRooms] = useState([]),
-    [monthlyData, setMonthlyData] = useState({}),
+    [occupiedRooms, setOccupiedRooms] = useState<any[]>([]),
+    [monthlyData, setMonthlyData] = useState<any>({}),
     [isFormSaved, setIsFormSaved] = useState(false),
     [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1),
     [selectedYear, setSelectedYear] = useState(new Date().getFullYear()),
     [averageGuestNights, setAverageGuestNights] = useState("0"),
     [averageRoomOccupancyRate, setAverageRoomOccupancyRate] = useState("0"),
     [averageGuestsPerRoom, setAverageGuestsPerRoom] = useState("0"),
-    [user, setUser] = useState(null),
+    [user, setUser] = useState<any | null>(null),
     [numberOfRooms, setNumberOfRooms] = useState(0),
     [hasSubmitted, setHasSubmitted] = useState(false),
     [isLoading, setIsLoading] = useState(true);
-  const gridRef = useRef(null);
+  const gridRef = useRef<HTMLDivElement | null>(null);
 
   // Fetch user profile
   useEffect(() => {
@@ -68,8 +68,8 @@ const SubmissionForm = () => {
         ]);
         const serverData = Array.isArray(serverRes.data?.days) ? serverRes.data.days : [];
         const localMonthData = Array.isArray(localData[key]) ? localData[key] : [];
-        const getRoomKey = r => `${r.day}-${r.room}`;
-        const uniqueRooms = new Map();
+        const getRoomKey = (r: any) => `${r.day}-${r.room}`;
+        const uniqueRooms = new Map<string, any>();
         localMonthData.forEach(r => uniqueRooms.set(getRoomKey(r), r));
         serverData.forEach(r => uniqueRooms.set(getRoomKey(r), r));
         let mergedRooms = Array.from(uniqueRooms.values());
@@ -134,18 +134,18 @@ const SubmissionForm = () => {
   }, [monthlyData, user, selectedMonth, selectedYear, isLoading]);
 
   // Room search
-  const handleSearch = roomNumber => {
+  const handleSearch = (roomNumber: number) => {
     if (roomNumber > 0 && roomNumber <= numberOfRooms) {
-      const el = gridRef.current.querySelector(`th[data-room="${roomNumber}"]`);
+      const el = gridRef.current?.querySelector(`th[data-room="${roomNumber}"]`);
       if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
     } else alert("Invalid room number");
   };
 
   // Cell click
-  const handleCellClick = (day, room) => { setSelectedDate(day); setSelectedRoom(room); setIsModalOpen(true); };
+  const handleCellClick = (day: number, room: number) => { setSelectedDate(day); setSelectedRoom(room); setIsModalOpen(true); };
 
   // Save guest data for a day/room
-  const handleSaveGuests = (day, room, guestData) => {
+  const handleSaveGuests = (day: number, room: number, guestData: any) => {
     const { guests, lengthOfStay, isCheckIn } = guestData;
     if (!guests?.length) return alert("Please add at least one guest");
     const stayLength = parseInt(lengthOfStay);
@@ -168,21 +168,18 @@ const SubmissionForm = () => {
     setOccupiedRooms(newMonthlyData[currentMonthKey] || []);
   };
 
-  // Room occupied check
-  const isRoomOccupied = (day, room) => Array.isArray(occupiedRooms) && occupiedRooms.some(r => r.day === day && r.room === room);
-
   // Room color
-  const getRoomColor = (day, room) => {
+  const getRoomColor = (day: number, room: number) => {
     if (!Array.isArray(occupiedRooms)) return "white";
     const roomData = occupiedRooms.find(r => r.day === day && r.room === room);
     return roomData ? (roomData.isCheckIn ? "#FBBF24" : "#34D399") : "white";
   };
 
   // Guest data for modal
-  const getGuestData = (day, room) => Array.isArray(occupiedRooms) ? occupiedRooms.find(r => r.day === day && r.room === room) : null;
+  const getGuestData = (day: number, room: number) => Array.isArray(occupiedRooms) ? occupiedRooms.find(r => r.day === day && r.room === room) : null;
 
   // Daily totals
-  const calculateDailyTotals = day => {
+  const calculateDailyTotals = (day: number) => {
     const rooms = Array.isArray(occupiedRooms) ? occupiedRooms : [];
     if (!rooms.length) return { checkIns: 0, overnight: 0, occupied: 0 };
     const dayRooms = rooms.filter(r => r.day === day);
@@ -242,7 +239,7 @@ const SubmissionForm = () => {
   };
 
   // Remove all guests for a day/room
-  const handleRemoveAllGuests = (day, room) => {
+  const handleRemoveAllGuests = (day: number, room: number) => {
     const updatedRooms = occupiedRooms.filter(r => !(r.day === day && r.room === room));
     const key = `${selectedYear}-${selectedMonth}`;
     setOccupiedRooms(updatedRooms);
@@ -258,24 +255,24 @@ const SubmissionForm = () => {
   };
 
   // Days in month
-  const getDaysInMonth = (month, year) => new Date(year, month, 0).getDate();
+  const getDaysInMonth = (month: number, year: number) => new Date(year, month, 0).getDate();
   const [daysInMonth, setDaysInMonth] = useState(getDaysInMonth(selectedMonth, selectedYear));
   useEffect(() => { setDaysInMonth(getDaysInMonth(selectedMonth, selectedYear)); }, [selectedMonth, selectedYear]);
 
   // LocalStorage helpers
-  const saveDataToLocalStorage = (userId, data) => {
+  const saveDataToLocalStorage = (userId: string, data: any) => {
     try { localStorage.setItem(`submission_${userId}`, JSON.stringify(data)); } catch (err) { console.error("Error saving to localStorage:", err); }
   };
-  const loadDataFromLocalStorage = userId => {
+  const loadDataFromLocalStorage = (userId: string) => {
     try { const d = localStorage.getItem(`submission_${userId}`); return d ? JSON.parse(d) : {}; } catch { return {}; }
   };
 
   // Month helpers
-  const isCurrentMonth = (m, y) => {
+  const isCurrentMonth = (m: number, y: number) => {
     const d = new Date(), cy = d.getFullYear(), cm = d.getMonth() + 1;
     return y === cy && m === cm;
   };
-  const isFutureMonth = (m, y) => {
+  const isFutureMonth = (m: number, y: number) => {
     const d = new Date(), cy = d.getFullYear(), cm = d.getMonth() + 1;
     return y > cy || (y === cy && m > cm);
   };
@@ -283,17 +280,17 @@ const SubmissionForm = () => {
   const isCurrentMonthValue = isCurrentMonth(selectedMonth, selectedYear);
 
   // Room conflict helpers
-  const hasRoomConflict = (startDay, room, lengthOfStay, currentOccupancies) =>
+  const hasRoomConflict = (startDay: number, room: number, lengthOfStay: number, currentOccupancies: any[]) =>
     findRoomConflictAcrossMonths(startDay, room, lengthOfStay, currentOccupancies, monthlyData).hasConflict;
 
-  function findRoomConflictAcrossMonths(startDay, room, lengthOfStay, currentOccupancies, allMonthlyData, currentStayId) {
+  function findRoomConflictAcrossMonths(startDay: number, room: number, lengthOfStay: number, currentOccupancies: any[], allMonthlyData: any, currentStayId?: string) {
     let remainingDays = lengthOfStay;
     let currentDay = startDay;
     let currentMonth = selectedMonth;
     let currentYear = selectedYear;
     let daysInCurrentMonth = getDaysInMonth(currentMonth, currentYear);
 
-    const checkForConflict = (day, month, year) => {
+    const checkForConflict = (day: number, month: number, year: number) => {
       const monthKey = `${year}-${month}`;
       const monthData = month === selectedMonth && year === selectedYear ? currentOccupancies : allMonthlyData[monthKey] || [];
       return monthData.some(occ =>
@@ -318,7 +315,7 @@ const SubmissionForm = () => {
     return { hasConflict: false };
   }
 
-  function findAvailableRoomAcrossMonths(startDay, lengthOfStay, currentOccupancies, allMonthlyData, excludedRoom = null) {
+  function findAvailableRoomAcrossMonths(startDay: number, lengthOfStay: number, currentOccupancies: any[], allMonthlyData: any, excludedRoom?: number | null) {
     for (let room = 1; room <= numberOfRooms; room++) {
       if (room === excludedRoom) continue;
       if (!findRoomConflictAcrossMonths(startDay, room, lengthOfStay, currentOccupancies, allMonthlyData).hasConflict) return room;
@@ -326,13 +323,13 @@ const SubmissionForm = () => {
     return null;
   }
 
-  function removeExistingStay(stayId, monthlyData) {
+  function removeExistingStay(stayId: string, monthlyData: any) {
     const updated = { ...monthlyData };
     for (const k in updated) if (Array.isArray(updated[k])) updated[k] = updated[k].filter(r => r.stayId !== stayId);
     return updated;
   }
 
-  function addStayToMonthlyData(monthlyData, startDay, room, lengthOfStay, guests, isCheckIn, stayId, startMonth, startYear) {
+  function addStayToMonthlyData(monthlyData: any, startDay: number, room: number, lengthOfStay: number, guests: any[], isCheckIn: boolean, stayId: string, startMonth: number, startYear: number) {
     const updated = { ...monthlyData };
     let remainingDays = lengthOfStay;
     let currentDay = startDay;
@@ -340,7 +337,7 @@ const SubmissionForm = () => {
     let currentYear = startYear;
     let isFirstDay = true;
 
-    const addDaysToMonth = (day, month, year, daysToAdd) => {
+    const addDaysToMonth = (day: number, month: number, year: number, daysToAdd: number) => {
       const monthKey = `${year}-${month}`;
       const monthData = updated[monthKey] || [];
       for (let d = day; d < day + daysToAdd; d++) {
@@ -398,7 +395,6 @@ const SubmissionForm = () => {
           daysInMonth={daysInMonth}
           numberOfRooms={numberOfRooms}
           onCellClick={handleCellClick}
-          isRoomOccupied={isRoomOccupied}
           getRoomColor={getRoomColor}
           calculateDailyTotals={calculateDailyTotals}
           disabled={hasSubmitted || isFutureMonthValue}
@@ -413,7 +409,6 @@ const SubmissionForm = () => {
           onRemoveAllGuests={handleRemoveAllGuests}
           initialData={getGuestData(selectedDate, selectedRoom)}
           disabled={hasSubmitted}
-          isCurrentMonth={isCurrentMonthValue}
           hasRoomConflict={hasRoomConflict}
           occupiedRooms={occupiedRooms}
           selectedYear={selectedYear}

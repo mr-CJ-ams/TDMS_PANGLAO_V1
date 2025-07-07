@@ -1,9 +1,10 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
+import { ProtectedRouteProps } from "../types";
 
-const ProtectedRoute = ({ children, isAdmin = false }) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, isAdmin = false }) => {
   const token = sessionStorage.getItem("token");
-  const user = JSON.parse(sessionStorage.getItem("user")); // Get user details
+  const user = JSON.parse(sessionStorage.getItem("user") || "null"); // Get user details
 
   // If no token, redirect to login
   if (!token) {
@@ -16,7 +17,7 @@ const ProtectedRoute = ({ children, isAdmin = false }) => {
   }
 
   // If authenticated (and authorized for admin routes), render the children
-  return children;
+  return <>{children}</>;
 };
 
 export default ProtectedRoute;

@@ -12,7 +12,7 @@ const AdminDashboard = () => {
     [showDeleteModal, setShowDeleteModal] = useState(false), [userToDelete, setUserToDelete] = useState(null),
     [submissions, setSubmissions] = useState([]), [selectedSubmission, setSelectedSubmission] = useState(null),
     [showSubmissionModal, setShowSubmissionModal] = useState(false),
-    API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000", navigate = useNavigate();
+    API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000", navigate = useNavigate();
 
   // Helper function to get month name
   const getMonthName = m => { const d = new Date(); d.setMonth(m - 1); return d.toLocaleString("default", { month: "long" }); };

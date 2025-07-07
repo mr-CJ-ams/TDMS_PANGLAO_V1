@@ -1,13 +1,21 @@
 import { useState } from "react";
 import DolphinSpinner from "./DolphinSpinner";
 
+interface SaveButtonProps {
+  onSave: () => Promise<void>;
+  isFormSaved: boolean;
+  hasSubmitted: boolean;
+  isFutureMonth: boolean;
+  isCurrentMonth: boolean;
+}
+
 const SaveButton = ({ 
   onSave, 
   isFormSaved, 
   hasSubmitted, 
   isFutureMonth, 
   isCurrentMonth 
-}) => {
+}: SaveButtonProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const SUBMISSION_TIMEOUT = 30000;
 

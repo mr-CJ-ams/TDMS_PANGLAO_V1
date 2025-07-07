@@ -3,7 +3,7 @@ import { Check, X, Loader2 } from "lucide-react";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 const ResetPassword = () => {
   const [password, setPassword] = useState(""),

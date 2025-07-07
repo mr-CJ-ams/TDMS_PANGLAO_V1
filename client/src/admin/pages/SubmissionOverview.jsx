@@ -15,8 +15,8 @@ const SubmissionOverview = ({
   const [loadingPenalty, setLoadingPenalty] = useState({});
   const [showAccessCodePrompt, setShowAccessCodePrompt] = useState(false);
   const [currentSubmissionId, setCurrentSubmissionId] = useState(null);
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
-  const ACCESS_CODE = process.env.REACT_APP_ACCESS_CODE;
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+const ACCESS_CODE = import.meta.env.VITE_ACCESS_CODE;
 
   useEffect(() => {
     if (activeSection !== "submission-overview") return;

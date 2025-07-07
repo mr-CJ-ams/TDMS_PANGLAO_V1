@@ -1,9 +1,14 @@
 import { useState } from "react";
 
-const RoomSearchBar = ({ onSearch }) => {
-  const [roomNumber, setRoomNumber] = useState("");
+// Add type annotations for props
+interface RoomSearchBarProps {
+  onSearch: (roomNumber: number) => void;
+}
 
-  const handleSearch = (e) => {
+const RoomSearchBar = ({ onSearch }: RoomSearchBarProps) => {
+  const [roomNumber, setRoomNumber] = useState<string>("");
+
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const num = parseInt(roomNumber, 10);
     if (num > 0) onSearch(num);

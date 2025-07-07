@@ -1,6 +1,15 @@
-import React from "react";
+
 import { Hotel } from "lucide-react";
 import "bootstrap/dist/css/bootstrap.min.css";
+
+interface MonthlyGridProps {
+  daysInMonth: number;
+  numberOfRooms: number;
+  onCellClick: (day: number, room: number) => void;
+  getRoomColor: (day: number, room: number) => string;
+  calculateDailyTotals: (day: number) => { checkIns: number; overnight: number; occupied: number };
+  disabled: boolean;
+}
 
 const MonthlyGrid = ({
   daysInMonth,
@@ -8,8 +17,8 @@ const MonthlyGrid = ({
   onCellClick,
   getRoomColor,
   calculateDailyTotals,
-  disabled,
-}) => {
+  disabled
+}: MonthlyGridProps) => {
   const rooms = Array.from({ length: numberOfRooms }, (_, i) => i + 1);
 
   return (

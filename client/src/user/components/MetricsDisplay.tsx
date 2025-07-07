@@ -1,6 +1,11 @@
-import React from "react";
+// Add type annotations for props
+interface MetricsDisplayProps {
+  averageGuestNights: string;
+  averageRoomOccupancyRate: string;
+  averageGuestsPerRoom: string;
+}
 
-const MetricsDisplay = ({ averageGuestNights, averageRoomOccupancyRate, averageGuestsPerRoom }) => {
+const MetricsDisplay = ({ averageGuestNights, averageRoomOccupancyRate, averageGuestsPerRoom }: MetricsDisplayProps) => {
   return (
     <div className="mt-4">
       <h3>Calculated Results</h3>
