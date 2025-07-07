@@ -13,7 +13,8 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000
 
 const UserDashboard = () => {
   const [user, setUser] = useState(null),
-    [activeSection, setActiveSection] = useState("dashboard");
+    [activeSection, setActiveSection] = useState("dashboard"),
+    [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -44,17 +45,29 @@ const UserDashboard = () => {
   };
 
   return (
-    <div className="container-fluid">
-      <div className="row">
-        <Sidebar activeSection={activeSection} setActiveSection={setActiveSection} handleLogout={handleLogout} user={user} />
-        <div className="col-md-9">
-          <div className="p-4">
-            {activeSection === "dashboard" && <Ordinance />}
-            {activeSection === "submission-input" && <SubmissionInput />}
-            {activeSection === "submission-history" && <SubmissionHistory user={user} />}
-            {activeSection === "profile-management" && <ProfileSection user={user} onUpdateRooms={handleUpdateRooms} />}
-            {activeSection === "admin-dashboard" && <MainDashboard />}
-            {activeSection === "help-support" && <HelpSupport />}
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', padding: '16px 0' }}>
+        <button
+          className="d-md-none btn"
+          style={{ background: 'none', border: 'none' }}
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+        >
+          <i className={`bi ${sidebarOpen ? 'bi-x-lg' : 'bi-list'}`} style={{ fontSize: 32, color: '#00BCD4' }}></i>
+        </button>
+      </div>
+      <div className="container-fluid">
+        <div className="row">
+          <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} activeSection={activeSection} setActiveSection={setActiveSection} handleLogout={handleLogout} user={user} />
+          <div className="col-md-9">
+            <div className="p-4">
+              {activeSection === "dashboard" && <Ordinance />}
+              {activeSection === "submission-input" && <SubmissionInput />}
+              {activeSection === "submission-history" && <SubmissionHistory user={user} />}
+              {activeSection === "profile-management" && <ProfileSection user={user} onUpdateRooms={handleUpdateRooms} />}
+              {activeSection === "admin-dashboard" && <MainDashboard />}
+              {activeSection === "help-support" && <HelpSupport />}
+            </div>
           </div>
         </div>
       </div>

@@ -5,6 +5,7 @@ import TourismLogo from "../components/img/1738398998646-Tourism_logo.png";
 import UserApproval from "./UserApproval";
 import SubmissionOverview from "./SubmissionOverview";
 import MainDashboard from "./MainDashboard";
+import AdminSidebar from "../components/AdminSidebar";
 
 const AdminDashboard = () => {
   const [users, setUsers] = useState([]), [activeSection, setActiveSection] = useState("dashboard"),
@@ -12,6 +13,7 @@ const AdminDashboard = () => {
     [showDeleteModal, setShowDeleteModal] = useState(false), [userToDelete, setUserToDelete] = useState(null),
     [submissions, setSubmissions] = useState([]), [selectedSubmission, setSelectedSubmission] = useState(null),
     [showSubmissionModal, setShowSubmissionModal] = useState(false),
+    [sidebarOpen, setSidebarOpen] = useState(false),
     API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000", navigate = useNavigate();
 
   // Helper function to get month name
@@ -93,84 +95,21 @@ const AdminDashboard = () => {
 
   return (
     <div className="container-fluid">
+      {/* Header with hamburger and title */}
+      <div style={{ display: 'flex', alignItems: 'center', padding: '16px 0' }}>
+        <button
+          className="d-md-none btn"
+          style={{ background: 'none', border: 'none' }}
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+        >
+          <i className={`bi ${sidebarOpen ? 'bi-x-lg' : 'bi-list'}`} style={{ fontSize: 32, color: '#00BCD4' }}></i>
+        </button>
+      </div>
+
       <div className="row">
-        {/* Sidebar */}
-        <div className="col-md-3 sidebar" style={{ backgroundColor: "#E0F7FA", minHeight: "50vh", boxShadow: "2px 0 8px rgba(0,0,0,0.1)", padding: "20px 0" }}>
-          <div className="sidebar-sticky">
-            {/* Logo */}
-            <div className="text-center mb-4" style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-              <img src={TourismLogo} alt="Tourism Logo" style={{ width: "100px", height: "auto", padding: "5px" }} />
-            </div>
-            {/* Sidebar Heading */}
-            <h4 className="sidebar-heading mb-4" style={{ color: "#37474F", fontWeight: "600", textAlign: "center", fontSize: "1.25rem", letterSpacing: "0.5px" }}>
-              Panglao Tourist Data Management System
-            </h4>
-            {/* Navigation Links */}
-            <ul className="nav flex-column">
-              <li className="nav-item">
-                <Link
-                  to="#"
-                  className={`nav-link ${activeSection === "dashboard" ? "active" : ""}`}
-                  style={{
-                    padding: "12px 20px",
-                    transition: "all 0.3s ease",
-                    backgroundColor: activeSection === "dashboard" ? "#00BCD4" : "transparent",
-                    color: activeSection === "dashboard" ? "#FFFFFF" : "#37474F",
-                    borderRadius: "8px",
-                    margin: "4px 0",
-                    display: "block",
-                  }}
-                  onClick={() => setActiveSection("dashboard")}
-                >
-                  Main Dashboard
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link
-                  to="#"
-                  className={`nav-link ${activeSection === "user-approval" ? "active" : ""}`}
-                  style={{
-                    padding: "12px 20px",
-                    transition: "all 0.3s ease",
-                    backgroundColor: activeSection === "user-approval" ? "#00BCD4" : "transparent",
-                    color: activeSection === "user-approval" ? "#FFFFFF" : "#37474F",
-                    borderRadius: "8px",
-                    margin: "4px 0",
-                    display: "block",
-                  }}
-                  onClick={() => setActiveSection("user-approval")}
-                >
-                  User Approval
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link
-                  to="#"
-                  className={`nav-link ${activeSection === "submission-overview" ? "active" : ""}`}
-                  style={{
-                    padding: "12px 20px",
-                    transition: "all 0.3s ease",
-                    backgroundColor: activeSection === "submission-overview" ? "#00BCD4" : "transparent",
-                    color: activeSection === "submission-overview" ? "#FFFFFF" : "#37474F",
-                    borderRadius: "8px",
-                    margin: "4px 0",
-                    display: "block",
-                  }}
-                  onClick={() => setActiveSection("submission-overview")}
-                >
-                  Submission Overview
-                </Link>
-              </li>
-            </ul>
-            {/* Logout Button */}
-            <div className="mt-4 p-3">
-              <button className="btn w-100" style={{
-                backgroundColor: "#FF6F00", color: "#FFFFFF", border: "none", padding: "12px",
-                borderRadius: "8px", cursor: "pointer", transition: "all 0.3s ease", fontWeight: "600", fontSize: "1rem", letterSpacing: "0.5px"
-              }} onClick={handleLogout}>Logout</button>
-            </div>
-          </div>
-        </div>
+              {/* Sidebar */}
+      <AdminSidebar open={sidebarOpen} setOpen={setSidebarOpen} activeSection={activeSection} setActiveSection={setActiveSection} handleLogout={handleLogout} />
         {/* Main Content */}
         <div className="col-md-9">
           <div className="p-4">
