@@ -79,7 +79,7 @@ const AdminDashboard = () => {
   };
 
   // Logout function
-  const handleLogout = () => { sessionStorage.removeItem("token"); sessionStorage.removeItem("user"); navigate("/admin/login"); };
+  const handleLogout = () => { sessionStorage.removeItem("token"); sessionStorage.removeItem("user"); navigate("/login"); };
 
   const isSubmissionLate = submission => new Date(submission.submitted_at) > new Date(submission.deadline);
 

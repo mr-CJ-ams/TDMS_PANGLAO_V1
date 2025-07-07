@@ -33,7 +33,11 @@ const Login = () => {
       }
       sessionStorage.setItem("token", data.token);
       sessionStorage.setItem("user", JSON.stringify(data.user));
-      navigate("/user/dashboard");
+      if (data.user.role === "admin") {
+        navigate("/admin/dashboard");
+      } else {
+        navigate("/user/dashboard");
+      }
     } catch {
       setError("Invalid credentials or account is deactivated");
     } finally {
@@ -99,9 +103,7 @@ const Login = () => {
           <p>
             <Link to="/forgot-password" className="text-cyan-600 hover:text-cyan-700">Forgot Password?</Link>
           </p>
-          <p>
-            <Link to="/admin/login" className="text-cyan-600 hover:text-cyan-700">Login as Administrator</Link>
-          </p>
+
         </div>
       </div>
       <button

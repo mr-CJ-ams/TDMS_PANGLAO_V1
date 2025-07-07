@@ -76,12 +76,6 @@ export const authAPI = {
     const response: AxiosResponse<ApiResponse<User>> = await apiClient.put('/auth/update-rooms', { number_of_rooms: numberOfRooms });
     return response.data;
   },
-
-  // Admin auth
-  adminLogin: async (credentials: LoginFormData): Promise<AuthResponse> => {
-    const response: AxiosResponse<AuthResponse> = await apiClient.post('/auth/admin/login', credentials);
-    return response.data;
-  },
 };
 
 // Submissions API

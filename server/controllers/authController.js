@@ -47,21 +47,6 @@ exports.login = async (req, res) => {
   }
 };
 
-exports.adminLogin = async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    const user = await userModel.findUserByUsername(username);
-    if (!user) return res.status(400).json("Invalid credentials");
-    const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) return res.status(400).json("Invalid credentials");
-    if (user.role !== "admin") return res.status(400).json("Unauthorized access");
-    const token = jwt.sign({ user_id: user.user_id, role: user.role }, process.env.JWT_SECRET);
-    res.json({ token, user });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send("Server error");
-  }
-};
 
 exports.getUser = async (req, res) => {
   try {
