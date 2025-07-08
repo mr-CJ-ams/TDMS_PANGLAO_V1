@@ -1,0 +1,32 @@
+.menu-toggle-btn {
+  background: #00BCD4 !important;
+  /* border: 2px solid #00838f !important; Debug border, remove later */
+  border-radius: 13px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  outline: none;
+  position: relative;
+  z-index: 10;
+}
+
+.menu-toggle-btn:hover,
+.menu-toggle-btn:focus {
+  background: #0097a7 !important;
+  box-shadow: 0 4px 16px rgba(0,188,212,0.2);
+  transform: scale(1.08);
+}
+
+.menu-toggle-btn:active {
+  background: #00838f !important;
+  transform: scale(0.98);
+}
+
+.menu-toggle-btn i {
+  color: #fff !important; /* Debug: dark icon for visibility */
+  font-size: 32px;
+} 

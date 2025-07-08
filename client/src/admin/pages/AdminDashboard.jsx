@@ -6,6 +6,7 @@ import UserApproval from "./UserApproval";
 import SubmissionOverview from "./SubmissionOverview";
 import MainDashboard from "./MainDashboard";
 import AdminSidebar from "../components/AdminSidebar";
+import '../../components/MenuButton.css';
 
 const AdminDashboard = () => {
   const [users, setUsers] = useState([]), [activeSection, setActiveSection] = useState("dashboard"),
@@ -98,8 +99,7 @@ const AdminDashboard = () => {
       {/* Header with hamburger and title */}
       <div style={{ display: 'flex', alignItems: 'center', padding: '16px 0' }}>
         <button
-          className="d-md-none btn"
-          style={{ background: 'none', border: 'none' }}
+          className="menu-toggle-btn d-md-none"
           onClick={() => setSidebarOpen(!sidebarOpen)}
           aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
         >

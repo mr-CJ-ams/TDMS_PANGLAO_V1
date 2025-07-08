@@ -15,6 +15,12 @@ const predictedData2025 = [
   { month: 4, total_check_ins: 72970, isPredicted: true },
   { month: 5, total_check_ins: 73620, isPredicted: true },
   { month: 6, total_check_ins: 70163, isPredicted: true },
+  { month: 7, total_check_ins: 0, isPredicted: true },
+  { month: 8, total_check_ins: 0, isPredicted: true },
+  { month: 9, total_check_ins: 0, isPredicted: true },
+  { month: 10, total_check_ins: 0, isPredicted: true },
+  { month: 11, total_check_ins: 0, isPredicted: true },
+  { month: 12, total_check_ins: 0, isPredicted: true },
 ];
 
 const MainDashboard = () => {

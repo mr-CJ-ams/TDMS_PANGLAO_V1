@@ -29,6 +29,22 @@ app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../client/build", "index.html"));
 });
 
+app.get('/api/test-error', (req, res, next) => {
+  // This will trigger the error handler
+  next(new Error('This is a test error!'));
+});
+
+// Add this at the very end, after all routes and other middleware
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Internal Server Error',
+    // Optionally, include stack trace in development only
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+  });
+});
+
 // Start the server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

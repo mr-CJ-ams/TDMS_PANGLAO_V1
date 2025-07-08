@@ -8,6 +8,8 @@ import SubmissionHistory from "../components/SubmissionHistory";
 import HelpSupport from "../components/HelpSupport";
 import Ordinance from "../components/Ordinance";
 import MainDashboard from "../../admin/pages/MainDashboard";
+import '../../components/MenuButton.css';
+
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
@@ -48,8 +50,7 @@ const UserDashboard = () => {
     <div>
       <div style={{ display: 'flex', alignItems: 'center', padding: '16px 0' }}>
         <button
-          className="d-md-none btn"
-          style={{ background: 'none', border: 'none' }}
+          className="menu-toggle-btn d-md-none"
           onClick={() => setSidebarOpen(!sidebarOpen)}
           aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
         >
