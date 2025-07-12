@@ -5,6 +5,7 @@ import Sidebar from "../components/Sidebar";
 import ProfileSection from "../components/ProfileSection";
 import SubmissionInput from "../components/SubmissionInput";
 import SubmissionHistory from "../components/SubmissionHistory";
+import UserStatistics from "../components/UserStatistics";
 import HelpSupport from "../components/HelpSupport";
 import Ordinance from "../components/Ordinance";
 import MainDashboard from "../../admin/pages/MainDashboard";
@@ -65,6 +66,7 @@ const UserDashboard = () => {
               {activeSection === "dashboard" && <Ordinance />}
               {activeSection === "submission-input" && <SubmissionInput />}
               {activeSection === "submission-history" && <SubmissionHistory user={user} />}
+              {activeSection === "user-statistics" && <UserStatistics user={user} />}
               {activeSection === "profile-management" && <ProfileSection user={user} onUpdateRooms={handleUpdateRooms} />}
               {activeSection === "admin-dashboard" && <MainDashboard />}
               {activeSection === "help-support" && <HelpSupport />}

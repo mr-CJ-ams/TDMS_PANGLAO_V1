@@ -83,6 +83,44 @@ class SubmissionModel {
     return result.rows;
   }
 
+  static async getUserStatistics(userId) {
+    const result = await pool.query(
+      `SELECT 
+         s.month,
+         s.year,
+         SUM(dm.check_ins) as total_check_ins
+       FROM submissions s
+       LEFT JOIN daily_metrics dm ON s.submission_id = dm.submission_id
+       WHERE s.user_id = $1
+       GROUP BY s.month, s.year
+       ORDER BY s.year ASC, s.month ASC`,
+      [userId]
+    );
+    return result.rows;
+  }
+
+  static async getUserMonthlyMetrics(userId, year) {
+    const result = await pool.query(
+      `SELECT 
+         s.month,
+         s.year,
+         SUM(dm.check_ins) as total_check_ins,
+         SUM(dm.overnight) as total_overnight,
+         SUM(dm.occupied) as total_occupied,
+         AVG(s.average_guest_nights) as average_guest_nights,
+         AVG(s.average_room_occupancy_rate) as average_room_occupancy_rate,
+         AVG(s.average_guests_per_room) as average_guests_per_room,
+         AVG(s.number_of_rooms) as total_rooms
+       FROM submissions s
+       LEFT JOIN daily_metrics dm ON s.submission_id = dm.submission_id
+       WHERE s.user_id = $1 AND s.year = $2
+       GROUP BY s.month, s.year
+       ORDER BY s.month ASC`,
+      [userId, year]
+    );
+    return result.rows;
+  }
+
   static async getSubmissionDetails(submissionId) {
     const result = await pool.query(
       `SELECT s.submission_id, s.month, s.year, s.submitted_at, s.is_late, s.penalty,
@@ -217,6 +255,42 @@ class SubmissionModel {
       [draftId]
     );
     return result.rows[0];
+  }
+
+  static async getUserGuestDemographics(userId, year, month) {
+    const result = await pool.query(
+      `SELECT
+          g.gender,
+          CASE WHEN g.age < 18 THEN 'Minors' ELSE 'Adults' END AS age_group,
+          g.status,
+          COUNT(*) as count
+        FROM submissions s
+        JOIN daily_metrics dm ON s.submission_id = dm.submission_id
+        JOIN guests g ON dm.metric_id = g.metric_id
+        WHERE s.user_id = $1 AND s.year = $2 AND s.month = $3 AND g.is_check_in = true
+        GROUP BY g.gender, age_group, g.status
+        ORDER BY g.gender, age_group, g.status`,
+      [userId, year, month]
+    );
+    return result.rows;
+  }
+
+  static async getUserNationalityCounts(userId, year, month) {
+    const result = await pool.query(
+      `SELECT
+          g.nationality,
+          COUNT(*) as count,
+          SUM(CASE WHEN g.gender = 'Male' THEN 1 ELSE 0 END) as male_count,
+          SUM(CASE WHEN g.gender = 'Female' THEN 1 ELSE 0 END) as female_count
+        FROM submissions s
+        JOIN daily_metrics dm ON s.submission_id = dm.submission_id
+        JOIN guests g ON dm.metric_id = g.metric_id
+        WHERE s.user_id = $1 AND s.year = $2 AND s.month = $3 AND g.is_check_in = true
+        GROUP BY g.nationality
+        ORDER BY count DESC, g.nationality ASC`,
+      [userId, year, month]
+    );
+    return result.rows;
   }
 }
 // Export the pool along with the class

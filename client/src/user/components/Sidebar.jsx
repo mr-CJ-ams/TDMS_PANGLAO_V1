@@ -6,6 +6,7 @@ const navItems = [
   { key: "dashboard", label: "Main Dashboard", icon: "bi-house" },
   { key: "submission-input", label: "Submission Input", icon: "bi-pencil-square" },
   { key: "submission-history", label: "Submission History", icon: "bi-clock-history" },
+  { key: "user-statistics", label: "My Statistics", icon: "bi-graph-up" },
   { key: "profile-management", label: "Profile Management", icon: "bi-person" },
   { key: "admin-dashboard", label: "Panglao Statistics", icon: "bi-bar-chart" },
   { key: "help-support", label: "Help and Support", icon: "bi-question-circle" },

@@ -27,6 +27,12 @@ router.post("/submit", submissionsController.submit);
 // Get submission history for a user
 router.get("/history/:userId", submissionsController.history);
 
+// Get user statistics for charts
+router.get("/statistics/:userId", submissionsController.getUserStatistics);
+
+// Get user monthly metrics for detailed table
+router.get("/metrics/:userId", submissionsController.getUserMonthlyMetrics);
+
 // Get details of a specific submission
 router.get("/details/:submissionId", submissionsController.details);
 
@@ -41,6 +47,12 @@ router.get("/check-submission", submissionsController.checkSubmission);
 
 // Get a specific submission for a user/month/year
 router.get("/:userId/:month/:year", submissionsController.getSubmission);
+
+// Get guest demographics for a user, year, and month
+router.get("/guest-demographics/:userId", submissionsController.getUserGuestDemographics);
+
+// Get nationality counts for a user, year, and month
+router.get("/nationality-counts/:userId", submissionsController.getUserNationalityCounts);
 
 // --- Draft management endpoints ---
 

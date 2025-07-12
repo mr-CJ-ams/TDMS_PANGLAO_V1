@@ -15,7 +15,7 @@ const nationalities = [
     "Laos", "Luxembourg", 
     "Malaysia", "Mexico", "Myanmar", 
     "Nauru", "Nepal", "Netherlands", "New Zealand", "Nigeria", "Norway", 
-    "Pakistan", "Papua New Guinea", "Peru", "Philippines", "Poland", "Portugal", 
+    "Pakistan", "Papua New Guinea", "Peru", "Philippines", "Philippines(OFW)", "Poland", "Portugal", 
     "Russia", 
     "Saudi Arabia", 
     "Singapore", 
@@ -23,8 +23,7 @@ const nationalities = [
     "Spain", "Sri Lanka", "Sweden", "Switzerland", 
     "Taiwan", "Thailand", 
     "Union of Serbia and Montenegro", "United Arab Emirates", "United Kingdom", "USA", 
-    "Venezuela", "Vietnam",
-    "Overseas Filipino", "Others"
+    "Venezuela", "Vietnam", "Others"
 ];
 
 export default nationalities;

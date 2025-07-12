@@ -90,7 +90,7 @@ const nationalityGroups = {
       SOUTH_AFRICA: "South Africa",
     },
     OTHERS: "Others and Unspecified Residences",
-    OVERSEAS_FILIPINO: "Overseas Filipino",
+    OVERSEAS_FILIPINO: "Philippines(OFW)",
   };
   
   export default nationalityGroups;

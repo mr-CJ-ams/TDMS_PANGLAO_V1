@@ -69,6 +69,29 @@ exports.history = async (req, res) => {
   }
 };
 
+exports.getUserStatistics = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const statistics = await SubmissionModel.getUserStatistics(userId);
+    res.json(statistics);
+  } catch (err) {
+    console.error("User statistics error:", err);
+    res.status(500).json({ error: "Failed to fetch user statistics" });
+  }
+};
+
+exports.getUserMonthlyMetrics = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { year } = req.query;
+    const metrics = await SubmissionModel.getUserMonthlyMetrics(userId, year);
+    res.json(metrics);
+  } catch (err) {
+    console.error("User monthly metrics error:", err);
+    res.status(500).json({ error: "Failed to fetch user monthly metrics" });
+  }
+};
+
 exports.details = async (req, res) => {
   try {
     const { submissionId } = req.params;
@@ -246,6 +269,30 @@ exports.getDraftDetails = async (req, res) => {
   } catch (err) {
     console.error("Error fetching draft details:", err);
     res.status(500).json({ error: "Failed to fetch draft details" });
+  }
+};
+
+exports.getUserGuestDemographics = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { year, month } = req.query;
+    const demographics = await SubmissionModel.getUserGuestDemographics(userId, year, month);
+    res.json(demographics);
+  } catch (err) {
+    console.error("User guest demographics error:", err);
+    res.status(500).json({ error: "Failed to fetch guest demographics" });
+  }
+};
+
+exports.getUserNationalityCounts = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { year, month } = req.query;
+    const counts = await SubmissionModel.getUserNationalityCounts(userId, year, month);
+    res.json(counts);
+  } catch (err) {
+    console.error("User nationality counts error:", err);
+    res.status(500).json({ error: "Failed to fetch nationality counts" });
   }
 };
 
