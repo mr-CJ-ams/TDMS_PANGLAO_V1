@@ -9,22 +9,26 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Function to send email notification
+// Function to send email notification (Promise-based)
 const sendEmailNotification = (email, subject, message) => {
   const mailOptions = {
-    from: "amaquincj00@gmail.com",
+    from: process.env.EMAIL_USER || "ubshsgr12stemamaquinc@gmail.com", // Use environment variable with fallback
     to: email,
     subject: subject,
     text: message,
     html: `<p>${message}</p>`, // Optional: Add HTML content for better formatting
   };
 
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.error("Error sending email:", error);
-    } else {
-      console.log("Email sent:", info.response);
-    }
+  return new Promise((resolve, reject) => {
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error("Error sending email:", error);
+        reject(error);
+      } else {
+        console.log("Email sent:", info.response);
+        resolve(info);
+      }
+    });
   });
 };
 

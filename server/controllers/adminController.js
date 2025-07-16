@@ -16,20 +16,26 @@ exports.getUsers = async (req, res) => {
 exports.approveUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const email = await AdminModel.approveUser(id);
-    
+    const email = await AdminModel.getUserEmailById(id);
+    if (!email) return res.status(404).json({ success: false, message: "User email not found." });
+
     const subject = "Your TDMS Account Has Been Approved";
     const message = `
-      Your account has been approved. You can now log in to the Tourism Data Management System (TDMS) using the link below:
-      Login Link: https://tdms-panglao-client.onrender.com
-      Thank you for using TDMS!
+      Dear Valued User,<br><br>
+      We are pleased to inform you that your account registration for the Tourism Data Management System (TDMS) has been approved.<br><br>
+      You may now log in and access the system using the following link:<br>
+      <a href=\"https://tdms-panglao-client.onrender.com\">Login Link</a><br><br>
+      If you have any questions or require assistance, please do not hesitate to contact our office.<br><br>
+      Thank you for your interest in the TDMS.<br><br>
+      Best regards,<br>
+      Panglao Tourism Office
     `;
-    sendEmailNotification(email, subject, message);
-    
-    res.json("User approved");
+    await sendEmailNotification(email, subject, message);
+    await AdminModel.approveUser(id);
+    res.json({ success: true, message: "User approved and email sent successfully." });
   } catch (err) {
     console.error(err.message);
-    res.status(500).send("Server error");
+    res.status(500).json({ success: false, message: "Failed to send email. User not approved." });
   }
 };
 
@@ -38,13 +44,25 @@ exports.declineUser = async (req, res) => {
   try {
     const { id } = req.params;
     const { message: declineMessage } = req.body;
-    const email = await AdminModel.declineUser(id);
-    
-    sendEmailNotification(email, `Your account has been declined. Reason: ${declineMessage}`);
-    res.json("User declined");
+    const email = await AdminModel.getUserEmailById(id);
+    if (!email) return res.status(404).json({ success: false, message: "User email not found." });
+
+    const subject = "Your TDMS Account Application Status";
+    const message = `
+      Dear Applicant,<br><br>
+      We regret to inform you that your registration for the Tourism Data Management System (TDMS) has not been approved.<br><br>
+      <strong>Reason for decline:</strong> ${declineMessage}<br><br>
+      If you believe this decision was made in error or if you have any questions, please contact our office for further clarification.<br><br>
+      Thank you for your interest in the TDMS.<br><br>
+      Sincerely,<br>
+      Panglao Tourism Office
+    `;
+    await sendEmailNotification(email, subject, message);
+    await AdminModel.declineUser(id);
+    res.json({ success: true, message: "User declined and email sent successfully." });
   } catch (err) {
     console.error(err.message);
-    res.status(500).send("Server error");
+    res.status(500).json({ success: false, message: "Failed to send email. User not declined." });
   }
 };
 
@@ -142,6 +160,18 @@ exports.getNationalityCounts = async (req, res) => {
   } catch (err) {
     console.error("Error fetching nationality counts:", err);
     res.status(500).json({ error: "Failed to fetch nationality counts" });
+  }
+};
+
+// Nationality Counts by Establishment
+exports.getNationalityCountsByEstablishment = async (req, res) => {
+  try {
+    const { year, month } = req.query;
+    const result = await AdminModel.getNationalityCountsByEstablishment(year, month);
+    res.json(result);
+  } catch (err) {
+    console.error("Error fetching nationality counts by establishment:", err);
+    res.status(500).json({ error: "Failed to fetch nationality counts by establishment" });
   }
 };
 

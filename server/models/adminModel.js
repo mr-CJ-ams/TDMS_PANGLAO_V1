@@ -53,6 +53,11 @@ class AdminModel {
     return true;
   }
 
+  static async getUserEmailById(id) {
+    const user = await pool.query("SELECT email FROM users WHERE user_id = $1", [id]);
+    return user.rows.length > 0 ? user.rows[0].email : null;
+  }
+
   // Submission related methods
   static async getSubmissions({ month, year, status, penaltyStatus, search }, { limit, offset }) {
     let query = `
@@ -181,6 +186,24 @@ class AdminModel {
       WHERE s.year = $1 AND s.month = $2 AND g.is_check_in = true
       GROUP BY g.nationality
       ORDER BY count DESC
+    `;
+    const result = await pool.query(query, [year, month]);
+    return result.rows;
+  }
+
+  static async getNationalityCountsByEstablishment(year, month) {
+    const query = `
+      SELECT 
+        u.company_name AS establishment,
+        g.nationality, 
+        COUNT(*) AS count
+      FROM guests g
+      JOIN daily_metrics dm ON g.metric_id = dm.metric_id
+      JOIN submissions s ON dm.submission_id = s.submission_id
+      JOIN users u ON s.user_id = u.user_id
+      WHERE s.year = $1 AND s.month = $2 AND g.is_check_in = true
+      GROUP BY u.company_name, g.nationality
+      ORDER BY u.company_name ASC, g.nationality ASC
     `;
     const result = await pool.query(query, [year, month]);
     return result.rows;
