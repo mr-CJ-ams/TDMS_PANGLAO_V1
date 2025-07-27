@@ -2,6 +2,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { sendEmailNotification } = require("../utils/email");
 const userModel = require("../models/userModel");
+const { getAutoApproval } = require("../utils/autoApproval");
 
 const accommodationCodes = {
   Hotel: "HTL", Condotel: "CON", "Serviced Residence": "SER", Resort: "RES",
@@ -18,10 +19,13 @@ exports.signup = async (req, res) => {
     } = req.body;
     const accommodation_code = accommodationCodes[accommodation_type] || "OTH";
     const hashedPassword = await bcrypt.hash(password, 10);
+    // Determine approval state
+    const is_approved = getAutoApproval();
     const user = await userModel.createUser({
       username, email, hashedPassword, phone_number, registered_owner, tin,
       company_name, company_address, accommodation_type, accommodation_code,
-      number_of_rooms, region, province, municipality, barangay, dateEstablished
+      number_of_rooms, region, province, municipality, barangay, dateEstablished,
+      is_approved
     });
     res.json(user);
   } catch (err) {

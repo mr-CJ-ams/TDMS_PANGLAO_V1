@@ -9,6 +9,7 @@ import ForgotPassword from "./user/pages/ForgotPassword";
 import ResetPassword from "./user/pages/ResetPassword";
 // import SubmissionDetails from "./user/pages/SubmissionDetails";
 import MainDashboard from "./admin/pages/MainDashboard";
+import HelpSupportPage from "./user/pages/HelpSupportPage";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const App = () => {
@@ -20,6 +21,7 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} /> 
+        <Route path="/help-support" element={<HelpSupportPage />} />
         {/* Protected Routes */}
         <Route
           path="/admin/dashboard"

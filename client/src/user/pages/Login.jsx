@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
-import { Eye, EyeOff, BarChart2 } from "lucide-react";
+import { Eye, EyeOff, HelpCircle } from "lucide-react";
 import TourismLogo from "../components/img/Tourism_logo.png";
 import DolphinSpinner from "../components/DolphinSpinner";
 
@@ -107,10 +107,10 @@ const Login = () => {
         </div>
       </div>
       <button
-        onClick={() => navigate("/main-dashboard")}
+        onClick={() => navigate("/help-support")}
         className="fixed bottom-6 right-6 text-amber-500 hover:text-amber-600 transition-colors"
       >
-        <BarChart2 size={32} />
+        <HelpCircle size={32} />
       </button>
     </div>
   );

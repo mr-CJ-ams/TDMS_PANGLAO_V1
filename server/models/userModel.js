@@ -4,11 +4,12 @@ exports.createUser = async (user) => {
   const {
     username, email, hashedPassword, phone_number, registered_owner, tin,
     company_name, company_address, accommodation_type, accommodation_code,
-    number_of_rooms, region, province, municipality, barangay, dateEstablished
+    number_of_rooms, region, province, municipality, barangay, dateEstablished,
+    is_approved = false
   } = user;
   const res = await pool.query(
-    "INSERT INTO users (username, email, password, phone_number, registered_owner, tin, company_name, company_address, accommodation_type, accommodation_code, number_of_rooms, region, province, municipality, barangay, date_established) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *",
-    [username, email, hashedPassword, phone_number, registered_owner, tin, company_name, company_address, accommodation_type, accommodation_code, number_of_rooms, region, province, municipality, barangay, dateEstablished]
+    "INSERT INTO users (username, email, password, phone_number, registered_owner, tin, company_name, company_address, accommodation_type, accommodation_code, number_of_rooms, region, province, municipality, barangay, date_established, is_approved) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *",
+    [username, email, hashedPassword, phone_number, registered_owner, tin, company_name, company_address, accommodation_type, accommodation_code, number_of_rooms, region, province, municipality, barangay, dateEstablished, is_approved]
   );
   return res.rows[0];
 };
