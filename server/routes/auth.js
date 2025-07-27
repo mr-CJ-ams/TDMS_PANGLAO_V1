@@ -20,4 +20,9 @@ router.put("/update-rooms", authController.updateRooms);
 router.post("/forgot-password", authController.forgotPassword);
 router.post("/reset-password", authController.resetPassword);
 
+// Email verification routes
+router.post("/request-email-verification", authController.requestEmailVerification);
+router.get("/verify-email", authController.verifyEmail);
+router.get("/check-email-verification", authController.checkEmailVerification);
+
 module.exports = router;

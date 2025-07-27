@@ -10,6 +10,8 @@ import ResetPassword from "./user/pages/ResetPassword";
 // import SubmissionDetails from "./user/pages/SubmissionDetails";
 import MainDashboard from "./admin/pages/MainDashboard";
 import HelpSupportPage from "./user/pages/HelpSupportPage";
+import EmailVerification from "./user/pages/EmailVerification";
+import EmailVerificationRequest from "./user/pages/EmailVerificationRequest";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const App = () => {
@@ -22,6 +24,8 @@ const App = () => {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} /> 
         <Route path="/help-support" element={<HelpSupportPage />} />
+        <Route path="/verify-email" element={<EmailVerification />} />
+        <Route path="/email-verification-request" element={<EmailVerificationRequest />} />
         {/* Protected Routes */}
         <Route
           path="/admin/dashboard"
