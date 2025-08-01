@@ -189,7 +189,6 @@ exports.saveDraft = async (req, res) => {
     await client.query("BEGIN");
     await SubmissionModel.saveDraft(client, userId, month, year, data);
     await client.query("COMMIT");
-    
     res.status(200).json({ message: "Draft saved successfully" });
   } catch (err) {
     await client.query("ROLLBACK");

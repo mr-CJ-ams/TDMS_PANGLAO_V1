@@ -42,6 +42,11 @@ const SubmissionForm = () => {
   // Check if already submitted for month/year
   useEffect(() => {
     if (!user) return;
+    
+    // Reset form saved state when switching months
+    setIsFormSaved(false);
+    console.log(`🔄 Month/Year changed to ${selectedMonth}/${selectedYear} - Reset isFormSaved to false`);
+    
     (async () => {
       try {
         const token = sessionStorage.getItem("token");
@@ -50,6 +55,7 @@ const SubmissionForm = () => {
           params: { user_id: user.user_id, month: selectedMonth, year: selectedYear }
         });
         setHasSubmitted(data.hasSubmitted);
+        console.log(`📋 Submission status for ${selectedMonth}/${selectedYear}: hasSubmitted = ${data.hasSubmitted}`);
       } catch (err) { console.error("Error checking submission:", err); }
     })();
   }, [user, selectedMonth, selectedYear]);
