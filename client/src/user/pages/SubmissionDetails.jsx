@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { Modal, ListGroup } from "react-bootstrap";
-import { FileSpreadsheet, Users } from "lucide-react";
+import { FileSpreadsheet, Users, Search, Filter } from "lucide-react";
 import { MetricsCard } from "../components/MetricsCard";
 import { ActionButton } from "../components/ActionButton";
+import Nationality from "../components/Nationality";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
@@ -14,6 +15,13 @@ const SubmissionDetails = ({ submissionId }) => {
     [loading, setLoading] = useState(true),
     [error, setError] = useState(null),
     [showNationalityModal, setShowNationalityModal] = useState(false);
+
+  // Pagination and search state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterRoom, setFilterRoom] = useState("");
+  const [filterNationality, setFilterNationality] = useState("");
+  const [roomSearchTerm, setRoomSearchTerm] = useState("");
+  const [highlightedRoom, setHighlightedRoom] = useState(null);
 
   useEffect(() => {
     if (!submissionId) return;
@@ -26,6 +34,86 @@ const SubmissionDetails = ({ submissionId }) => {
       .catch(() => setError("Failed to fetch submission details. Please try again."))
       .finally(() => setLoading(false));
   }, [submissionId]);
+
+  // Filter and pagination logic
+  const getDaysInMonth = (month, year) => {
+    return new Date(year, month, 0).getDate();
+  };
+
+  const daysInMonth = submission ? getDaysInMonth(submission.month, submission.year) : 31;
+
+  const filteredDays = Array.from({ length: daysInMonth }, (_, dayIndex) => {
+    const day = dayIndex + 1;
+    const dayData = submission?.days.find(d => d.day === day);
+    const dayGuests = dayData?.guests || [];
+    
+    // Apply filters
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      const hasMatchingGuest = dayGuests.some(guest => 
+        guest.nationality.toLowerCase().includes(searchLower) ||
+        guest.gender.toLowerCase().includes(searchLower) ||
+        guest.status.toLowerCase().includes(searchLower) ||
+        guest.room_number.toString().includes(searchTerm)
+      );
+      if (!hasMatchingGuest) return null;
+    }
+    
+    if (filterRoom) {
+      const hasRoomGuest = dayGuests.some(guest => 
+        guest.room_number.toString() === filterRoom
+      );
+      if (!hasRoomGuest) return null;
+    }
+    
+    if (filterNationality) {
+      const hasNationalityGuest = dayGuests.some(guest => 
+        guest.nationality.toLowerCase().includes(filterNationality.toLowerCase())
+      );
+      if (!hasNationalityGuest) return null;
+    }
+    
+    return { day, dayData, dayGuests };
+  }).filter(Boolean);
+
+  const resetFilters = () => {
+    setSearchTerm("");
+    setFilterRoom("");
+    setFilterNationality("");
+    setRoomSearchTerm("");
+    setHighlightedRoom(null);
+  };
+
+  const handleRoomSearch = () => {
+    const roomNumber = parseInt(roomSearchTerm);
+    if (roomNumber && roomNumber >= 1 && roomNumber <= submission?.number_of_rooms) {
+      setHighlightedRoom(roomNumber);
+      
+      // Scroll to the room column
+      const roomElement = document.getElementById(`room-${roomNumber}`);
+      if (roomElement) {
+        roomElement.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'nearest',
+          inline: 'center'
+        });
+        
+        // Add a temporary highlight effect
+        roomElement.classList.add('bg-yellow-100', 'border-2', 'border-yellow-400');
+        setTimeout(() => {
+          roomElement.classList.remove('bg-yellow-100', 'border-2', 'border-yellow-400');
+        }, 3000);
+      }
+    } else {
+      setHighlightedRoom(null);
+    }
+  };
+
+  const handleRoomSearchKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleRoomSearch();
+    }
+  };
 
   const calculateMetrics = (s) => {
     if (!s || !s.days)
@@ -121,86 +209,238 @@ const SubmissionDetails = ({ submissionId }) => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Submission Details</h1>
-          <div className="mt-2 text-gray-600">
-            <p className="mb-1">
-              <span className="font-medium">Month:</span>{" "}
+        </div>
+        
+        {/* Basic Info Cards - Top Row */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-slate-50 rounded-xl shadow-sm p-6">
+            <h3 className="text-sm font-medium text-slate-500 mb-2">Month</h3>
+            <p className="text-xl font-semibold text-slate-800">
               {new Date(0, submission.month - 1).toLocaleString("default", { month: "long" })}
             </p>
-            <p className="mb-1">
-              <span className="font-medium">Year:</span> {submission.year}
-            </p>
-            <p>
-              <span className="font-medium">Submitted:</span>{" "}
+          </div>
+          
+          <div className="bg-slate-50 rounded-xl shadow-sm p-6">
+            <h3 className="text-sm font-medium text-slate-500 mb-2">Year</h3>
+            <p className="text-xl font-semibold text-slate-800">{submission.year}</p>
+          </div>
+          
+          <div className="bg-slate-50 rounded-xl shadow-sm p-6">
+            <h3 className="text-sm font-medium text-slate-500 mb-2">Submitted At</h3>
+            <p className="text-xl font-semibold text-slate-800">
               {new Date(submission.submitted_at).toLocaleString()}
             </p>
           </div>
         </div>
+        
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-3 mb-8">
           <ActionButton onClick={exportToExcel}>
             <FileSpreadsheet className="w-4 h-4 inline mr-2" />
             Export to Excel
           </ActionButton>
-          <ActionButton onClick={() => setShowNationalityModal(true)} variant="outline">
-            <Users className="w-4 h-4 inline mr-2" />
-            Top Markets Ranking
-          </ActionButton>
           <ActionButton onClick={exportNationalityCountsToExcel}>
             <FileSpreadsheet className="w-4 h-4 inline mr-2" />
             Export Top Markets Ranking
           </ActionButton>
         </div>
-        {/* Metrics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <MetricsCard title="Total No. of Guest Check-Ins" value={totalCheckIns} />
-          <MetricsCard title="Total Rooms" value={submission.number_of_rooms} />
-          <MetricsCard title="Total No. of Guest Staying Overnight" value={totalOvernight} />
-          <MetricsCard title="Total No. of Rooms Occupied" value={totalOccupied} />
+        
+        {/* Metrics Cards - Bottom Row */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {/* Totals Card */}
+          <div className="bg-slate-50 rounded-xl shadow-sm p-6">
+            <h3 className="text-lg font-semibold text-slate-800 mb-4">Totals</h3>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-slate-500">Total No. of Guest Check-Ins</p>
+                <p className="text-2xl font-semibold text-slate-800">{totalCheckIns}</p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-500">Total No. Guest Staying Overnight</p>
+                <p className="text-2xl font-semibold text-slate-800">{totalOvernight}</p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-500">Total No. of Occupied Rooms</p>
+                <p className="text-2xl font-semibold text-slate-800">{totalOccupied}</p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Averages Card */}
+          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-sm p-6">
+            <h3 className="text-lg font-semibold text-slate-800 mb-4">Averages</h3>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-green-600">Ave. Guest-Nights</p>
+                <p className="text-2xl font-semibold text-slate-800">{averageGuestNights}</p>
+              </div>
+              <div>
+                <p className="text-sm text-green-600">Ave. Room Occupancy Rate</p>
+                <p className="text-2xl font-semibold text-slate-800">{averageRoomOccupancyRate}%</p>
+              </div>
+              <div>
+                <p className="text-sm text-green-600">Ave. Guests per Room</p>
+                <p className="text-2xl font-semibold text-slate-800">{averageGuestsPerRoom}</p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Top Markets Ranking Card */}
+          <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl shadow-sm p-6">
+            <h3 className="text-lg font-semibold text-slate-800 mb-4">Top Markets Ranking</h3>
+            <button 
+              onClick={() => setShowNationalityModal(true)}
+              className="w-full px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium"
+            >
+              View Nationality Counts
+            </button>
+          </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <MetricsCard title="Ave. Guest-Nights" value={averageGuestNights} />
-          <MetricsCard title="Ave. Room Occupancy Rate" value={`${averageRoomOccupancyRate}%`} />
-          <MetricsCard title="Ave. Guests per Room" value={averageGuestsPerRoom} />
-        </div>
+        
         {/* Daily Metrics Table */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-8">
-          <h2 className="text-xl font-semibold p-6 border-b">Daily Metrics</h2>
+          <div className="p-6 border-b">
+            <h2 className="text-xl font-semibold mb-4">Daily Metrics</h2>
+            
+            {/* Search and Filter Controls */}
+            <div className="flex flex-wrap gap-4 items-center mb-4">
+              
+              {/* Room Quick Search */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  placeholder="Room #"
+                  value={roomSearchTerm}
+                  onChange={(e) => setRoomSearchTerm(e.target.value)}
+                  onKeyPress={handleRoomSearchKeyPress}
+                  min="1"
+                  max={submission?.number_of_rooms || 1}
+                  className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 w-20"
+                />
+                <button
+                  onClick={handleRoomSearch}
+                  className="px-3 py-2 bg-cyan-500 text-white rounded-md hover:bg-cyan-600 transition-colors text-sm font-medium"
+                >
+                  Go to Room
+                </button>
+              </div>
+              
+              <button
+                onClick={resetFilters}
+                className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
+              >
+                Clear Filters
+              </button>
+            </div>
+            
+            {/* Results Summary */}
+            <div className="text-sm text-gray-600 mb-4">
+              Showing {filteredDays.length} of {daysInMonth} days
+              {searchTerm || filterRoom || filterNationality ? (
+                <span className="ml-2 text-cyan-600">
+                  (filtered)
+                </span>
+              ) : null}
+            </div>
+          </div>
+          
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  {["Day", "Check Ins", "Overnight", "Occupied", "Guests"].map((h) => (
-                    <th key={h} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {h}
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">
+                    Day
+                  </th>
+                  {Array.from({ length: submission.number_of_rooms }, (_, i) => (
+                    <th 
+                      key={i + 1} 
+                      id={`room-${i + 1}`}
+                      className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r ${
+                        highlightedRoom === i + 1 ? 'bg-yellow-100 border-yellow-400' : ''
+                      }`}
+                    >
+                      Room {i + 1}
                     </th>
                   ))}
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Summary
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {submission.days.map((day) => (
-                  <tr key={day.day} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">{day.day}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{day.check_ins || 0}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{day.overnight || 0}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{day.occupied || 0}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {day.guests?.length > 0 ? (
-                        <ul className="list-none space-y-1">
-                          {day.guests.map((guest, i) => (
-                            <li key={i} className="text-sm text-gray-600 whitespace-nowrap">
-                              Room {guest.room_number}, {guest.gender}, {guest.age}, {guest.status}, {guest.nationality}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <span className="text-gray-400">No guests</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {filteredDays.map(({ day, dayGuests }) => {
+                  // Group guests by room
+                  const guestsByRoom = {};
+                  for (let roomNum = 1; roomNum <= submission.number_of_rooms; roomNum++) {
+                    guestsByRoom[roomNum] = dayGuests.filter(g => g.room_number === roomNum);
+                  }
+                  
+                  // Calculate summary
+                  const totalCheckIns = dayGuests.filter(g => g.isCheckIn).length;
+                  const totalOvernight = dayGuests.length;
+                  const totalOccupied = Object.values(guestsByRoom).filter(guests => guests.length > 0).length;
+                  
+                  return (
+                    <tr key={day} className="hover:bg-gray-50">
+                      <td className="px-4 py-4 whitespace-nowrap font-medium text-gray-900 border-r">
+                        {day}
+                      </td>
+                      {Array.from({ length: submission.number_of_rooms }, (_, roomIndex) => {
+                        const roomNum = roomIndex + 1;
+                        const roomGuests = guestsByRoom[roomNum] || [];
+                        
+                        return (
+                          <td 
+                            key={roomNum} 
+                            id={`room-${roomNum}-day-${day}`}
+                            className={`px-4 py-4 border-r ${
+                              highlightedRoom === roomNum ? 'bg-yellow-50 border-yellow-300' : ''
+                            }`}
+                          >
+                            {roomGuests.length > 0 ? (
+                              <div className="space-y-1">
+                                {roomGuests.map((guest, guestIndex) => (
+                                  <div key={guestIndex} className="text-xs text-gray-600 p-1 bg-gray-50 rounded">
+                                    <div className="font-medium">
+                                      {guest.isCheckIn ? '✓' : '●'} {guest.gender}, {guest.age}
+                                    </div>
+                                    <div className="text-gray-500">
+                                      {guest.status}, {guest.nationality}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 text-xs">Empty</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                      <td className="px-4 py-4">
+                        <div className="text-xs space-y-1">
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Check-ins:</span>
+                            <span className="font-medium">{totalCheckIns}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Overnight:</span>
+                            <span className="font-medium">{totalOvernight}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Occupied:</span>
+                            <span className="font-medium">{totalOccupied}</span>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
+          
+          {/* Pagination Controls */}
+          {/* Removed pagination as per edit hint */}
         </div>
         {/* Nationality Modal */}
         <Modal show={showNationalityModal} onHide={() => setShowNationalityModal(false)}>
