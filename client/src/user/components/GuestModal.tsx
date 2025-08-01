@@ -69,6 +69,7 @@ const GuestModal = ({
   const handleRemoveAll = () => { onRemoveAllGuests(day, room); onClose(); };
 
   const isEditingExisting = initialData && initialData.day === day && initialData.room === room;
+  const isStartDay = initialData?.isStartDay;
   const showConflict = lengthOfStay && hasRoomConflict && hasRoomConflict(day, room, parseInt(lengthOfStay), occupiedRooms);
 
   return (
@@ -76,7 +77,11 @@ const GuestModal = ({
       <div className="modal-dialog">
         <div className="modal-content">
           <div className="modal-header">
-            <h5 className="modal-title">Day {day} - Room {room}</h5>
+            <h5 className="modal-title">
+              Day {day} - Room {room}
+              {isStartDay && <span className="badge bg-warning ms-2">Start Day (Editable)</span>}
+              {!isStartDay && isEditingExisting && <span className="badge bg-success ms-2">Following Day (Non-editable)</span>}
+            </h5>
           </div>
           <div className="modal-body">
             {error && <div className="alert alert-danger">{error}</div>}
@@ -97,6 +102,11 @@ const GuestModal = ({
               </div>
             ) : (
               !isEditingExisting && <div className="alert alert-info mt-2">✅ These dates are available for booking</div>
+            )}
+            {!isStartDay && isEditingExisting && (
+              <div className="alert alert-info mt-2">
+                ℹ️ This is a following day. Changes will be applied to the entire stay starting from the start day.
+              </div>
             )}
             {guests.map((guest, idx) => (
               <div key={idx} className="mb-3">

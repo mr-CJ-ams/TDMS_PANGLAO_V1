@@ -203,7 +203,12 @@ class SubmissionModel {
         isCheckIn: Boolean(guest.isCheckIn)
       })) : [],
       lengthOfStay: Number(item.lengthOfStay) || 0,
-      isCheckIn: Boolean(item.isCheckIn)
+      isCheckIn: Boolean(item.isCheckIn),
+      stayId: String(item.stayId || ''),
+      startDay: Number(item.startDay) || 0,
+      startMonth: Number(item.startMonth) || 0,
+      startYear: Number(item.startYear) || 0,
+      isStartDay: Boolean(item.isStartDay)
     }));
 
     await client.query(

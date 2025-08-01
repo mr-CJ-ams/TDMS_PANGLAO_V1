@@ -71,4 +71,7 @@ router.get("/drafts", submissionsController.getAllDrafts);
 // Get details of a specific draft
 router.get("/draft/:draftId", submissionsController.getDraftDetails);
 
+// Remove a stay from all months for a user
+router.delete("/stay/:userId/:stayId", submissionsController.removeStayFromAllMonths);
+
 module.exports = router;
