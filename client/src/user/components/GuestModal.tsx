@@ -30,7 +30,7 @@ const GuestModal = ({
 }: GuestModalProps) => {
   const [lengthOfStay, setLengthOfStay] = useState(initialData?.lengthOfStay?.toString() || "");
   const [guests, setGuests] = useState(initialData?.guests || []);
-  const [isCheckIn] = useState(true);
+  const [isCheckIn, setIsCheckIn] = useState(initialData?.isCheckIn !== false); // Default to true, but can be false
   const [error, setError] = useState("");
 
   const handleSave = () => {
@@ -85,6 +85,35 @@ const GuestModal = ({
           </div>
           <div className="modal-body">
             {error && <div className="alert alert-danger">{error}</div>}
+            
+            {/* Check-in toggle button */}
+            <div className="form-group mb-3">
+              <label className="form-label fw-bold">Does guest check-in today?</label>
+              <div className="d-flex gap-2">
+                <button
+                  type="button"
+                  className={`btn ${isCheckIn ? 'btn-warning' : 'btn-outline-warning'} flex-fill`}
+                  onClick={() => setIsCheckIn(true)}
+                  disabled={disabled}
+                >
+                  Yes
+                </button>
+                <button
+                  type="button"
+                  className={`btn ${!isCheckIn ? 'btn-primary' : 'btn-outline-primary'} flex-fill`}
+                  onClick={() => setIsCheckIn(false)}
+                  disabled={disabled}
+                >
+                  No
+                </button>
+              </div>
+              <small className="form-text text-muted">
+                {isCheckIn 
+                  ? "✅ This will count as a check-in and the start day will be yellow" 
+                  : "ℹ️ This will NOT count as a check-in and the start day will be blue"}
+              </small>
+            </div>
+
             <div className="form-group">
               <label>Length of Overnight Stay</label>
               <input

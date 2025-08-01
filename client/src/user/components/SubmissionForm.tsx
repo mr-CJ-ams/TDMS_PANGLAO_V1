@@ -336,8 +336,11 @@ const SubmissionForm = () => {
     const roomData = occupiedRooms.find(r => r.day === day && r.room === room);
     if (!roomData) return "white";
     
-    // Yellow for start days (editable), Green for following days (non-editable)
-    return roomData.isStartDay ? "#FBBF24" : "#34D399";
+    // Yellow for check-in start days, Blue for non-check-in start days, Green for following days
+    if (roomData.isStartDay) {
+      return roomData.isCheckIn ? "#FBBF24" : "#3B82F6"; // Yellow for check-in, Blue for non-check-in
+    }
+    return "#34D399"; // Green for following days
   };
 
   // Guest data for modal
@@ -366,7 +369,7 @@ const SubmissionForm = () => {
     });
     
     const uniqueDayRooms = Array.from(uniqueRooms.values());
-    const checkIns = uniqueDayRooms.filter(r => r.isCheckIn).reduce((a, r) => a + (r.guests?.length || 0), 0);
+    const checkIns = uniqueDayRooms.filter(r => r.isCheckIn === true).reduce((a, r) => a + (r.guests?.length || 0), 0);
     const overnight = uniqueDayRooms.reduce((a, r) => a + (r.guests?.length || 0), 0);
     const occupied = new Set(uniqueDayRooms.map(r => r.room)).size;
     
@@ -381,7 +384,7 @@ const SubmissionForm = () => {
 
   // Overall metrics
   const calculateOverallTotals = () => {
-    const totalCheckIns = occupiedRooms.filter(r => r.isCheckIn && r.guests.length > 0).reduce((a, r) => a + r.guests.length, 0);
+    const totalCheckIns = occupiedRooms.filter(r => r.isCheckIn === true && r.guests.length > 0).reduce((a, r) => a + r.guests.length, 0);
     const totalOvernight = occupiedRooms.filter(r => r.guests.length > 0).reduce((a, r) => a + r.guests.length, 0);
     const totalRoomsOccupied = new Set(occupiedRooms.filter(r => r.guests.length > 0).map(r => r.room)).size;
     const totalRoomsAvailable = numberOfRooms;
