@@ -125,7 +125,7 @@ class SubmissionModel {
     const result = await pool.query(
       `SELECT s.submission_id, s.month, s.year, s.submitted_at, s.is_late, s.penalty,
               s.average_guest_nights, s.average_room_occupancy_rate, s.average_guests_per_room,
-              s.number_of_rooms,
+              s.number_of_rooms, u.company_name, u.accommodation_type,
               COALESCE(json_agg(json_build_object(
                 'day', dm.day,
                 'check_ins', dm.check_ins,
@@ -141,9 +141,10 @@ class SubmissionModel {
                 )) FROM guests g WHERE g.metric_id = dm.metric_id), '[]'::json)
               )) FILTER (WHERE dm.metric_id IS NOT NULL), '[]'::json) AS days
        FROM submissions s
+       LEFT JOIN users u ON s.user_id = u.user_id
        LEFT JOIN daily_metrics dm ON s.submission_id = dm.submission_id
        WHERE s.submission_id = $1
-       GROUP BY s.submission_id`,
+       GROUP BY s.submission_id, u.company_name, u.accommodation_type`,
       [submissionId]
     );
     return result.rows[0];

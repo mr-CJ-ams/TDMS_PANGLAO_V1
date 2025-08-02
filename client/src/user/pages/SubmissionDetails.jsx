@@ -151,42 +151,275 @@ const SubmissionDetails = ({ submissionId }) => {
     [nationalityCounts]
   );
 
-  const exportToExcel = () => {
-    const data = [
-      ["Day", "Check Ins", "Overnight", "Occupied", "Room Number", "Gender", "Age", "Status", "Nationality"],
-      ...submission.days.flatMap((day) =>
-        day.guests?.length
-          ? day.guests.map((guest) => [
-              day.day,
-              day.check_ins || 0,
-              day.overnight || 0,
-              day.occupied || 0,
-              guest.room_number,
-              guest.gender,
-              guest.age,
-              guest.status,
-              guest.nationality,
-            ])
-          : [[day.day, day.check_ins || 0, day.overnight || 0, day.occupied || 0, "", "", "", "", ""]]
-      ),
-    ];
-    const ws = XLSX.utils.aoa_to_sheet(data),
-      wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Submission Details");
-    saveAs(
-      new Blob([XLSX.write(wb, { bookType: "xlsx", type: "array" })], { type: "application/octet-stream" }),
-      `Submission_Details_${submission.month}_${submission.year}.xlsx`
-    );
-  };
 
-  const exportNationalityCountsToExcel = () => {
-    const data = [["Nationality", "Count"], ...sortedNationalities.map((n) => [n, nationalityCounts[n]])],
-      ws = XLSX.utils.aoa_to_sheet(data),
-      wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Nationality Counts");
+  const exportDailyMetricsToExcel = () => {
+    const getDaysInMonth = (month, year) => {
+      return new Date(year, month, 0).getDate();
+    };
+    const daysInMonth = getDaysInMonth(submission.month, submission.year);
+    
+    // Create workbook with multiple sheets
+    const wb = XLSX.utils.book_new();
+    
+    // Sheet 1: Submission Details
+    const submissionDetailsData = [
+      ["SUBMISSION DETAILS"],
+      [""], // Empty row for spacing
+      ["Month", new Date(0, submission.month - 1).toLocaleString("default", { month: "long" })],
+      ["Year", submission.year],
+      ["Company Name", submission.company_name || "N/A"],
+      ["Accommodation Type", submission.accommodation_type || "N/A"],
+      ["Submitted At", new Date(submission.submitted_at).toLocaleString()],
+      ["Total Rooms", submission.number_of_rooms],
+      [""], // Empty row for spacing
+      ["TOTALS"],
+      ["Total No. of Guest Check-Ins", totalCheckIns],
+      ["Total No. Guest Staying Overnight", totalOvernight],
+      ["Total No. of Occupied Rooms", totalOccupied],
+      [""], // Empty row for spacing
+      ["AVERAGES"],
+      ["Ave. Guest-Nights", averageGuestNights],
+      ["Ave. Room Occupancy Rate", `${averageRoomOccupancyRate}%`],
+      ["Ave. Guests per Room", averageGuestsPerRoom],
+    ];
+    
+    const submissionWs = XLSX.utils.aoa_to_sheet(submissionDetailsData);
+    XLSX.utils.book_append_sheet(wb, submissionWs, "Submission Details");
+    
+    // Auto-size columns for submission details
+    submissionWs['!cols'] = [
+      { width: 25 }, // Label column
+      { width: 20 }  // Value column
+    ];
+    
+    // Sheet 2: Daily Metrics
+    // Create headers: Day, Room 1, Room 2, ..., Room N, Summary
+    const headers = ["Day"];
+    for (let i = 1; i <= submission.number_of_rooms; i++) {
+      headers.push(`Room ${i}`);
+    }
+    headers.push("Check-ins", "Overnight", "Occupied");
+    
+    const data = [headers];
+    
+    // Add data for each day
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dayData = submission.days.find(d => d.day === day);
+      const dayGuests = dayData?.guests || [];
+      
+      // Group guests by room
+      const guestsByRoom = {};
+      for (let roomNum = 1; roomNum <= submission.number_of_rooms; roomNum++) {
+        guestsByRoom[roomNum] = dayGuests.filter(g => g.room_number === roomNum);
+      }
+      
+      // Calculate summary
+      const totalCheckIns = dayGuests.filter(g => g.isCheckIn).length;
+      const totalOvernight = dayGuests.length;
+      const totalOccupied = Object.values(guestsByRoom).filter(guests => guests.length > 0).length;
+      
+      const row = [day];
+      
+      // Add room data
+      for (let roomNum = 1; roomNum <= submission.number_of_rooms; roomNum++) {
+        const roomGuests = guestsByRoom[roomNum] || [];
+        if (roomGuests.length > 0) {
+          const guestDetails = roomGuests.map(guest => 
+            `${guest.isCheckIn ? '✓' : '●'} ${guest.gender}, ${guest.age}, ${guest.status}, ${guest.nationality}`
+          ).join('\n'); // Use line breaks instead of semicolons
+          row.push(guestDetails);
+        } else {
+          row.push("Empty");
+        }
+      }
+      
+      // Add summary data
+      row.push(totalCheckIns, totalOvernight, totalOccupied);
+      
+      data.push(row);
+    }
+    
+    const dailyMetricsWs = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, dailyMetricsWs, "Daily Metrics");
+    
+    // Auto-size columns for daily metrics
+    const colWidths = [8]; // Day column
+    for (let i = 1; i <= submission.number_of_rooms; i++) {
+      colWidths.push(30); // Room columns
+    }
+    colWidths.push(12, 12, 12); // Summary columns
+    
+    dailyMetricsWs['!cols'] = colWidths.map(width => ({ width }));
+    
+    // Auto-fit rows for multi-line content
+    const maxRowHeight = 15; // Base row height
+    for (let rowIndex = 1; rowIndex < data.length; rowIndex++) {
+      const row = data[rowIndex];
+      let maxLines = 1;
+      
+      // Check each room column for number of lines
+      for (let colIndex = 1; colIndex <= submission.number_of_rooms; colIndex++) {
+        const cellValue = row[colIndex];
+        if (cellValue && cellValue !== "Empty") {
+          const lines = cellValue.split('\n').length;
+          maxLines = Math.max(maxLines, lines);
+        }
+      }
+      
+      // Set row height based on content
+      const rowHeight = Math.max(maxRowHeight, maxLines * 15);
+      if (!dailyMetricsWs['!rows']) dailyMetricsWs['!rows'] = [];
+      dailyMetricsWs['!rows'][rowIndex] = { hpt: rowHeight };
+    }
+    
+    // Sheet 3: Nationality Counts
+    const nationalityData = [
+      ["Year", "=", submission.year],
+      ["Month", "=", new Date(0, submission.month - 1).toLocaleString("default", { month: "long" })],
+      ["(PANGLAO REPORT)", submission.company_name || "Resort"],
+      [""], // Empty row for spacing
+      ["COUNTRY OF RESIDENCE"],
+      ["TOTAL PHILIPPINE RESIDENTS", "=", nationalityCounts["Philippines"] || 0],
+      ["NON-PHILIPPINE RESIDENTS", "=", Object.entries(nationalityCounts).filter(([country]) => country !== "Philippines").reduce((sum, [, count]) => sum + count, 0)],
+      [""], // Empty row for spacing
+      
+      // ASIA - ASEAN
+      ["ASIA - ASEAN"],
+      ["   Brunei", "=", nationalityCounts["Brunei"] || 0],
+      ["   Cambodia", "=", nationalityCounts["Cambodia"] || 0],
+      ["   Indonesia", "=", nationalityCounts["Indonesia"] || 0],
+      ["   Laos", "=", nationalityCounts["Laos"] || 0],
+      ["   Malaysia", "=", nationalityCounts["Malaysia"] || 0],
+      ["   Myanmar", "=", nationalityCounts["Myanmar"] || 0],
+      ["   Singapore", "=", nationalityCounts["Singapore"] || 0],
+      ["   Thailand", "=", nationalityCounts["Thailand"] || 0],
+      ["   Vietnam", "=", nationalityCounts["Vietnam"] || 0],
+      [""], // Empty row for spacing
+      
+      // ASIA - EAST ASIA
+      ["ASIA - EAST ASIA"],
+      ["   China", "=", nationalityCounts["China"] || 0],
+      ["   Hong Kong", "=", nationalityCounts["Hong Kong"] || 0],
+      ["   Japan", "=", nationalityCounts["Japan"] || 0],
+      ["   Korea", "=", nationalityCounts["Korea"] || 0],
+      ["   Taiwan", "=", nationalityCounts["Taiwan"] || 0],
+      [""], // Empty row for spacing
+      
+      // ASIA - SOUTH ASIA
+      ["ASIA - SOUTH ASIA"],
+      ["   Bangladesh", "=", nationalityCounts["Bangladesh"] || 0],
+      ["   India", "=", nationalityCounts["India"] || 0],
+      ["   Iran", "=", nationalityCounts["Iran"] || 0],
+      ["   Nepal", "=", nationalityCounts["Nepal"] || 0],
+      ["   Pakistan", "=", nationalityCounts["Pakistan"] || 0],
+      ["   Sri Lanka", "=", nationalityCounts["Sri Lanka"] || 0],
+      [""], // Empty row for spacing
+      
+      // MIDDLE EAST
+      ["MIDDLE EAST"],
+      ["   Bahrain", "=", nationalityCounts["Bahrain"] || 0],
+      ["   Egypt", "=", nationalityCounts["Egypt"] || 0],
+      ["   Israel", "=", nationalityCounts["Israel"] || 0],
+      ["   Jordan", "=", nationalityCounts["Jordan"] || 0],
+      ["   Kuwait", "=", nationalityCounts["Kuwait"] || 0],
+      ["   Saudi Arabia", "=", nationalityCounts["Saudi Arabia"] || 0],
+      ["   United Arab Emirates", "=", nationalityCounts["United Arab Emirates"] || 0],
+      [""], // Empty row for spacing
+      
+      // AMERICA - NORTH AMERICA
+      ["AMERICA - NORTH AMERICA"],
+      ["   Canada", "=", nationalityCounts["Canada"] || 0],
+      ["   Mexico", "=", nationalityCounts["Mexico"] || 0],
+      ["   USA", "=", nationalityCounts["USA"] || 0],
+      [""], // Empty row for spacing
+      
+      // AMERICA - SOUTH AMERICA
+      ["AMERICA - SOUTH AMERICA"],
+      ["   Argentina", "=", nationalityCounts["Argentina"] || 0],
+      ["   Brazil", "=", nationalityCounts["Brazil"] || 0],
+      ["   Colombia", "=", nationalityCounts["Colombia"] || 0],
+      ["   Peru", "=", nationalityCounts["Peru"] || 0],
+      ["   Venezuela", "=", nationalityCounts["Venezuela"] || 0],
+      [""], // Empty row for spacing
+      
+      // EUROPE - WESTERN EUROPE
+      ["EUROPE - WESTERN EUROPE"],
+      ["   Austria", "=", nationalityCounts["Austria"] || 0],
+      ["   Belgium", "=", nationalityCounts["Belgium"] || 0],
+      ["   France", "=", nationalityCounts["France"] || 0],
+      ["   Germany", "=", nationalityCounts["Germany"] || 0],
+      ["   Luxembourg", "=", nationalityCounts["Luxembourg"] || 0],
+      ["   Netherlands", "=", nationalityCounts["Netherlands"] || 0],
+      ["   Switzerland", "=", nationalityCounts["Switzerland"] || 0],
+      [""], // Empty row for spacing
+      
+      // EUROPE - NORTHERN EUROPE
+      ["EUROPE - NORTHERN EUROPE"],
+      ["   Denmark", "=", nationalityCounts["Denmark"] || 0],
+      ["   Finland", "=", nationalityCounts["Finland"] || 0],
+      ["   Ireland", "=", nationalityCounts["Ireland"] || 0],
+      ["   Norway", "=", nationalityCounts["Norway"] || 0],
+      ["   Sweden", "=", nationalityCounts["Sweden"] || 0],
+      ["   United Kingdom", "=", nationalityCounts["United Kingdom"] || 0],
+      [""], // Empty row for spacing
+      
+      // EUROPE - SOUTHERN EUROPE
+      ["EUROPE - SOUTHERN EUROPE"],
+      ["   Greece", "=", nationalityCounts["Greece"] || 0],
+      ["   Italy", "=", nationalityCounts["Italy"] || 0],
+      ["   Portugal", "=", nationalityCounts["Portugal"] || 0],
+      ["   Spain", "=", nationalityCounts["Spain"] || 0],
+      ["   Union of Serbia and Montenegro", "=", nationalityCounts["Union of Serbia and Montenegro"] || 0],
+      [""], // Empty row for spacing
+      
+      // EUROPE - EASTERN EUROPE
+      ["EUROPE - EASTERN EUROPE"],
+      ["   Poland", "=", nationalityCounts["Poland"] || 0],
+      ["   Russia", "=", nationalityCounts["Russia"] || 0],
+      [""], // Empty row for spacing
+      
+      // AUSTRALASIA/PACIFIC
+      ["AUSTRALASIA/PACIFIC"],
+      ["   Australia", "=", nationalityCounts["Australia"] || 0],
+      ["   Guam", "=", nationalityCounts["Guam"] || 0],
+      ["   Nauru", "=", nationalityCounts["Nauru"] || 0],
+      ["   New Zealand", "=", nationalityCounts["New Zealand"] || 0],
+      ["   Papua New Guinea", "=", nationalityCounts["Papua New Guinea"] || 0],
+      [""], // Empty row for spacing
+      
+      // AFRICA
+      ["AFRICA"],
+      ["   Nigeria", "=", nationalityCounts["Nigeria"] || 0],
+      ["   South Africa", "=", nationalityCounts["South Africa"] || 0],
+      [""], // Empty row for spacing
+      
+      // OTHERS AND UNSPECIFIED RESIDENCES
+      ["OTHERS AND UNSPECIFIED RESIDENCES"],
+      ["   Others and Unspecified Residences", "=", nationalityCounts["Others and Unspecified Residences"] || 0],
+      [""], // Empty row for spacing
+      
+      // Summary totals
+      ["TOTAL NON-PHILIPPINE RESIDENTS", "=", Object.entries(nationalityCounts).filter(([country]) => country !== "Philippines").reduce((sum, [, count]) => sum + count, 0)],
+      [""], // Empty row for spacing
+      ["GRAND TOTAL GUEST ARRIVALS", "=", Object.values(nationalityCounts).reduce((sum, count) => sum + count, 0)],
+      ["   Total Philippine Residents", "=", nationalityCounts["Philippines"] || 0],
+      ["   Total Non-Philippine Residents", "=", Object.entries(nationalityCounts).filter(([country]) => country !== "Philippines").reduce((sum, [, count]) => sum + count, 0)],
+      ["   Total Overseas Filipinos", "=", nationalityCounts["Overseas Filipinos"] || 0],
+    ];
+    
+    const nationalityWs = XLSX.utils.aoa_to_sheet(nationalityData);
+    XLSX.utils.book_append_sheet(wb, nationalityWs, "Nationality Counts");
+    
+    // Auto-size columns for nationality counts
+    nationalityWs['!cols'] = [
+      { width: 35 }, // Country/Region column
+      { width: 5 },  // Equals sign column
+      { width: 15 }  // Count column
+    ];
+    
     saveAs(
       new Blob([XLSX.write(wb, { bookType: "xlsx", type: "array" })], { type: "application/octet-stream" }),
-      `Nationality_Counts_Submission_${submissionId}.xlsx`
+      `${submission.company_name || 'Resort'}_${new Date(0, submission.month - 1).toLocaleString("default", { month: "long" })}_${submission.year}_Tourist_Arrival_Report.xlsx`
     );
   };
 
@@ -235,13 +468,9 @@ const SubmissionDetails = ({ submissionId }) => {
         
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-3 mb-8">
-          <ActionButton onClick={exportToExcel}>
+          <ActionButton onClick={exportDailyMetricsToExcel}>
             <FileSpreadsheet className="w-4 h-4 inline mr-2" />
-            Export to Excel
-          </ActionButton>
-          <ActionButton onClick={exportNationalityCountsToExcel}>
-            <FileSpreadsheet className="w-4 h-4 inline mr-2" />
-            Export Top Markets Ranking
+            Export Daily Metrics
           </ActionButton>
         </div>
         
@@ -294,7 +523,7 @@ const SubmissionDetails = ({ submissionId }) => {
             >
               View Nationality Counts
             </button>
-          </div>
+        </div>
         </div>
         
         {/* Daily Metrics Table */}
@@ -431,8 +660,8 @@ const SubmissionDetails = ({ submissionId }) => {
                             <span className="font-medium">{totalOccupied}</span>
                           </div>
                         </div>
-                      </td>
-                    </tr>
+                    </td>
+                  </tr>
                   );
                 })}
               </tbody>
