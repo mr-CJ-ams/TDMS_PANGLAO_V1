@@ -3,7 +3,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 
 const navItems = [
-  { key: "dashboard", label: "Main Dashboard", icon: "bi-house" },
+  { key: "home", label: "Home", icon: "bi-house" },
   { key: "submission-input", label: "Submission Input", icon: "bi-pencil-square" },
   { key: "submission-history", label: "Submission History", icon: "bi-clock-history" },
   { key: "user-statistics", label: "My Statistics", icon: "bi-graph-up" },

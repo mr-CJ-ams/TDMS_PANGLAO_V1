@@ -7,7 +7,7 @@ import SubmissionInput from "../components/SubmissionInput";
 import SubmissionHistory from "../components/SubmissionHistory";
 import UserStatistics from "../components/UserStatistics";
 import HelpSupport from "../components/HelpSupport";
-import Ordinance from "../components/Ordinance";
+import Homepage from "../components/Homepage";
 import MainDashboard from "../../admin/pages/MainDashboard";
 import '../../components/MenuButton.css';
 
@@ -16,7 +16,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000
 
 const UserDashboard = () => {
   const [user, setUser] = useState(null),
-    [activeSection, setActiveSection] = useState("dashboard"),
+    [activeSection, setActiveSection] = useState("home"),
     [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -63,7 +63,7 @@ const UserDashboard = () => {
           <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} activeSection={activeSection} setActiveSection={setActiveSection} handleLogout={handleLogout} user={user} />
           <div className="col-md-9">
             <div className="p-4">
-              {activeSection === "dashboard" && <Ordinance />}
+              {activeSection === "home" && <Homepage />}
               {activeSection === "submission-input" && <SubmissionInput />}
               {activeSection === "submission-history" && <SubmissionHistory user={user} />}
               {activeSection === "user-statistics" && <UserStatistics user={user} />}
