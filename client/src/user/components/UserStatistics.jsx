@@ -267,12 +267,13 @@ const UserStatistics = ({ user }) => {
         )}
 
         {/* Monthly Metrics Table */}
-        {filledMonthlyMetrics.length > 0 && (
+        {monthlyMetrics.length > 0 && (
           <UserMonthlyMetrics
             monthlyMetrics={filledMonthlyMetrics}
             selectedYear={selectedYear}
             formatMonth={formatMonth}
             toNumber={toNumber}
+            user={user}
           />
         )}
 

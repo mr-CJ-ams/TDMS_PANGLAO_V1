@@ -23,7 +23,7 @@ const predictedData2025 = [
   { month: 12, total_check_ins: 0, isPredicted: true },
 ];
 
-const MainDashboard = () => {
+const MainDashboard = ({ user }) => {
   const [monthlyCheckIns, setMonthlyCheckIns] = useState([]),
     [monthlyMetrics, setMonthlyMetrics] = useState([]),
     [nationalityCounts, setNationalityCounts] = useState([]),
@@ -108,6 +108,7 @@ const MainDashboard = () => {
         selectedYear={selectedYear}
         selectedMonth={selectedMonth}
         formatMonth={formatMonth}
+        user={user}
       />
       <NationalityCounts
         nationalityCounts={nationalityCounts}

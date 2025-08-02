@@ -113,7 +113,7 @@ const AdminDashboard = () => {
         {/* Main Content */}
         <div className="col-md-9">
           <div className="p-4">
-            {activeSection === "dashboard" && <MainDashboard />}
+            {activeSection === "dashboard" && <MainDashboard user={{ role: "admin" }} />}
             {activeSection === "user-approval" && (
               <UserApproval
                 users={users}

@@ -8,7 +8,7 @@ import regions from "../utils/regions";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
-const RegionalDistribution = ({ nationalityCounts, selectedYear, selectedMonth, formatMonth }) => {
+const RegionalDistribution = ({ nationalityCounts, selectedYear, selectedMonth, formatMonth, user }) => {
   const [establishmentData, setEstablishmentData] = React.useState([]);
 
   React.useEffect(() => {
@@ -232,20 +232,22 @@ const RegionalDistribution = ({ nationalityCounts, selectedYear, selectedMonth, 
   return (
     <div style={{ padding: "20px", backgroundColor: "#E0F7FA" }}>
       <h3 style={{ color: "#37474F", marginBottom: "20px" }}> Top Markets Ranking </h3>
-      <button
-        style={{
-          backgroundColor: "#00BCD4",
-          color: "#FFFFFF",
-          border: "none",
-          padding: "10px 20px",
-          borderRadius: "8px",
-          cursor: "pointer",
-          marginBottom: "20px",
-        }}
-        onClick={exportToExcel}
-      >
-        Export DAE-form 2
-      </button>
+      {user?.role === "admin" && (
+        <button
+          style={{
+            backgroundColor: "#00BCD4",
+            color: "#FFFFFF",
+            border: "none",
+            padding: "10px 20px",
+            borderRadius: "8px",
+            cursor: "pointer",
+            marginBottom: "20px",
+          }}
+          onClick={exportToExcel}
+        >
+          Export DAE-form 2
+        </button>
+      )}
       {/* <pre>{JSON.stringify(processedData, null, 2)}</pre> For debugging */}
     </div>
   );

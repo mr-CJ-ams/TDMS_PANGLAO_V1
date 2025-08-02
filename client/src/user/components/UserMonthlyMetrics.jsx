@@ -2,24 +2,53 @@ import React from "react";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
-const UserMonthlyMetrics = ({ monthlyMetrics, selectedYear, formatMonth, toNumber }) => {
+const UserMonthlyMetrics = ({ monthlyMetrics, selectedYear, formatMonth, toNumber, user }) => {
   const exportMonthlyMetrics = () => {
-    const worksheet = XLSX.utils.json_to_sheet(
-      monthlyMetrics.map(m => ({
-        Month: formatMonth(m.month),
-        "Total No. Guest Check-Ins": toNumber(m.total_check_ins),
-        "Total No. of Guest Staying Overnight": toNumber(m.total_overnight),
-        "Total No. Rooms Occupied": toNumber(m.total_occupied),
-        "Ave. Guest-Nights": toNumber(m.average_guest_nights).toFixed(2),
-        "Ave. Room Occupancy Rate": `${toNumber(m.average_room_occupancy_rate).toFixed(2)}%`,
-        "Ave. Guests per Room": toNumber(m.average_guests_per_room).toFixed(2),
-        "Total Rooms": toNumber(m.total_rooms),
-      }))
-    );
+    // Create data array with report info and monthly metrics in one sheet
+    const data = [
+      ["MONTHLY METRICS REPORT"],
+      [""], // Empty row for spacing
+      ["Company Name", user?.company_name || "N/A"],
+      ["Accommodation Type", user?.accommodation_type || "N/A"],
+      ["Year", selectedYear],
+      [""], // Empty row for spacing
+      [""], // Empty row for spacing
+      // Headers for monthly metrics
+      ["Month", "Total No. Guest Check-Ins", "Total No. of Guest Staying Overnight", "Total No. Rooms Occupied", "Ave. Guest-Nights", "Ave. Room Occupancy Rate", "Ave. Guests per Room", "Total Rooms"],
+      // Monthly metrics data
+      ...monthlyMetrics.map(m => [
+        formatMonth(m.month),
+        toNumber(m.total_check_ins),
+        toNumber(m.total_overnight),
+        toNumber(m.total_occupied),
+        toNumber(m.average_guest_nights).toFixed(2),
+        `${toNumber(m.average_room_occupancy_rate).toFixed(2)}%`,
+        toNumber(m.average_guests_per_room).toFixed(2),
+        toNumber(m.total_rooms),
+      ])
+    ];
+    
+    const worksheet = XLSX.utils.aoa_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, worksheet, "Monthly Metrics");
+    
+    // Auto-size columns
+    worksheet['!cols'] = [
+      { width: 15 }, // Month
+      { width: 25 }, // Total Check-ins
+      { width: 30 }, // Total Overnight
+      { width: 25 }, // Total Occupied
+      { width: 20 }, // Ave Guest-Nights
+      { width: 25 }, // Ave Room Occupancy Rate
+      { width: 20 }, // Ave Guests per Room
+      { width: 15 }, // Total Rooms
+    ];
+    
     const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-    saveAs(new Blob([buf], { type: "application/octet-stream" }), `My_Monthly_Metrics_${selectedYear}.xlsx`);
+    saveAs(
+      new Blob([buf], { type: "application/octet-stream" }), 
+      `${user?.company_name || 'Resort'}_${selectedYear}_Monthly_Metrics_Report.xlsx`
+    );
   };
 
   // Helper function to safely convert to number

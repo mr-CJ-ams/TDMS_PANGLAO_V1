@@ -1,25 +1,38 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 const UserGuestDemographics = ({ user, selectedYear, selectedMonth, formatMonth }) => {
   const [guestDemographics, setGuestDemographics] = useState([]);
+  const [nationalityCounts, setNationalityCounts] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!user || !selectedYear || !selectedMonth) return;
     setLoading(true);
-    axios
-      .get(`${API_BASE_URL}/api/submissions/guest-demographics/${user.user_id}?year=${selectedYear}&month=${selectedMonth}`, {
+    
+    // Fetch both guest demographics and nationality counts
+    Promise.all([
+      axios.get(`${API_BASE_URL}/api/submissions/guest-demographics/${user.user_id}?year=${selectedYear}&month=${selectedMonth}`, {
+        headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` },
+      }),
+      axios.get(`${API_BASE_URL}/api/submissions/nationality-counts/${user.user_id}?year=${selectedYear}&month=${selectedMonth}`, {
         headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` },
       })
-      .then(res => setGuestDemographics(res.data))
-      .catch(err => {
-        setGuestDemographics([]);
-        console.error("Error fetching guest demographics:", err);
-      })
-      .finally(() => setLoading(false));
+    ])
+    .then(([demographicsRes, nationalityRes]) => {
+      setGuestDemographics(demographicsRes.data);
+      setNationalityCounts(nationalityRes.data);
+    })
+    .catch(err => {
+      setGuestDemographics([]);
+      setNationalityCounts([]);
+      console.error("Error fetching data:", err);
+    })
+    .finally(() => setLoading(false));
   }, [user, selectedYear, selectedMonth]);
 
   // Calculate summary
@@ -50,9 +63,104 @@ const UserGuestDemographics = ({ user, selectedYear, selectedMonth, formatMonth 
     { Category: "Single", Total: summary.Single },
   ];
 
+  const exportGuestDemographics = () => {
+    // Create workbook with multiple sheets
+    const wb = XLSX.utils.book_new();
+    
+    // Sheet 1: Guest Demographics
+    const demographicsData = [
+      ["GUEST DEMOGRAPHICS REPORT"],
+      [""], // Empty row for spacing
+      ["Company Name", user?.company_name || "N/A"],
+      ["Accommodation Type", user?.accommodation_type || "N/A"],
+      ["Month", formatMonth(selectedMonth)],
+      ["Year", selectedYear],
+      [""], // Empty row for spacing
+      [""], // Empty row for spacing
+      // Summary section
+      ["SUMMARY"],
+      ["Category", "Total"],
+      ...summaryTableData.map(row => [row.Category, row.Total]),
+      [""], // Empty row for spacing
+      [""], // Empty row for spacing
+      // Detailed section
+      ["DETAILED BREAKDOWN"],
+      ["Gender", "Age Group", "Status", "Count"],
+      ...guestDemographics.map(demo => [
+        demo.gender,
+        demo.age_group,
+        demo.status,
+        demo.count
+      ])
+    ];
+    
+    const demographicsWorksheet = XLSX.utils.aoa_to_sheet(demographicsData);
+    XLSX.utils.book_append_sheet(wb, demographicsWorksheet, "Guest Demographics");
+    
+    // Auto-size columns for demographics sheet
+    demographicsWorksheet['!cols'] = [
+      { width: 20 }, // Company Name, Category, Gender
+      { width: 25 }, // Accommodation Type, Total, Age Group
+      { width: 15 }, // Month, Status
+      { width: 15 }, // Year, Count
+    ];
+    
+    // Sheet 2: Nationality Counts
+    const nationalityData = [
+      ["NATIONALITY COUNTS REPORT"],
+      [""], // Empty row for spacing
+      ["Company Name", user?.company_name || "N/A"],
+      ["Accommodation Type", user?.accommodation_type || "N/A"],
+      ["Month", formatMonth(selectedMonth)],
+      ["Year", selectedYear],
+      [""], // Empty row for spacing
+      [""], // Empty row for spacing
+      ["Nationality", "Count", "Male", "Female"],
+      ...nationalityCounts.map(n => [
+        n.nationality,
+        n.count,
+        n.male_count,
+        n.female_count
+      ])
+    ];
+    
+    const nationalityWorksheet = XLSX.utils.aoa_to_sheet(nationalityData);
+    XLSX.utils.book_append_sheet(wb, nationalityWorksheet, "Nationality Counts");
+    
+    // Auto-size columns for nationality sheet
+    nationalityWorksheet['!cols'] = [
+      { width: 25 }, // Nationality
+      { width: 15 }, // Count
+      { width: 15 }, // Male
+      { width: 15 }, // Female
+    ];
+    
+    const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    saveAs(
+      new Blob([buf], { type: "application/octet-stream" }), 
+      `${user?.company_name || 'Resort'}_${formatMonth(selectedMonth)}_${selectedYear}_Guest_Demographics_Report.xlsx`
+    );
+  };
+
   return (
     <div style={{ padding: 20, backgroundColor: "#E0F7FA", marginTop: 24, borderRadius: 12 }}>
-      <h3 style={{ color: "#37474F", marginBottom: 20 }}>Guest Demographics of Guest Check-Ins</h3>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <h3 style={{ color: "#37474F", margin: 0 }}>Guest Demographics of Guest Check-Ins</h3>
+        <button
+          style={{
+            backgroundColor: "#00BCD4",
+            color: "#FFF",
+            border: "none",
+            padding: "10px 20px",
+            borderRadius: 8,
+            cursor: "pointer",
+            fontSize: "14px"
+          }}
+          onClick={exportGuestDemographics}
+        >
+          Export to Excel
+        </button>
+      </div>
       <div style={{ marginBottom: 20 }}>
         <span style={{ color: "#0288D1", fontWeight: 500 }}>
           Year: {selectedYear} &nbsp; | &nbsp; Month: {formatMonth(selectedMonth)}
