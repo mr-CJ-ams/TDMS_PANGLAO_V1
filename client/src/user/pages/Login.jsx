@@ -62,6 +62,7 @@ const Login = () => {
               value={username}
               onChange={e => setUsername(e.target.value)}
               required
+              autoComplete="username"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
             />
           </div>
@@ -73,6 +74,7 @@ const Login = () => {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
+                autoComplete="current-password"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
               />
               <button

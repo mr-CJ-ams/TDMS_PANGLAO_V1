@@ -7,6 +7,7 @@ interface SaveButtonProps {
   hasSubmitted: boolean;
   isFutureMonth: boolean;
   isCurrentMonth: boolean;
+  disabled?: boolean;
 }
 
 const SaveButton = ({ 
@@ -14,7 +15,8 @@ const SaveButton = ({
   isFormSaved, 
   hasSubmitted, 
   isFutureMonth, 
-  isCurrentMonth 
+  isCurrentMonth,
+  disabled = false
 }: SaveButtonProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const SUBMISSION_TIMEOUT = 30000;
@@ -35,7 +37,7 @@ const SaveButton = ({
     }
   };
 
-  const isDisabled = isFormSaved || hasSubmitted || isFutureMonth || isCurrentMonth || isSubmitting;
+  const isDisabled = isFormSaved || hasSubmitted || isFutureMonth || isCurrentMonth || isSubmitting || disabled;
 
   return (
     <button

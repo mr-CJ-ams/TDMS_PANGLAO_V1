@@ -6,9 +6,10 @@ interface MonthYearSelectorProps {
   selectedYear: number;
   onMonthChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onYearChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  disabled?: boolean;
 }
 
-const MonthYearSelector = ({ selectedMonth, selectedYear, onMonthChange, onYearChange }: MonthYearSelectorProps) => {
+const MonthYearSelector = ({ selectedMonth, selectedYear, onMonthChange, onYearChange, disabled = false }: MonthYearSelectorProps) => {
   return (
     <div className="mt-4">
       <div className="row">
@@ -18,6 +19,7 @@ const MonthYearSelector = ({ selectedMonth, selectedYear, onMonthChange, onYearC
             className="form-control"
             value={selectedMonth}
             onChange={onMonthChange}
+            disabled={disabled}
           >
             {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
               <option key={month} value={month}>
@@ -32,6 +34,7 @@ const MonthYearSelector = ({ selectedMonth, selectedYear, onMonthChange, onYearC
             className="form-control"
             value={selectedYear}
             onChange={onYearChange}
+            disabled={disabled}
           >
             {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + i).map((year) => (
               <option key={year} value={year}>

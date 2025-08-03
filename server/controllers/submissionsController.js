@@ -305,9 +305,9 @@ exports.removeStayFromAllMonths = async (req, res) => {
       return res.status(400).json({ error: "Missing required parameters" });
     }
     
-    console.log("\n" + "=".repeat(80));
-    console.log(`🗑️ REMOVE STAY REQUEST - User: ${userId}, StayId: ${stayId}`);
-    console.log("=".repeat(80));
+    // console.log("\n" + "=".repeat(80));
+    // console.log(`🗑️ REMOVE STAY REQUEST - User: ${userId}, StayId: ${stayId}`);
+    // console.log("=".repeat(80));
     
     await client.query("BEGIN");
     
@@ -317,7 +317,7 @@ exports.removeStayFromAllMonths = async (req, res) => {
       [userId]
     );
     
-    console.log(`📊 Found ${result.rows.length} draft entries for user ${userId}`);
+    // console.log(`📊 Found ${result.rows.length} draft entries for user ${userId}`);
     
     let totalRemoved = 0;
     const updatedDrafts = [];
@@ -327,34 +327,34 @@ exports.removeStayFromAllMonths = async (req, res) => {
       const monthData = draft.data || [];
       const originalLength = monthData.length;
       
-      console.log(`\n🔍 Checking ${draft.month}/${draft.year}: ${originalLength} entries`);
+      // console.log(`\n🔍 Checking ${draft.month}/${draft.year}: ${originalLength} entries`);
       
       // Filter out entries with the specified stayId
       const filteredData = monthData.filter((entry) => entry.stayId !== stayId);
       const removedCount = originalLength - filteredData.length;
       
       if (removedCount > 0) {
-        console.log(`   ❌ Removing ${removedCount} entries from ${draft.month}/${draft.year} for stayId: ${stayId}`);
+        // console.log(`   ❌ Removing ${removedCount} entries from ${draft.month}/${draft.year} for stayId: ${stayId}`);
         
         // Log the entries being removed with full details
         const removedEntries = monthData.filter((entry) => entry.stayId === stayId);
-        console.log(`   📋 DETAILED REMOVAL LIST:`);
+        // console.log(`   📋 DETAILED REMOVAL LIST:`);
         
         removedEntries.forEach((entry, index) => {
-          console.log(`      ${index + 1}. Day ${entry.day}, Room ${entry.room}`);
-          console.log(`         ├─ StayId: ${entry.stayId}`);
-          console.log(`         ├─ isCheckIn: ${entry.isCheckIn}`);
-          console.log(`         ├─ isStartDay: ${entry.isStartDay}`);
-          console.log(`         ├─ lengthOfStay: ${entry.lengthOfStay}`);
-          console.log(`         ├─ startDay: ${entry.startDay}`);
-          console.log(`         ├─ startMonth: ${entry.startMonth}`);
-          console.log(`         ├─ startYear: ${entry.startYear}`);
-          console.log(`         └─ Guests: ${entry.guests?.length || 0}`);
+          // console.log(`      ${index + 1}. Day ${entry.day}, Room ${entry.room}`);
+          // console.log(`         ├─ StayId: ${entry.stayId}`);
+          // console.log(`         ├─ isCheckIn: ${entry.isCheckIn}`);
+          // console.log(`         ├─ isStartDay: ${entry.isStartDay}`);
+          // console.log(`         ├─ lengthOfStay: ${entry.lengthOfStay}`);
+          // console.log(`         ├─ startDay: ${entry.startDay}`);
+          // console.log(`         ├─ startMonth: ${entry.startMonth}`);
+          // console.log(`         ├─ startYear: ${entry.startYear}`);
+          // console.log(`         └─ Guests: ${entry.guests?.length || 0}`);
           
           // Log guest details if any
           if (entry.guests && entry.guests.length > 0) {
             entry.guests.forEach((guest, guestIndex) => {
-              console.log(`            👤 Guest ${guestIndex + 1}: ${guest.gender}, Age: ${guest.age}, ${guest.nationality}`);
+              // console.log(`            👤 Guest ${guestIndex + 1}: ${guest.gender}, Age: ${guest.age}, ${guest.nationality}`);
             });
           }
           
@@ -380,28 +380,28 @@ exports.removeStayFromAllMonths = async (req, res) => {
         
         updatedDrafts.push({ month: draft.month, year: draft.year, removed: removedCount });
       } else {
-        console.log(`   ✅ No entries found for stayId ${stayId} in ${draft.month}/${draft.year}`);
+        // console.log(`   ✅ No entries found for stayId ${stayId} in ${draft.month}/${draft.year}`);
       }
     }
     
     await client.query("COMMIT");
     
-    console.log("\n" + "=".repeat(80));
-    console.log(`📈 REMOVAL SUMMARY:`);
-    console.log("=".repeat(80));
-    console.log(`🏨 Total entries removed: ${totalRemoved}`);
-    console.log(`📅 Months affected: ${updatedDrafts.length}`);
+    // console.log("\n" + "=".repeat(80));
+    // console.log(`📈 REMOVAL SUMMARY:`);
+    // console.log("=".repeat(80));
+    // console.log(`🏨 Total entries removed: ${totalRemoved}`);
+    // console.log(`📅 Months affected: ${updatedDrafts.length}`);
     
-    if (allRemovedData.length > 0) {
-      console.log(`\n📋 COMPLETE REMOVAL BREAKDOWN:`);
-      allRemovedData.forEach((item, index) => {
-        console.log(`   ${index + 1}. ${item.month}/${item.year} - Day ${item.day}, Room ${item.room} (${item.guests} guests)`);
-        if (item.isStartDay) console.log(`      ⭐ START DAY`);
-        if (item.isCheckIn) console.log(`      🚪 CHECK-IN DAY`);
-      });
-    }
+    // if (allRemovedData.length > 0) {
+    //   // console.log(`\n📋 COMPLETE REMOVAL BREAKDOWN:`);
+    //   allRemovedData.forEach((item, index) => {
+    //     // console.log(`   ${index + 1}. ${item.month}/${item.year} - Day ${item.day}, Room ${item.room} (${item.guests} guests)`);
+    //     if (item.isStartDay) console.log(`      ⭐ START DAY`);
+    //     if (item.isCheckIn) console.log(`      🚪 CHECK-IN DAY`);
+    //   });
+    // }
     
-    console.log("=".repeat(80));
+    // console.log("=".repeat(80));
     
     res.json({ 
       message: "Stay removed successfully from all months",

@@ -1,3 +1,47 @@
 @import "tailwindcss";
 
-/* Custom styles can be added here */ 
+/* Custom styles can be added here */
+
+/* DolphinSpinner animations */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes water-1 {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+@keyframes water-2 {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scale(0.9);
+    opacity: 0.6;
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 2s linear infinite;
+}
+
+.animate-water-1 {
+  animation: water-1 3s ease-in-out infinite;
+}
+
+.animate-water-2 {
+  animation: water-2 3s ease-in-out infinite reverse;
+} 

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Sidebar from "../components/Sidebar";
 import ProfileSection from "../components/ProfileSection";
-import SubmissionInput from "../components/SubmissionInput";
+import SubmissionForm from "../components/SubmissionForm";
 import SubmissionHistory from "../components/SubmissionHistory";
 import UserStatistics from "../components/UserStatistics";
 import HelpSupport from "../components/HelpSupport";
@@ -64,7 +64,7 @@ const UserDashboard = () => {
           <div className="col-md-9">
             <div className="p-4">
               {activeSection === "home" && <Homepage />}
-              {activeSection === "submission-input" && <SubmissionInput />}
+              {activeSection === "submission-input" && <SubmissionForm />}
               {activeSection === "submission-history" && <SubmissionHistory user={user} />}
               {activeSection === "user-statistics" && <UserStatistics user={user} />}
               {activeSection === "profile-management" && <ProfileSection user={user} onUpdateRooms={handleUpdateRooms} />}

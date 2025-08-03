@@ -1,4 +1,5 @@
 
+import React, { useCallback, useMemo } from "react";
 import { Hotel } from "lucide-react";
 import "bootstrap/dist/css/bootstrap.min.css";
 
@@ -19,7 +20,27 @@ const MonthlyGrid = ({
   calculateDailyTotals,
   disabled
 }: MonthlyGridProps) => {
-  const rooms = Array.from({ length: numberOfRooms }, (_, i) => i + 1);
+  const rooms = useMemo(() => Array.from({ length: numberOfRooms }, (_, i) => i + 1), [numberOfRooms]);
+  
+  const handleCellClick = useCallback((day: number, room: number) => {
+    if (!disabled) {
+      onCellClick(day, room);
+    }
+  }, [disabled, onCellClick]);
+
+  const handleMouseEnter = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!disabled) {
+      e.currentTarget.style.transform = "scale(1.05)";
+      e.currentTarget.style.boxShadow = "0 6px 8px rgba(0,0,0,0.15)";
+    }
+  }, [disabled]);
+
+  const handleMouseLeave = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!disabled) {
+      e.currentTarget.style.transform = "scale(1)";
+      e.currentTarget.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
+    }
+  }, [disabled]);
 
   return (
     <div className="table-responsive" style={{ overflowX: "auto" }}>
@@ -99,7 +120,7 @@ const MonthlyGrid = ({
                 {rooms.map((room) => (
                   <td key={`${day}-${room}`}>
                     <button
-                      onClick={() => !disabled && onCellClick(day, room)}
+                      onClick={() => handleCellClick(day, room)}
                       className="btn w-100 d-flex align-items-center justify-content-center gap-2 px-2 py-1 border-0"
                       style={{
                         backgroundColor: getRoomColor(day, room),
@@ -111,18 +132,8 @@ const MonthlyGrid = ({
                         cursor: disabled ? "not-allowed" : "pointer",
                         opacity: disabled ? 0.6 : 1,
                       }}
-                      onMouseEnter={(e) => {
-                        if (!disabled) {
-                          e.currentTarget.style.transform = "scale(1.05)";
-                          e.currentTarget.style.boxShadow = "0 6px 8px rgba(0,0,0,0.15)";
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!disabled) {
-                          e.currentTarget.style.transform = "scale(1)";
-                          e.currentTarget.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
-                        }
-                      }}
+                      onMouseEnter={handleMouseEnter}
+                      onMouseLeave={handleMouseLeave}
                       disabled={disabled}
                     >
                       <Hotel size={16} />Room {room}

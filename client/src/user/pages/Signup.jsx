@@ -222,13 +222,13 @@ const Signup = () => {
           {/* Rest of the form fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[
-              { label: "Username *", name: "username", type: "text" },
-              { label: "Phone Number *", name: "phoneNumber", type: "tel" },
-              { label: "Company Name *", name: "companyName", type: "text" },
-              { label: "Registered Owner *", name: "registeredOwner", type: "text" },
-              { label: "Date Established *", name: "dateEstablished", type: "date" },
-              { label: "Tax Identification No. (TIN) *", name: "tin", type: "text" }
-            ].map(({ label, name, type }) => (
+              { label: "Username *", name: "username", type: "text", autoComplete: "username" },
+              { label: "Phone Number *", name: "phoneNumber", type: "tel", autoComplete: "tel" },
+              { label: "Company Name *", name: "companyName", type: "text", autoComplete: "organization" },
+              { label: "Registered Owner *", name: "registeredOwner", type: "text", autoComplete: "name" },
+              { label: "Date Established *", name: "dateEstablished", type: "date", autoComplete: "off" },
+              { label: "Tax Identification No. (TIN) *", name: "tin", type: "text", autoComplete: "off" }
+            ].map(({ label, name, type, autoComplete }) => (
               <div key={name}>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
                 <input
@@ -237,6 +237,7 @@ const Signup = () => {
                   value={formData[name]}
                   onChange={handleChange}
                   required
+                  autoComplete={autoComplete}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
                 />
               </div>
@@ -251,6 +252,7 @@ const Signup = () => {
                   value={formData.password}
                   onChange={handleChange}
                   required
+                  autoComplete="new-password"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
                 />
                 <button type="button" onClick={() => setShowPassword(v => !v)}
@@ -281,6 +283,7 @@ const Signup = () => {
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   required
+                  autoComplete="new-password"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
                 />
                 <button type="button" onClick={() => setShowConfirmPassword(v => !v)}

@@ -3,9 +3,10 @@ import { useState } from "react";
 // Add type annotations for props
 interface RoomSearchBarProps {
   onSearch: (roomNumber: number) => void;
+  disabled?: boolean;
 }
 
-const RoomSearchBar = ({ onSearch }: RoomSearchBarProps) => {
+const RoomSearchBar = ({ onSearch, disabled = false }: RoomSearchBarProps) => {
   const [roomNumber, setRoomNumber] = useState<string>("");
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
@@ -27,6 +28,7 @@ const RoomSearchBar = ({ onSearch }: RoomSearchBarProps) => {
           onChange={(e) =>
             /^\d*$/.test(e.target.value) && setRoomNumber(e.target.value)
           }
+          disabled={disabled}
           style={{
             border: "1px solid #52B3D0", // cyan-400 border
             borderRadius: "8px 0 0 8px",
@@ -35,6 +37,7 @@ const RoomSearchBar = ({ onSearch }: RoomSearchBarProps) => {
         <button
           type="submit"
           className="btn"
+          disabled={disabled}
           style={{
             backgroundColor: "#22d3ee", // cyan-400 background
             color: "white",

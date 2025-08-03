@@ -6,6 +6,7 @@ import GuestModal from "./GuestModal";
 import MetricsDisplay from "./MetricsDisplay";
 import SaveButton from "./SaveButton";
 import RoomSearchBar from "./RoomSearchBar";
+import DolphinSpinner from "./DolphinSpinner";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
@@ -45,7 +46,7 @@ const SubmissionForm = () => {
     
     // Reset form saved state when switching months
     setIsFormSaved(false);
-    console.log(`🔄 Month/Year changed to ${selectedMonth}/${selectedYear} - Reset isFormSaved to false`);
+    // console.log(`🔄 Month/Year changed to ${selectedMonth}/${selectedYear} - Reset isFormSaved to false`);
     
     (async () => {
       try {
@@ -55,7 +56,7 @@ const SubmissionForm = () => {
           params: { user_id: user.user_id, month: selectedMonth, year: selectedYear }
         });
         setHasSubmitted(data.hasSubmitted);
-        console.log(`📋 Submission status for ${selectedMonth}/${selectedYear}: hasSubmitted = ${data.hasSubmitted}`);
+        // console.log(`📋 Submission status for ${selectedMonth}/${selectedYear}: hasSubmitted = ${data.hasSubmitted}`);
       } catch (err) { console.error("Error checking submission:", err); }
     })();
   }, [user, selectedMonth, selectedYear]);
@@ -127,7 +128,7 @@ const SubmissionForm = () => {
                 const daysInCurrentMonthForThisStay = Math.max(0, Math.floor((stayEndInCurrentMonth.getTime() - stayStartInCurrentMonth.getTime()) / (24 * 60 * 60 * 1000)) + 1);
                 
                 if (daysInCurrentMonthForThisStay > 0) {
-                  console.log(`Continuing stay ${entry.stayId}: ${daysInCurrentMonthForThisStay} days in ${selectedMonth}/${selectedYear}`);
+                  // console.log(`Continuing stay ${entry.stayId}: ${daysInCurrentMonthForThisStay} days in ${selectedMonth}/${selectedYear}`);
                   
                   // Create entries for each day in the current month
                   for (let day = 1; day <= daysInCurrentMonthForThisStay; day++) {
@@ -149,7 +150,7 @@ const SubmissionForm = () => {
           // Add continuing stays to merged rooms, avoiding duplicates
           const continuingEntries = Array.from(continuingStays.values());
           if (continuingEntries.length > 0) {
-            console.log(`Found ${continuingEntries.length} continuing stay entries from previous month`);
+            // console.log(`Found ${continuingEntries.length} continuing stay entries from previous month`);
             mergedRooms = [...mergedRooms, ...continuingEntries];
           }
         } catch (prevErr) {
@@ -297,10 +298,10 @@ const SubmissionForm = () => {
     // If editing an existing stay, remove excess days first
     let updatedMonthlyData = monthlyData;
     if (existingEntry?.stayId) {
-      console.log(`Editing existing stay: ${existingEntry.stayId}, new length: ${stayLength}`);
+      // console.log(`Editing existing stay: ${existingEntry.stayId}, new length: ${stayLength}`);
       // Remove all entries for this stay across all months
       updatedMonthlyData = removeExistingStay(currentStayId, monthlyData);
-      console.log('Removed existing stay data, updating with new length');
+      // console.log('Removed existing stay data, updating with new length');
     }
     
     // Add the new/updated stay
@@ -317,11 +318,11 @@ const SubmissionForm = () => {
     
     // Force refresh of other months that might be affected
     const affectedMonths = getAffectedMonths(day, selectedMonth, selectedYear, stayLength);
-    console.log(`Affected months for stay:`, affectedMonths);
+    // console.log(`Affected months for stay:`, affectedMonths);
     affectedMonths.forEach(({ month, year }) => {
       const monthKey = `${year}-${month}`;
       if (monthKey !== currentMonthKey && newMonthlyData[monthKey]) {
-        console.log(`Refreshing data for ${monthKey}`);
+        // console.log(`Refreshing data for ${monthKey}`);
         // Trigger a re-render for other affected months
         setTimeout(() => {
           setMonthlyData(prev => ({ ...prev }));
@@ -375,8 +376,8 @@ const SubmissionForm = () => {
     
     // Debug logging for Day 1 totals
     if (day === 1 && (checkIns > 0 || overnight > 0)) {
-      console.log(`Day ${day} totals:`, { checkIns, overnight, occupied });
-      console.log(`Day ${day} rooms:`, uniqueDayRooms.map(r => ({ room: r.room, stayId: r.stayId, guests: r.guests?.length, isCheckIn: r.isCheckIn, isStartDay: r.isStartDay })));
+      // console.log(`Day ${day} totals:`, { checkIns, overnight, occupied });
+      // console.log(`Day ${day} rooms:`, uniqueDayRooms.map(r => ({ room: r.room, stayId: r.stayId, guests: r.guests?.length, isCheckIn: r.isCheckIn, isStartDay: r.isStartDay })));
     }
     
     return { checkIns, overnight, occupied };
@@ -436,14 +437,14 @@ const SubmissionForm = () => {
     const roomData = occupiedRooms.find(r => r.day === day && r.room === room);
     if (!roomData) return;
     
-    console.log(`\n🗑️ REMOVE ALL GUESTS REQUEST`);
-    console.log(`   📅 Day: ${day}, Room: ${room}`);
-    console.log(`   🏨 StayId: ${roomData.stayId}`);
-    console.log(`   🚀 isStartDay: ${roomData.isStartDay}`);
+    // console.log(`\n🗑️ REMOVE ALL GUESTS REQUEST`);
+    // console.log(`   📅 Day: ${day}, Room: ${room}`);
+    // console.log(`   🏨 StayId: ${roomData.stayId}`);
+    // console.log(`   🚀 isStartDay: ${roomData.isStartDay}`);
     
     // If this is a start day, remove the entire stay from all months
     if (roomData.isStartDay && roomData.stayId) {
-      console.log(`   🔥 Removing entire stay ${roomData.stayId} from all months...`);
+      // console.log(`   🔥 Removing entire stay ${roomData.stayId} from all months...`);
       
       // Remove from database first
       await removeStayFromDatabase(roomData.stayId);
@@ -458,7 +459,7 @@ const SubmissionForm = () => {
           if (Array.isArray(monthData)) {
             const filteredData = monthData.filter(r => r.stayId !== roomData.stayId);
             updatedMonthlyData[monthKey] = filteredData;
-            console.log(`   🗑️ Removed stay from frontend state: ${monthKey} (${monthData.length - filteredData.length} entries)`);
+            // console.log(`   🗑️ Removed stay from frontend state: ${monthKey} (${monthData.length - filteredData.length} entries)`);
           }
         });
         
@@ -469,27 +470,21 @@ const SubmissionForm = () => {
       const updatedRooms = occupiedRooms.filter(r => r.stayId !== roomData.stayId);
       setOccupiedRooms(updatedRooms);
       
-      console.log(`   ✅ Successfully removed entire stay from all months (frontend + database)`);
+      // console.log(`   ✅ Successfully removed entire stay from all months (frontend + database)`);
     } else {
       // If this is a following day, remove only this specific day
-      console.log(`   🎯 Removing only this specific day (following day)`);
+      // console.log(`   🎯 Removing only this specific day (following day)`);
       
       const updatedRooms = occupiedRooms.filter(r => !(r.day === day && r.room === room));
       const key = `${selectedYear}-${selectedMonth}`;
       setOccupiedRooms(updatedRooms);
       setMonthlyData(prev => ({ ...prev, [key]: updatedRooms }));
       
-      console.log(`   ✅ Successfully removed specific day`);
+      // console.log(`   ✅ Successfully removed specific day`);
     }
   };
 
-  // Clear all guest data for month
-  const handleClearMonth = () => {
-    if (!window.confirm("Are you sure you want to clear all guest data for this month? This action cannot be undone.")) return;
-    const key = `${selectedYear}-${selectedMonth}`;
-    setMonthlyData(prev => ({ ...prev, [key]: [] }));
-    setOccupiedRooms([]);
-  };
+
 
   // Days in month
   const getDaysInMonth = (month: number, year: number) => new Date(year, month, 0).getDate();
@@ -653,7 +648,7 @@ const SubmissionForm = () => {
         const afterCount = updated[k].length;
         const removed = beforeCount - afterCount;
         if (removed > 0) {
-          console.log(`Removed ${removed} entries from ${k} for stayId: ${stayId}`);
+          // console.log(`Removed ${removed} entries from ${k} for stayId: ${stayId}`);
           totalRemoved += removed;
         }
       }
@@ -666,7 +661,7 @@ const SubmissionForm = () => {
       console.error("Background database cleanup failed:", err);
     });
     
-    console.log(`Total entries removed for stayId ${stayId}: ${totalRemoved}`);
+    // console.log(`Total entries removed for stayId ${stayId}: ${totalRemoved}`);
     return updated;
   }
 
@@ -675,14 +670,14 @@ const SubmissionForm = () => {
     try {
       const token = sessionStorage.getItem("token");
       if (!token || !user) {
-        console.log("❌ No token or user found, skipping database removal");
+        // console.log("❌ No token or user found, skipping database removal");
         return;
       }
       
-      console.log(`\n🗄️ DATABASE REMOVAL REQUEST`);
-      console.log(`   🏨 StayId: ${stayId}`);
-      console.log(`   👤 User: ${user.user_id}`);
-      console.log(`   🌐 API URL: ${API_BASE_URL}/api/submissions/stay/${user.user_id}/${stayId}`);
+      // console.log(`\n🗄️ DATABASE REMOVAL REQUEST`);
+      // console.log(`   🏨 StayId: ${stayId}`);
+      // console.log(`   👤 User: ${user.user_id}`);
+      // console.log(`   🌐 API URL: ${API_BASE_URL}/api/submissions/stay/${user.user_id}/${stayId}`);
       
       // Use the new backend endpoint to remove stay from all months efficiently
       const response = await axios.delete(
@@ -693,14 +688,14 @@ const SubmissionForm = () => {
         }
       );
       
-      console.log(`   ✅ Successfully removed stayId ${stayId} from all months`);
-      console.log(`   📊 Response:`, response.data);
+      // console.log(`   ✅ Successfully removed stayId ${stayId} from all months`);
+      // console.log(`   📊 Response:`, response.data);
       
     } catch (err: any) {
       console.error("❌ Error removing stay from database:", err);
       console.error("❌ Error details:", err.response?.data || err.message);
       // Fallback to the old method if the new endpoint fails
-      console.log("🔄 Falling back to manual removal method...");
+      // console.log("🔄 Falling back to manual removal method...");
       await removeStayFromDatabaseFallback(stayId);
     }
   };
@@ -717,7 +712,7 @@ const SubmissionForm = () => {
       ) as any;
       
       if (!startEntry) {
-        console.log(`No start entry found for stayId ${stayId}, skipping database cleanup`);
+        // console.log(`No start entry found for stayId ${stayId}, skipping database cleanup`);
         return;
       }
       
@@ -725,7 +720,7 @@ const SubmissionForm = () => {
       const { startDay, startMonth, startYear, lengthOfStay } = startEntry;
       const affectedMonths = getAffectedMonths(startDay, startMonth, startYear, lengthOfStay);
       
-      console.log(`Fallback: Checking ${affectedMonths.length} months for stayId ${stayId}:`, affectedMonths);
+      // console.log(`Fallback: Checking ${affectedMonths.length} months for stayId ${stayId}:`, affectedMonths);
       
       for (const { month, year } of affectedMonths) {
         try {
@@ -742,7 +737,7 @@ const SubmissionForm = () => {
           const hasStayData = monthData.some((entry: any) => entry.stayId === stayId);
           
           if (hasStayData) {
-            console.log(`Fallback: Found stayId ${stayId} in ${month}/${year}, removing...`);
+            // console.log(`Fallback: Found stayId ${stayId} in ${month}/${year}, removing...`);
             
             // Remove the stay from this month's data
             const filteredData = monthData.filter((entry: any) => entry.stayId !== stayId);
@@ -762,7 +757,7 @@ const SubmissionForm = () => {
               }
             );
             
-            console.log(`Fallback: Successfully removed stayId ${stayId} from ${month}/${year}`);
+            // console.log(`Fallback: Successfully removed stayId ${stayId} from ${month}/${year}`);
           }
         } catch (err) {
           // Ignore errors for months that don't have data
@@ -793,10 +788,10 @@ const SubmissionForm = () => {
       return monthlyData;
     }
 
-    console.log(`\n🏨 Creating stay: ${stayId}`);
-    console.log(`   📅 Start: ${startMonth}/${startYear} Day ${startDay}`);
-    console.log(`   📊 Length: ${lengthOfStay} days`);
-    console.log(`   🏠 Room: ${room}`);
+    // console.log(`\n🏨 Creating stay: ${stayId}`);
+    // console.log(`   📅 Start: ${startMonth}/${startYear} Day ${startDay}`);
+    // console.log(`   📊 Length: ${lengthOfStay} days`);
+    // console.log(`   🏠 Room: ${room}`);
 
     const updated = { ...monthlyData };
     let remainingDays = lengthOfStay;
@@ -808,7 +803,7 @@ const SubmissionForm = () => {
     const addDaysToMonth = (day: number, month: number, year: number, daysToAdd: number) => {
       const monthKey = `${year}-${month}`;
       const monthData = updated[monthKey] || [];
-      console.log(`   📝 Adding ${daysToAdd} days to ${monthKey} starting from day ${day}`);
+      // console.log(`   📝 Adding ${daysToAdd} days to ${monthKey} starting from day ${day}`);
       
       for (let d = day; d < day + daysToAdd; d++) {
         monthData.push({
@@ -826,7 +821,7 @@ const SubmissionForm = () => {
         isFirstDay = false;
       }
       updated[monthKey] = monthData;
-      console.log(`   ✅ Total entries in ${monthKey} after adding: ${monthData.length}`);
+      // console.log(`   ✅ Total entries in ${monthKey} after adding: ${monthData.length}`);
     };
 
     while (remainingDays > 0) {
@@ -849,7 +844,32 @@ const SubmissionForm = () => {
   }
 
   return (
-    <div className="container mt-5">
+    <div className="container mt-5" style={{ position: 'relative' }}>
+      {/* Loading Overlay */}
+      {isLoading && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            borderRadius: '8px',
+          }}
+        >
+          <DolphinSpinner size="lg" />
+          <p className="mt-3 text-muted" style={{ fontSize: '1.1rem', fontWeight: '500' }}>
+            Loading data for {selectedMonth}/{selectedYear}...
+          </p>
+        </div>
+      )}
+      
       <h2>Monthly Recording Format</h2>
       <p>Form: DAE-1A</p>
       <SaveButton
@@ -858,15 +878,16 @@ const SubmissionForm = () => {
         hasSubmitted={hasSubmitted}
         isFutureMonth={isFutureMonthValue}
         isCurrentMonth={isCurrentMonthValue}
+        disabled={isLoading}
       />
       <MonthYearSelector
         selectedMonth={selectedMonth}
         selectedYear={selectedYear}
         onMonthChange={e => setSelectedMonth(parseInt(e.target.value))}
         onYearChange={e => setSelectedYear(parseInt(e.target.value))}
+        disabled={isLoading}
       />
-      <RoomSearchBar onSearch={handleSearch} />
-      <button className="btn btn-danger mt-3" onClick={handleClearMonth} disabled={hasSubmitted}>Clear All Data</button>
+      <RoomSearchBar onSearch={handleSearch} disabled={isLoading} />
       <div ref={gridRef}>
         <MonthlyGrid
           daysInMonth={daysInMonth}
@@ -874,7 +895,7 @@ const SubmissionForm = () => {
           onCellClick={handleCellClick}
           getRoomColor={getRoomColor}
           calculateDailyTotals={calculateDailyTotals}
-          disabled={hasSubmitted || isFutureMonthValue}
+          disabled={hasSubmitted || isFutureMonthValue || isLoading}
         />
       </div>
       {isModalOpen && (
@@ -885,7 +906,7 @@ const SubmissionForm = () => {
           onSave={handleSaveGuests}
           onRemoveAllGuests={handleRemoveAllGuests}
           initialData={getGuestData(selectedDate, selectedRoom)}
-          disabled={hasSubmitted}
+          disabled={hasSubmitted || isLoading}
           hasRoomConflict={hasRoomConflict}
           occupiedRooms={occupiedRooms}
           selectedYear={selectedYear}

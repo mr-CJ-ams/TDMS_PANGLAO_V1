@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 
-const Ordinance = () => {
+const Homepage = () => {
   const [scrollY, setScrollY] = useState(0);
   const [isVisible, setIsVisible] = useState({});
   const sectionsRef = useRef({});
@@ -690,7 +690,7 @@ const Ordinance = () => {
       </footer>
 
       {/* Custom CSS for wave animation */}
-      <style jsx>{`
+      <style>{`
         @keyframes wave {
           0%, 100% { transform: translateX(0); }
           50% { transform: translateX(-25px); }

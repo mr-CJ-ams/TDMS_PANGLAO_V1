@@ -60,6 +60,7 @@ const ResetPassword = () => {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required minLength={8}
+                autoComplete="new-password"
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 transition-all"
                 placeholder="Enter new password"
               />
@@ -84,6 +85,7 @@ const ResetPassword = () => {
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
                 required minLength={8}
+                autoComplete="new-password"
                 placeholder="Confirm new password"
                 className={`w-full px-4 py-2 border rounded-lg transition-all focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 ${
                   confirmPassword && !passwordsMatch ? "border-rose-500 bg-rose-50" :
