@@ -1,7 +1,7 @@
-
-import React, { useCallback, useMemo } from "react";
+import React, { useMemo, useRef } from "react";
+import { FixedSizeGrid as VirtualizedGrid } from "react-window";
 import { Hotel } from "lucide-react";
-import "bootstrap/dist/css/bootstrap.min.css";
+import useMediaQuery from "../hooks/useMediaQuery";
 
 interface MonthlyGridProps {
   daysInMonth: number;
@@ -10,7 +10,12 @@ interface MonthlyGridProps {
   getRoomColor: (day: number, room: number) => string;
   calculateDailyTotals: (day: number) => { checkIns: number; overnight: number; occupied: number };
   disabled: boolean;
+  gridRef?: React.RefObject<VirtualizedGrid>;
 }
+
+const CELL_WIDTH = 70;
+const CELL_HEIGHT = 48;
+const CELL_PADDING = 4;
 
 const MonthlyGrid = ({
   daysInMonth,
@@ -18,146 +23,236 @@ const MonthlyGrid = ({
   onCellClick,
   getRoomColor,
   calculateDailyTotals,
-  disabled
+  disabled,
+  gridRef
 }: MonthlyGridProps) => {
   const rooms = useMemo(() => Array.from({ length: numberOfRooms }, (_, i) => i + 1), [numberOfRooms]);
+  const days = useMemo(() => Array.from({ length: daysInMonth }, (_, i) => i + 1), [daysInMonth]);
+  const isDesktop = useMediaQuery("(min-width:900px)");
   
-  const handleCellClick = useCallback((day: number, room: number) => {
-    if (!disabled) {
-      onCellClick(day, room);
-    }
-  }, [disabled, onCellClick]);
+  const mainGridRef = gridRef || useRef<VirtualizedGrid>(null);
+  const daysColumnRef = useRef<VirtualizedGrid>(null);
 
-  const handleMouseEnter = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
-    if (!disabled) {
-      e.currentTarget.style.transform = "scale(1.05)";
-      e.currentTarget.style.boxShadow = "0 6px 8px rgba(0,0,0,0.15)";
-    }
-  }, [disabled]);
+  // Calculate grid sizes
+  const totalColumns = numberOfRooms + 3; // rooms + 3 totals
+  const fullGridWidth = totalColumns * CELL_WIDTH;
+  const gridWidth = isDesktop
+    ? Math.min(window.innerWidth - CELL_WIDTH, fullGridWidth)
+    : window.innerWidth - CELL_WIDTH - 16;
+  const gridHeight = isDesktop
+    ? Math.min(window.innerHeight * 0.7, daysInMonth * CELL_HEIGHT + CELL_HEIGHT)
+    : Math.min(window.innerHeight * 0.5, daysInMonth * CELL_HEIGHT + CELL_HEIGHT);
 
-  const handleMouseLeave = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
-    if (!disabled) {
-      e.currentTarget.style.transform = "scale(1)";
-      e.currentTarget.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
+  // Track the last scroll position to prevent infinite updates
+  const lastScrollTop = useRef<number>(0);
+  // Sync vertical scrolling between days column and main grid
+  // Sync vertical scrolling between days column and main grid
+  const onMainGridScroll = ({ scrollTop }: { scrollTop: number }) => {
+    if (daysColumnRef.current && Math.abs(scrollTop - lastScrollTop.current) > 1) {
+      lastScrollTop.current = scrollTop;
+      daysColumnRef.current.scrollTo({ scrollTop });
     }
-  }, [disabled]);
+  };
 
-  return (
-    <div className="table-responsive" style={{ overflowX: "auto" }}>
-      <table
-        className="table text-center"
+  const onDaysColumnScroll = ({ scrollTop }: { scrollTop: number }) => {
+    if (mainGridRef.current && Math.abs(scrollTop - lastScrollTop.current) > 1) {
+      lastScrollTop.current = scrollTop;
+      mainGridRef.current.scrollTo({ scrollTop });
+    }
+  };
+
+   // Also update the DayCell component to match the padding
+  const DayCell = ({ rowIndex, style }: any) => {
+    const paddedStyle = {
+      ...style,
+      padding: `${CELL_PADDING}px 0`, // Vertical padding only to maintain alignment
+      boxSizing: 'border-box'
+    };
+
+    if (rowIndex === 0) {
+      return (
+        <div style={{
+          ...paddedStyle,
+          background: "#e0e7ef",
+          fontWeight: "bold",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: "12px 0 0 0",
+          borderBottom: "2px solid #bcd",
+          borderRight: "1px solid #bcd",
+          padding: 0 // No padding for header
+        }}>
+          Day
+        </div>
+      );
+    }
+   return (
+      <div style={{
+        ...paddedStyle,
+        background: "#fffaf0",
+        fontWeight: "bold",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: "12px 0 0 12px",
+        borderBottom: "1px solid #eee",
+        borderRight: "1px solid #eee",
+      }}>
+        {days[rowIndex - 1]}
+      </div>
+    );
+  };
+
+  // Render main grid cell (rooms + totals)
+  const MainCell = ({ columnIndex, rowIndex, style }: any) => {
+    const paddedStyle = {
+      ...style,
+      padding: CELL_PADDING,
+      boxSizing: 'border-box' // Ensure padding is included in the cell dimensions
+    };
+    // Header row
+    if (rowIndex === 0) {
+      // Room headers
+      if (columnIndex < numberOfRooms) {
+        return (
+          <div style={{
+            ...style,
+            background: "#e0e7ef",
+            fontWeight: "bold",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderBottom: "2px solid #bcd",
+            borderRight: "1px solid #bcd",
+            padding: 0 // No padding for headers
+          }}>
+            Rm{rooms[columnIndex]}
+          </div>
+        );
+      }
+      // Totals headers
+       const labels = ["Check-ins", "Overnight", "Occupied"];
+      const i = columnIndex - numberOfRooms;
+      return (
+        <div style={{
+          ...paddedStyle,
+          background: "#e0e7ef",
+          fontWeight: "bold",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderBottom: "2px solid #bcd",
+          borderRight: i === 2 ? undefined : "1px solid #bcd",
+          borderRadius: i === 2 ? "0 12px 0 0" : undefined,
+          padding: 0 // No padding for headers
+        }}>
+          {labels[i]}
+        </div>
+      );
+    }
+
+    // Room cells
+    if (columnIndex < numberOfRooms) {
+      const room = rooms[columnIndex];
+      const day = days[rowIndex - 1];
+      return (
+        <div style={style}>
+          <button
+            onClick={() => !disabled && onCellClick(day, room)}
+            className="btn w-100 d-flex align-items-center justify-content-center gap-2 px-2 py-1 border-0"
+            style={{
+              backgroundColor: getRoomColor(day, room),
+              borderRadius: 8, // Slightly smaller radius to account for padding
+              fontSize: 14,
+              color: "#333",
+              transition: "all 0.3s ease",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)", // Smaller shadow
+              cursor: disabled ? "not-allowed" : "pointer",
+              opacity: disabled ? 0.6 : 1,
+              width: "100%",
+              height: "100%",
+              margin: 0
+            }}
+            disabled={disabled}
+          >
+            <Hotel size={16} /> Rm{room}
+          </button>
+        </div>
+      );
+    }
+
+ // Totals cells
+    const totals = calculateDailyTotals(days[rowIndex - 1]);
+    const labels = [totals.checkIns, totals.overnight, totals.occupied];
+    const i = columnIndex - numberOfRooms;
+    return (
+      <div
         style={{
-          minWidth: 900,
-          borderCollapse: "separate",
-          borderSpacing: "0 8px",
-          backgroundColor: "#f0f8ff",
+          ...paddedStyle,
+          background: "#fffaf0",
+          fontWeight: "bold",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: i === 2 ? "0 12px 12px 0" : undefined,
+          borderBottom: "1px solid #eee",
+          borderRight: i === 2 ? undefined : "1px solid #eee",
         }}
       >
-        <thead>
-          <tr>
-            <th
-              style={{
-                position: "sticky",
-                left: 0,
-                zIndex: 2,
-                backgroundColor: "#06b6d4",
-                color: "#fff",
-                fontWeight: "bold",
-                padding: 12,
-                borderRadius: "12px 0 0 12px",
-              }}
-            >
-              Day
-            </th>
-            {rooms.map((room) => (
-              <th
-                key={room}
-                data-room={room}
-                style={{
-                  backgroundColor: "#06b6d4",
-                  color: "#fff",
-                  fontWeight: "bold",
-                  padding: 12,
-                }}
-              >
-                Room {room}
-              </th>
-            ))}
-            {["Check In", "Overnight", "Occupied"].map((label, i) => (
-              <th
-                key={label}
-                style={{
-                  backgroundColor: "#06b6d4",
-                  color: "#fff",
-                  fontWeight: "bold",
-                  padding: 12,
-                  borderRadius: i === 2 ? "0 12px 12px 0" : undefined,
-                }}
-              >
-                {label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
-            const totals = calculateDailyTotals(day);
-            return (
-              <tr key={day}>
-                <td
-                  style={{
-                    position: "sticky",
-                    left: 0,
-                    zIndex: 1,
-                    backgroundColor: "#fffaf0",
-                    fontWeight: "bold",
-                    padding: 12,
-                    borderRadius: "12px 0 0 12px",
-                  }}
-                >
-                  {day}
-                </td>
-                {rooms.map((room) => (
-                  <td key={`${day}-${room}`}>
-                    <button
-                      onClick={() => handleCellClick(day, room)}
-                      className="btn w-100 d-flex align-items-center justify-content-center gap-2 px-2 py-1 border-0"
-                      style={{
-                        backgroundColor: getRoomColor(day, room),
-                        borderRadius: 12,
-                        fontSize: 14,
-                        color: "#333",
-                        transition: "all 0.3s ease",
-                        boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-                        cursor: disabled ? "not-allowed" : "pointer",
-                        opacity: disabled ? 0.6 : 1,
-                      }}
-                      onMouseEnter={handleMouseEnter}
-                      onMouseLeave={handleMouseLeave}
-                      disabled={disabled}
-                    >
-                      <Hotel size={16} />Room {room}
-                    </button>
-                  </td>
-                ))}
-                {[totals.checkIns, totals.overnight, totals.occupied].map((val, i) => (
-                  <td
-                    key={i}
-                    style={{
-                      backgroundColor: "#fffaf0",
-                      fontWeight: "bold",
-                      padding: 12,
-                      borderRadius: i === 2 ? "0 12px 12px 0" : undefined,
-                    }}
-                  >
-                    <strong>{val}</strong>
-                  </td>
-                ))}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+        <strong>{labels[i]}</strong>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ 
+      display: "flex", 
+      width: "100%",
+      borderRadius: 12,
+      boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+      overflow: "hidden"
+    }}>
+      {/* Fixed day column */}
+      <div style={{ 
+        width: CELL_WIDTH,
+        flexShrink: 0,
+        borderRight: "1px solid #eee"
+      }}>
+        <VirtualizedGrid
+          ref={daysColumnRef}
+          columnCount={1}
+          rowCount={daysInMonth + 1} // +1 for header
+          columnWidth={CELL_WIDTH}
+          rowHeight={CELL_HEIGHT}
+          width={CELL_WIDTH}
+          height={gridHeight}
+          onScroll={onDaysColumnScroll}
+          style={{ overflowX: "hidden" }}
+        >
+          {DayCell}
+        </VirtualizedGrid>
+      </div>
+
+      {/* Scrollable main grid */}
+      <div style={{ 
+        flex: 1,
+        overflow: "auto",
+        minWidth: 0
+      }}>
+        <VirtualizedGrid
+          ref={mainGridRef}
+          columnCount={totalColumns}
+          rowCount={daysInMonth + 1} // +1 for header
+          columnWidth={CELL_WIDTH}
+          rowHeight={CELL_HEIGHT}
+          width={gridWidth}
+          height={gridHeight}
+          onScroll={onMainGridScroll}
+        >
+          {MainCell}
+        </VirtualizedGrid>
+      </div>
     </div>
   );
 };

@@ -7,6 +7,7 @@ import MetricsDisplay from "./MetricsDisplay";
 import SaveButton from "./SaveButton";
 import RoomSearchBar from "./RoomSearchBar";
 import DolphinSpinner from "./DolphinSpinner";
+import { FixedSizeGrid as VirtualizedGrid } from "react-window";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
@@ -26,6 +27,8 @@ const SubmissionForm = () => {
     [numberOfRooms, setNumberOfRooms] = useState(0),
     [hasSubmitted, setHasSubmitted] = useState(false),
     [isLoading, setIsLoading] = useState(true);
+
+    const mainGridRef = useRef<VirtualizedGrid>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
 
   // Fetch user profile
@@ -97,7 +100,7 @@ const SubmissionForm = () => {
             timeout: 10000
           });
           const prevData = Array.isArray(prevRes.data?.days) ? prevRes.data.days : [];
-          const prevMonthDays = getDaysInMonth(prevMonth, prevYear);
+          // const prevMonthDays = getDaysInMonth(prevMonth, prevYear);
           
           // Find continuing stays that extend into the current month - FIXED LOGIC
           const continuingStays = new Map();
@@ -250,12 +253,22 @@ const SubmissionForm = () => {
   }, [monthlyData, user, selectedMonth, selectedYear, isLoading]);
 
   // Room search
-  const handleSearch = (roomNumber: number) => {
-    if (roomNumber > 0 && roomNumber <= numberOfRooms) {
-      const el = gridRef.current?.querySelector(`th[data-room="${roomNumber}"]`);
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-    } else alert("Invalid room number");
-  };
+    const handleSearch = (roomNumber: number) => {
+      if (roomNumber > 0 && roomNumber <= numberOfRooms) {
+        // Calculate the column index (0-based)
+        const columnIndex = roomNumber - 1;
+        
+        // Scroll the main grid to the room column
+        if (mainGridRef.current) {
+          mainGridRef.current.scrollToItem({
+            columnIndex,
+            align: "center"
+          });
+        }
+      } else {
+        alert("Invalid room number");
+      }
+    };
 
   // Cell click
   const handleCellClick = (day: number, room: number) => {
@@ -510,41 +523,41 @@ const SubmissionForm = () => {
   };
 
   // Date calculation helpers for stayId logic
-  const calculateDayNumberFromStart = (entryDay: number, entryMonth: number, entryYear: number, startDay: number, startMonth: number, startYear: number) => {
-    const startDate = new Date(startYear, startMonth - 1, startDay);
-    const entryDate = new Date(entryYear, entryMonth - 1, entryDay);
+  // const calculateDayNumberFromStart = (entryDay: number, entryMonth: number, entryYear: number, startDay: number, startMonth: number, startYear: number) => {
+  //   const startDate = new Date(startYear, startMonth - 1, startDay);
+  //   const entryDate = new Date(entryYear, entryMonth - 1, entryDay);
     
-    // Handle timezone issues by setting both to midnight
-    startDate.setHours(0, 0, 0, 0);
-    entryDate.setHours(0, 0, 0, 0);
+  //   // Handle timezone issues by setting both to midnight
+  //   startDate.setHours(0, 0, 0, 0);
+  //   entryDate.setHours(0, 0, 0, 0);
     
-    const diffTime = entryDate.getTime() - startDate.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays + 1; // +1 because day 1 is the start day
-  };
+  //   const diffTime = entryDate.getTime() - startDate.getTime();
+  //   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  //   return diffDays + 1; // +1 because day 1 is the start day
+  // };
 
-  const removeExcessStayDays = (allEntries: any[], stayId: string, newLengthOfStay: number) => {
-    // Find the start day entry
-    const startEntry = allEntries.find(entry => 
-      entry.stayId === stayId && entry.isStartDay === true
-    );
+  // const removeExcessStayDays = (allEntries: any[], stayId: string, newLengthOfStay: number) => {
+  //   // Find the start day entry
+  //   const startEntry = allEntries.find(entry => 
+  //     entry.stayId === stayId && entry.isStartDay === true
+  //   );
     
-    if (!startEntry) return allEntries;
+  //   if (!startEntry) return allEntries;
     
-    // Filter out entries that are beyond the new length
-    return allEntries.filter(entry => {
-      if (entry.stayId !== stayId) return true; // Keep entries from other stays
+  //   // Filter out entries that are beyond the new length
+  //   return allEntries.filter(entry => {
+  //     if (entry.stayId !== stayId) return true; // Keep entries from other stays
       
-      // Calculate day number from start
-      const dayNumber = calculateDayNumberFromStart(
-        entry.day, entry.month || selectedMonth, entry.year || selectedYear,
-        startEntry.startDay, startEntry.startMonth, startEntry.startYear
-      );
+  //     // Calculate day number from start
+  //     const dayNumber = calculateDayNumberFromStart(
+  //       entry.day, entry.month || selectedMonth, entry.year || selectedYear,
+  //       startEntry.startDay, startEntry.startMonth, startEntry.startYear
+  //     );
       
-      // Keep if within the new length of stay
-      return dayNumber <= newLengthOfStay;
-    });
-  };
+  //     // Keep if within the new length of stay
+  //     return dayNumber <= newLengthOfStay;
+  //   });
+  // };
 
   const getAffectedMonths = (startDay: number, startMonth: number, startYear: number, lengthOfStay: number) => {
     const affectedMonths = [];
@@ -628,13 +641,13 @@ const SubmissionForm = () => {
     return { hasConflict: false };
   }
 
-  function findAvailableRoomAcrossMonths(startDay: number, lengthOfStay: number, currentOccupancies: any[], allMonthlyData: any, excludedRoom?: number | null) {
-    for (let room = 1; room <= numberOfRooms; room++) {
-      if (room === excludedRoom) continue;
-      if (!findRoomConflictAcrossMonths(startDay, room, lengthOfStay, currentOccupancies, allMonthlyData).hasConflict) return room;
-    }
-    return null;
-  }
+  // function findAvailableRoomAcrossMonths(startDay: number, lengthOfStay: number, currentOccupancies: any[], allMonthlyData: any, excludedRoom?: number | null) {
+  //   for (let room = 1; room <= numberOfRooms; room++) {
+  //     if (room === excludedRoom) continue;
+  //     if (!findRoomConflictAcrossMonths(startDay, room, lengthOfStay, currentOccupancies, allMonthlyData).hasConflict) return room;
+  //   }
+  //   return null;
+  // }
 
   function removeExistingStay(stayId: string, monthlyData: any) {
     const updated = { ...monthlyData };
@@ -680,13 +693,13 @@ const SubmissionForm = () => {
       // console.log(`   🌐 API URL: ${API_BASE_URL}/api/submissions/stay/${user.user_id}/${stayId}`);
       
       // Use the new backend endpoint to remove stay from all months efficiently
-      const response = await axios.delete(
-        `${API_BASE_URL}/api/submissions/stay/${user.user_id}/${stayId}`,
-        { 
-          headers: { Authorization: `Bearer ${token}` },
-          timeout: 10000
-        }
-      );
+      // const response = await axios.delete(
+      //   `${API_BASE_URL}/api/submissions/stay/${user.user_id}/${stayId}`,
+      //   { 
+      //     headers: { Authorization: `Bearer ${token}` },
+      //     timeout: 10000
+      //   }
+      // );
       
       // console.log(`   ✅ Successfully removed stayId ${stayId} from all months`);
       // console.log(`   📊 Response:`, response.data);
@@ -896,6 +909,7 @@ const SubmissionForm = () => {
           getRoomColor={getRoomColor}
           calculateDailyTotals={calculateDailyTotals}
           disabled={hasSubmitted || isFutureMonthValue || isLoading}
+          gridRef={mainGridRef}
         />
       </div>
       {isModalOpen && (
