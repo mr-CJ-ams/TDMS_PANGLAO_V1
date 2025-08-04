@@ -19,6 +19,7 @@ const SubmissionOverview = ({
   const [currentSubmissionId, setCurrentSubmissionId] = useState(null);
   const [roomSearchTerm, setRoomSearchTerm] = useState("");
   const [highlightedRoom, setHighlightedRoom] = useState(null);
+  const [receiptNumbers, setReceiptNumbers] = useState({}); // Add this state
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 const ACCESS_CODE = import.meta.env.VITE_ACCESS_CODE;
 
@@ -38,18 +39,36 @@ const ACCESS_CODE = import.meta.env.VITE_ACCESS_CODE;
 
   const handleFilterChange = e => { setFilters(f => ({ ...f, [e.target.name]: e.target.value })); setPage(1); };
 
-  const handlePenaltyPayment = submissionId => { setCurrentSubmissionId(submissionId); setShowAccessCodePrompt(true); };
+  const handlePenaltyPayment = submissionId => {
+    setCurrentSubmissionId(submissionId);
+    setShowAccessCodePrompt(true);
+  };
 
-  const confirmPenaltyPayment = async accessCode => {
+  const confirmPenaltyPayment = async (accessCode, receiptNumber) => {
     if (accessCode !== ACCESS_CODE) return alert("Invalid access code");
     setShowAccessCodePrompt(false);
     setLoadingPenalty(p => ({ ...p, [currentSubmissionId]: true }));
     try {
       const token = sessionStorage.getItem("token");
-      await axios.put(`${API_BASE_URL}/api/submissions/penalty/${currentSubmissionId}`, { penalty: true }, { headers: { Authorization: `Bearer ${token}` } });
-      setSubmissions(submissions.map(s => s.submission_id === currentSubmissionId ? { ...s, penalty: true } : s));
-    } catch (err) { console.error("Error updating penalty status:", err); }
-    finally { setLoadingPenalty(p => ({ ...p, [currentSubmissionId]: false })); }
+      await axios.put(
+        `${API_BASE_URL}/api/submissions/penalty/${currentSubmissionId}`,
+        { penalty: true, receipt_number: receiptNumber },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setSubmissions(submissions.map(s =>
+        s.submission_id === currentSubmissionId
+          ? { ...s, penalty: true, receipt_number: receiptNumber }
+          : s
+      ));
+      setReceiptNumbers(rn => ({
+        ...rn,
+        [currentSubmissionId]: receiptNumber
+      }));
+    } catch (err) {
+      console.error("Error updating penalty status:", err);
+    } finally {
+      setLoadingPenalty(p => ({ ...p, [currentSubmissionId]: false }));
+    }
   };
 
   const handleRoomSearch = () => {
@@ -421,7 +440,7 @@ const ACCESS_CODE = import.meta.env.VITE_ACCESS_CODE;
         <table className="w-full">
           <thead>
             <tr className="bg-sky-100 text-sky-900">
-              {["Submission ID", "User ID", "Company Name", "Month", "Year", "Submitted At", "Status", "Penalty Status", "Actions"].map(h => (
+              {["Submission ID", "User ID", "Company Name", "Month", "Year", "Submitted At", "Status", "Penalty Status", "Receipt Number", "Actions"].map(h => (
                 <th key={h} className="p-4 text-left font-medium">{h}</th>
               ))}
             </tr>
@@ -449,6 +468,9 @@ const ACCESS_CODE = import.meta.env.VITE_ACCESS_CODE;
                       {submission.penalty ? "Paid" : "Unpaid"}
                     </button>
                   )}
+                </td>
+                <td className="p-4">
+                  {submission.receipt_number || receiptNumbers[submission.submission_id] || "-"}
                 </td>
                 <td className="p-4">
                   <button

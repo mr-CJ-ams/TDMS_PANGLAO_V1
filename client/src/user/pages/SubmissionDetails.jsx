@@ -561,12 +561,12 @@ const SubmissionDetails = ({ submissionId }) => {
           
           {/* Top Markets Ranking Card */}
           <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">Top Markets Ranking</h3>
+            <h3 className="text-lg font-semibold text-slate-800 mb-4">Guest Check-in Rankings by Nationality</h3>
             <button 
               onClick={() => setShowNationalityModal(true)}
               className="w-full px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium"
             >
-              View Nationality Counts
+              View
             </button>
         </div>
         </div>
@@ -595,13 +595,13 @@ const SubmissionDetails = ({ submissionId }) => {
                 onClick={handleRoomSearch}
                 className="px-3 py-2 bg-cyan-500 text-white rounded-md hover:bg-cyan-600 transition-colors text-sm font-medium"
               >
-                Go to Room
+                Search Room
               </button>
               <button
                 onClick={scrollToSummary}
                 className="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm font-medium"
               >
-                Go to Summary
+                View Summary
               </button>
             </div>
               
@@ -611,6 +611,27 @@ const SubmissionDetails = ({ submissionId }) => {
               >
                 Clear Filters
               </button>
+
+              {/* Pagination Controls */}
+          <div className="flex justify-end items-center gap-2 p-4">
+            <button
+              disabled={roomPage === 1}
+              onClick={() => setRoomPage(roomPage - 1)}
+              className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300"
+            >
+              Prev
+            </button>
+            <span>
+              Page {roomPage} of {totalRoomPages}
+            </span>
+            <button
+              disabled={roomPage === totalRoomPages}
+              onClick={() => setRoomPage(roomPage + 1)}
+              className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300"
+            >
+              Next
+            </button>
+          </div>
             </div>
             
             {/* Results Summary */}
@@ -726,31 +747,11 @@ const SubmissionDetails = ({ submissionId }) => {
             </table>
           </div>
           
-          {/* Pagination Controls */}
-          <div className="flex justify-end items-center gap-2 p-4">
-            <button
-              disabled={roomPage === 1}
-              onClick={() => setRoomPage(roomPage - 1)}
-              className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300"
-            >
-              Prev
-            </button>
-            <span>
-              Page {roomPage} of {totalRoomPages}
-            </span>
-            <button
-              disabled={roomPage === totalRoomPages}
-              onClick={() => setRoomPage(roomPage + 1)}
-              className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300"
-            >
-              Next
-            </button>
-          </div>
         </div>
         {/* Nationality Modal */}
         <Modal show={showNationalityModal} onHide={() => setShowNationalityModal(false)}>
           <Modal.Header closeButton>
-            <Modal.Title>Nationality Counts (Check-ins Only)</Modal.Title>
+            <Modal.Title>Guest Nationalities (Check-in Data)</Modal.Title>
           </Modal.Header>
           <Modal.Body>
             <ListGroup>
