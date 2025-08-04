@@ -22,6 +22,8 @@ const SubmissionDetails = ({ submissionId }) => {
   const [filterNationality, setFilterNationality] = useState("");
   const [roomSearchTerm, setRoomSearchTerm] = useState("");
   const [highlightedRoom, setHighlightedRoom] = useState(null);
+  const [roomPage, setRoomPage] = useState(1);
+  const roomsPerPage = 20; // You can adjust this number
 
   useEffect(() => {
     if (!submissionId) return;
@@ -86,24 +88,42 @@ const SubmissionDetails = ({ submissionId }) => {
 
   const handleRoomSearch = () => {
     const roomNumber = parseInt(roomSearchTerm);
-    if (roomNumber && roomNumber >= 1 && roomNumber <= submission?.number_of_rooms) {
+    if (
+      roomNumber &&
+      roomNumber >= 1 &&
+      roomNumber <= submission?.number_of_rooms
+    ) {
       setHighlightedRoom(roomNumber);
-      
-      // Scroll to the room column
-      const roomElement = document.getElementById(`room-${roomNumber}`);
-      if (roomElement) {
-        roomElement.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'nearest',
-          inline: 'center'
-        });
-        
-        // Add a temporary highlight effect
-        roomElement.classList.add('bg-yellow-100', 'border-2', 'border-yellow-400');
-        setTimeout(() => {
-          roomElement.classList.remove('bg-yellow-100', 'border-2', 'border-yellow-400');
-        }, 3000);
-      }
+
+      // Calculate which page the room is on
+      const targetPage = Math.ceil(roomNumber / roomsPerPage);
+      setRoomPage(targetPage);
+
+      // Wait for page update, then scroll to the room column
+      setTimeout(() => {
+        const roomElement = document.getElementById(`room-${roomNumber}`);
+        if (roomElement) {
+          roomElement.scrollIntoView({
+            behavior: "smooth",
+            block: "nearest",
+            inline: "center",
+          });
+
+          // Add a temporary highlight effect
+          roomElement.classList.add(
+            "bg-yellow-100",
+            "border-2",
+            "border-yellow-400"
+          );
+          setTimeout(() => {
+            roomElement.classList.remove(
+              "bg-yellow-100",
+              "border-2",
+              "border-yellow-400"
+            );
+          }, 3000);
+        }
+      }, 200); // Wait for table to re-render
     } else {
       setHighlightedRoom(null);
     }
@@ -112,6 +132,26 @@ const SubmissionDetails = ({ submissionId }) => {
   const handleRoomSearchKeyPress = (e) => {
     if (e.key === 'Enter') {
       handleRoomSearch();
+    }
+  };
+
+  const scrollToSummary = () => {
+    const summaryHeader = document.getElementById('summary-header');
+    if (summaryHeader) {
+      summaryHeader.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center'
+      });
+
+      // Add temporary highlight effect
+      const allSummaryCells = document.querySelectorAll('td:last-child');
+      allSummaryCells.forEach(cell => {
+        cell.classList.add('bg-blue-100', 'border-2', 'border-blue-400');
+        setTimeout(() => {
+          cell.classList.remove('bg-blue-100', 'border-2', 'border-blue-400');
+        }, 3000);
+      });
     }
   };
 
@@ -436,6 +476,11 @@ const SubmissionDetails = ({ submissionId }) => {
     averageGuestsPerRoom,
   } = calculateMetrics(submission);
 
+  const totalRoomPages = Math.ceil((submission.number_of_rooms || 1) / roomsPerPage);
+  const startRoom = (roomPage - 1) * roomsPerPage + 1;
+  const endRoom = Math.min(startRoom + roomsPerPage - 1, submission.number_of_rooms || 1);
+  const visibleRooms = Array.from({ length: endRoom - startRoom + 1 }, (_, i) => startRoom + i);
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -535,24 +580,30 @@ const SubmissionDetails = ({ submissionId }) => {
             <div className="flex flex-wrap gap-4 items-center mb-4">
               
               {/* Room Quick Search */}
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  placeholder="Room #"
-                  value={roomSearchTerm}
-                  onChange={(e) => setRoomSearchTerm(e.target.value)}
-                  onKeyPress={handleRoomSearchKeyPress}
-                  min="1"
-                  max={submission?.number_of_rooms || 1}
-                  className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 w-20"
-                />
-                <button
-                  onClick={handleRoomSearch}
-                  className="px-3 py-2 bg-cyan-500 text-white rounded-md hover:bg-cyan-600 transition-colors text-sm font-medium"
-                >
-                  Go to Room
-                </button>
-              </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                placeholder="Room #"
+                value={roomSearchTerm}
+                onChange={(e) => setRoomSearchTerm(e.target.value)}
+                onKeyPress={handleRoomSearchKeyPress}
+                min="1"
+                max={submission?.number_of_rooms || 1}
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 w-20"
+              />
+              <button
+                onClick={handleRoomSearch}
+                className="px-3 py-2 bg-cyan-500 text-white rounded-md hover:bg-cyan-600 transition-colors text-sm font-medium"
+              >
+                Go to Room
+              </button>
+              <button
+                onClick={scrollToSummary}
+                className="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm font-medium"
+              >
+                Go to Summary
+              </button>
+            </div>
               
               <button
                 onClick={resetFilters}
@@ -577,21 +628,27 @@ const SubmissionDetails = ({ submissionId }) => {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">
+                  <th
+                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r sticky left-0 bg-gray-50 z-10"
+                    style={{ minWidth: 80, maxWidth: 120 }}
+                  >
                     Day
                   </th>
-                  {Array.from({ length: submission.number_of_rooms }, (_, i) => (
-                    <th 
-                      key={i + 1} 
-                      id={`room-${i + 1}`}
+                  {visibleRooms.map((roomNum) => (
+                    <th
+                      key={roomNum}
+                      id={`room-${roomNum}`}
                       className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r ${
-                        highlightedRoom === i + 1 ? 'bg-yellow-100 border-yellow-400' : ''
+                        highlightedRoom === roomNum ? 'bg-yellow-100 border-yellow-400' : ''
                       }`}
                     >
-                      Room {i + 1}
+                      Room {roomNum}
                     </th>
                   ))}
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    id="summary-header"
+                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     Summary
                   </th>
                 </tr>
@@ -600,7 +657,7 @@ const SubmissionDetails = ({ submissionId }) => {
                 {filteredDays.map(({ day, dayGuests }) => {
                   // Group guests by room
                   const guestsByRoom = {};
-                  for (let roomNum = 1; roomNum <= submission.number_of_rooms; roomNum++) {
+                  for (let roomNum = startRoom; roomNum <= endRoom; roomNum++) {
                     guestsByRoom[roomNum] = dayGuests.filter(g => g.room_number === roomNum);
                   }
                   
@@ -611,16 +668,17 @@ const SubmissionDetails = ({ submissionId }) => {
                   
                   return (
                     <tr key={day} className="hover:bg-gray-50">
-                      <td className="px-4 py-4 whitespace-nowrap font-medium text-gray-900 border-r">
+                      <td
+                        className="px-4 py-4 whitespace-nowrap font-medium text-gray-900 border-r sticky left-0 bg-white z-10"
+                        style={{ minWidth: 80, maxWidth: 120 }}
+                      >
                         {day}
                       </td>
-                      {Array.from({ length: submission.number_of_rooms }, (_, roomIndex) => {
-                        const roomNum = roomIndex + 1;
+                      {visibleRooms.map((roomNum) => {
                         const roomGuests = guestsByRoom[roomNum] || [];
-                        
                         return (
-                          <td 
-                            key={roomNum} 
+                          <td
+                            key={roomNum}
                             id={`room-${roomNum}-day-${day}`}
                             className={`px-4 py-4 border-r ${
                               highlightedRoom === roomNum ? 'bg-yellow-50 border-yellow-300' : ''
@@ -669,7 +727,25 @@ const SubmissionDetails = ({ submissionId }) => {
           </div>
           
           {/* Pagination Controls */}
-          {/* Removed pagination as per edit hint */}
+          <div className="flex justify-end items-center gap-2 p-4">
+            <button
+              disabled={roomPage === 1}
+              onClick={() => setRoomPage(roomPage - 1)}
+              className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300"
+            >
+              Prev
+            </button>
+            <span>
+              Page {roomPage} of {totalRoomPages}
+            </span>
+            <button
+              disabled={roomPage === totalRoomPages}
+              onClick={() => setRoomPage(roomPage + 1)}
+              className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300"
+            >
+              Next
+            </button>
+          </div>
         </div>
         {/* Nationality Modal */}
         <Modal show={showNationalityModal} onHide={() => setShowNationalityModal(false)}>

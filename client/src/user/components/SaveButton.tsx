@@ -53,9 +53,9 @@ const SaveButton = ({
           Processing...
         </>
       ) : hasSubmitted ? (
-        "Already Submitted"
+        "Submitted"
       ) : (
-        "Save Form"
+        "Submit"
       )}
     </button>
   );

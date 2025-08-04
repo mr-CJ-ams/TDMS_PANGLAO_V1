@@ -270,6 +270,24 @@ const SubmissionForm = () => {
       }
     };
 
+    const handleScrollToTotals = () => {
+      if (mainGridRef.current) {
+        // Calculate the column index for the first totals column (Check-ins)
+        const totalsStartColumn = numberOfRooms;
+        
+        // Scroll to the first totals column (Check-ins)
+        mainGridRef.current.scrollToItem({
+          columnIndex: totalsStartColumn,
+          align: "center"
+        });
+        
+        // If you want to scroll to a specific totals column, you can adjust the index:
+        // Check-ins: numberOfRooms
+        // Overnight: numberOfRooms + 1
+        // Occupied: numberOfRooms + 2
+      }
+    };
+
   // Cell click
   const handleCellClick = (day: number, room: number) => {
     // Check if this is a following day (non-editable)
@@ -900,7 +918,21 @@ const SubmissionForm = () => {
         onYearChange={e => setSelectedYear(parseInt(e.target.value))}
         disabled={isLoading}
       />
-      <RoomSearchBar onSearch={handleSearch} disabled={isLoading} />
+      <div className="d-flex align-items-center gap-2 mb-3">
+        <RoomSearchBar onSearch={handleSearch} disabled={isLoading} />
+        <button 
+          onClick={() => handleScrollToTotals()}
+          className="btn btn-outline-primary"
+          disabled={isLoading}
+          style={{
+            whiteSpace: 'nowrap',
+            padding: '0.375rem 0.75rem',
+            height: '38px' // Match the search bar height
+          }}
+        >
+          <i className="bi bi-bar-chart-fill me-1"></i> Show Summary
+        </button>
+      </div>
       <div ref={gridRef}>
         <MonthlyGrid
           daysInMonth={daysInMonth}

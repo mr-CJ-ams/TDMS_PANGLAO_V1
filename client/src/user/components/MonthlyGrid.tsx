@@ -1,6 +1,5 @@
 import React, { useMemo, useRef } from "react";
 import { FixedSizeGrid as VirtualizedGrid } from "react-window";
-import { Hotel } from "lucide-react";
 import useMediaQuery from "../hooks/useMediaQuery";
 
 interface MonthlyGridProps {
@@ -65,7 +64,7 @@ const MonthlyGrid = ({
   const DayCell = ({ rowIndex, style }: any) => {
     const paddedStyle = {
       ...style,
-      padding: `${CELL_PADDING}px 0`, // Vertical padding only to maintain alignment
+      padding: `${CELL_PADDING}px`, // Padding on all sides
       boxSizing: 'border-box'
     };
 
@@ -81,7 +80,7 @@ const MonthlyGrid = ({
           borderRadius: "12px 0 0 0",
           borderBottom: "2px solid #bcd",
           borderRight: "1px solid #bcd",
-          padding: 0 // No padding for header
+          padding: `${CELL_PADDING}px` // Padding for header too
         }}>
           Day
         </div>
@@ -108,8 +107,8 @@ const MonthlyGrid = ({
   const MainCell = ({ columnIndex, rowIndex, style }: any) => {
     const paddedStyle = {
       ...style,
-      padding: CELL_PADDING,
-      boxSizing: 'border-box' // Ensure padding is included in the cell dimensions
+      padding: `${CELL_PADDING}px`, // Padding on all sides
+      boxSizing: 'border-box'
     };
     // Header row
     if (rowIndex === 0) {
@@ -117,7 +116,7 @@ const MonthlyGrid = ({
       if (columnIndex < numberOfRooms) {
         return (
           <div style={{
-            ...style,
+            ...paddedStyle,
             background: "#e0e7ef",
             fontWeight: "bold",
             display: "flex",
@@ -125,9 +124,8 @@ const MonthlyGrid = ({
             justifyContent: "center",
             borderBottom: "2px solid #bcd",
             borderRight: "1px solid #bcd",
-            padding: 0 // No padding for headers
           }}>
-            Rm{rooms[columnIndex]}
+            Room {rooms[columnIndex]}
           </div>
         );
       }
@@ -145,7 +143,6 @@ const MonthlyGrid = ({
           borderBottom: "2px solid #bcd",
           borderRight: i === 2 ? undefined : "1px solid #bcd",
           borderRadius: i === 2 ? "0 12px 0 0" : undefined,
-          padding: 0 // No padding for headers
         }}>
           {labels[i]}
         </div>
@@ -157,26 +154,26 @@ const MonthlyGrid = ({
       const room = rooms[columnIndex];
       const day = days[rowIndex - 1];
       return (
-        <div style={style}>
+        <div style={paddedStyle}>
           <button
             onClick={() => !disabled && onCellClick(day, room)}
             className="btn w-100 d-flex align-items-center justify-content-center gap-2 px-2 py-1 border-0"
             style={{
               backgroundColor: getRoomColor(day, room),
-              borderRadius: 8, // Slightly smaller radius to account for padding
+              borderRadius: 8,
               fontSize: 14,
               color: "#333",
               transition: "all 0.3s ease",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)", // Smaller shadow
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
               cursor: disabled ? "not-allowed" : "pointer",
               opacity: disabled ? 0.6 : 1,
               width: "100%",
               height: "100%",
-              margin: 0
+              margin: 0,
             }}
             disabled={disabled}
           >
-            <Hotel size={16} /> Rm{room}
+            Room {room}
           </button>
         </div>
       );

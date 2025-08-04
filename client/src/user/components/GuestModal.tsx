@@ -1,5 +1,6 @@
 import { useState } from "react";
 import nationalities from "./Nationality";
+import { Trash2, PlusIcon } from "lucide-react";
 
 interface GuestModalProps {
   day: number;
@@ -88,7 +89,7 @@ const GuestModal = ({
             
             {/* Check-in toggle button */}
             <div className="form-group mb-3">
-              <label className="form-label fw-bold">Does guest check-in today?</label>
+              <label className="form-label fw-bold">Guest check-in today?</label>
               <div className="d-flex gap-2">
                 <button
                   type="button"
@@ -109,8 +110,8 @@ const GuestModal = ({
               </div>
               <small className="form-text text-muted">
                 {isCheckIn 
-                  ? "✅ This will count as a check-in and the start day will be yellow" 
-                  : "ℹ️ This will NOT count as a check-in and the start day will be blue"}
+                  ? "✅ This will count as a check-in and the start day cell will be yellow" 
+                  : "ℹ️ This will NOT count as a check-in and the start day cell will be blue"}
               </small>
             </div>
 
@@ -130,7 +131,7 @@ const GuestModal = ({
                 {isEditingExisting ? "⚠️ Occupied" : "⚠️ This Length of Overnight Stay overlaps with existing occupied rooms"}
               </div>
             ) : (
-              !isEditingExisting && <div className="alert alert-info mt-2">✅ These dates are available for booking</div>
+              !isEditingExisting && <div className="alert alert-info mt-2">✅ These dates are available</div>
             )}
             {!isStartDay && isEditingExisting && (
               <div className="alert alert-info mt-2">
@@ -171,15 +172,45 @@ const GuestModal = ({
                     </select>
                   </div>
                 </div>
-                <button className="btn btn-danger btn-sm mt-2" onClick={() => handleRemoveGuest(idx)} disabled={disabled}>Remove</button>
+                <button className="btn btn-danger btn-sm mt-2" onClick={() => handleRemoveGuest(idx)} disabled={disabled}><Trash2 size={16}/></button>
               </div>
             ))}
-            <button className="btn btn-primary" onClick={handleAddGuest} disabled={disabled}>Add Guest</button>
+            <div className="flex justify-end">
+              <button className="btn btn-primary" onClick={handleAddGuest} disabled={disabled}>
+                <PlusIcon size={16} />
+              </button>
+            </div>
+
           </div>
           <div className="modal-footer">
-            <button className="btn btn-danger" onClick={handleRemoveAll} disabled={disabled}>Remove All Guest Data</button>
-            <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
-            <button className="btn btn-primary" onClick={handleSave} disabled={disabled || !guests.length}>Save</button>
+            <div className="flex justify-between items-center w-full mt-4">
+          {/* Left side */}
+          <button
+          //btn w-100 d-flex align-items-center justify-content-center gap-2 px-2 py-1 border-0
+            className="btn btn-danger w-35 d-flex align-items-center justify-center gap-2"
+            onClick={handleRemoveAll}
+            disabled={disabled}
+          >
+            <Trash2 size={16} />
+            Remove All
+          </button>
+
+
+          {/* Right side */}
+          <div className="flex gap-3"> {/* gap between Cancel and Save */}
+            <button className="btn btn-secondary" onClick={onClose}>
+              Cancel
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleSave}
+              disabled={disabled || !guests.length}
+            >
+              Save
+            </button>
+          </div>
+        </div>
+
           </div>
         </div>
       </div>
