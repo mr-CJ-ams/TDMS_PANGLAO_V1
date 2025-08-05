@@ -176,8 +176,10 @@ const GuestModal = ({
               </div>
             ))}
             <div className="flex justify-end">
-              <button className="btn btn-primary" onClick={handleAddGuest} disabled={disabled}>
-                <PlusIcon size={16} />
+              <button className="btn btn-success w-20 d-flex align-items-center justify-center gap-2" 
+                onClick={handleAddGuest} 
+                disabled={disabled}>
+                <PlusIcon size={16} /> Add
               </button>
             </div>
 
@@ -202,7 +204,7 @@ const GuestModal = ({
               Cancel
             </button>
             <button
-              className="btn btn-primary"
+              className="btn btn-success"
               onClick={handleSave}
               disabled={disabled || !guests.length}
             >

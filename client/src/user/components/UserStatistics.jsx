@@ -208,61 +208,72 @@ const UserStatistics = ({ user }) => {
         ) : (
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h4 className="text-lg font-semibold text-gray-800 mb-4">Monthly Check-ins for {selectedYear}</h4>
-            <ResponsiveContainer width="100%" height={400}>
-              <LineChart
-                data={filteredData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+            {/* Responsive horizontal scroll for mobile */}
+            <div className="w-full overflow-x-auto">
+              <div
+                style={{
+                  minWidth: 700, // Ensures all months are visible and chart is not compressed
+                  width: "100%",
+                  maxWidth: "1200px",
+                }}
               >
-                {/* Background gradient */}
-                <defs>
-                  <linearGradient id="userGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#E0F7FA" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#FFF3E0" stopOpacity={0.8} />
-                  </linearGradient>
-                </defs>
-                <rect x={0} y={0} width="100%" height="100%" fill="url(#userGradient)" />
+                <ResponsiveContainer width="100%" height={400}>
+                  <LineChart
+                    data={filteredData}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                  >
+                    {/* Background gradient */}
+                    <defs>
+                      <linearGradient id="userGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#E0F7FA" stopOpacity={0.8} />
+                        <stop offset="95%" stopColor="#FFF3E0" stopOpacity={0.8} />
+                      </linearGradient>
+                    </defs>
+                    <rect x={0} y={0} width="100%" height="100%" fill="url(#userGradient)" />
 
-                {/* Grid */}
-                <CartesianGrid strokeDasharray="3 3" stroke="#B0BEC5" strokeOpacity={0.5} />
+                    {/* Grid */}
+                    <CartesianGrid strokeDasharray="3 3" stroke="#B0BEC5" strokeOpacity={0.5} />
 
-                {/* X Axis */}
-                <XAxis
-                  dataKey="month"
-                  tickFormatter={formatMonth}
-                  tick={{ fill: "#37474F", fontSize: 12, fontWeight: "bold" }}
-                  axisLine={{ stroke: "#37474F", strokeWidth: 1 }}
-                />
+                    {/* X Axis */}
+                    <XAxis
+                      dataKey="month"
+                      tickFormatter={formatMonth}
+                      tick={{ fill: "#37474F", fontSize: 12, fontWeight: "bold" }}
+                      axisLine={{ stroke: "#37474F", strokeWidth: 1 }}
+                    />
 
-                {/* Y Axis */}
-                <YAxis
-                  tick={{ fill: "#37474F", fontSize: 12, fontWeight: "bold" }}
-                  axisLine={{ stroke: "#37474F", strokeWidth: 1 }}
-                />
+                    {/* Y Axis */}
+                    <YAxis
+                      tick={{ fill: "#37474F", fontSize: 12, fontWeight: "bold" }}
+                      axisLine={{ stroke: "#37474F", strokeWidth: 1 }}
+                    />
 
-                {/* Tooltip */}
-                <Tooltip content={<CustomTooltip />} />
+                    {/* Tooltip */}
+                    <Tooltip content={<CustomTooltip />} />
 
-                {/* Legend */}
-                <Legend
-                  wrapperStyle={{
-                    paddingTop: "20px",
-                    color: "#37474F",
-                  }}
-                />
+                    {/* Legend */}
+                    <Legend
+                      wrapperStyle={{
+                        paddingTop: "20px",
+                        color: "#37474F",
+                      }}
+                    />
 
-                {/* Line */}
-                <Line
-                  type="monotone"
-                  dataKey="total_check_ins"
-                  stroke="#0288D1"
-                  activeDot={{ r: 8, fill: "#0288D1" }}
-                  name="Monthly Check-ins"
-                  strokeOpacity={0.8}
-                  dot={{ fill: "#0288D1", strokeWidth: 2, r: 4 }}
-                  strokeWidth={2}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+                    {/* Line */}
+                    <Line
+                      type="monotone"
+                      dataKey="total_check_ins"
+                      stroke="#0288D1"
+                      activeDot={{ r: 8, fill: "#0288D1" }}
+                      name="Monthly Check-ins"
+                      strokeOpacity={0.8}
+                      dot={{ fill: "#0288D1", strokeWidth: 2, r: 4 }}
+                      strokeWidth={2}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </div>
         )}
 
@@ -298,4 +309,4 @@ const UserStatistics = ({ user }) => {
   );
 };
 
-export default UserStatistics; 
+export default UserStatistics;

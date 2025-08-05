@@ -149,11 +149,11 @@ const EmailVerificationRequest = () => {
 
         <div className="mt-6 space-y-2 text-center">
           <button
-            onClick={() => navigate("/login")}
+            onClick={() => navigate("/signup")}
             className="flex items-center gap-2 text-cyan-600 hover:text-cyan-700 mx-auto"
           >
             <ArrowLeft size={16} />
-            Back to Login
+            Back to Signup
           </button>
         </div>
       </div>

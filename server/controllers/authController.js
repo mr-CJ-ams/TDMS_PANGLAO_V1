@@ -116,7 +116,7 @@ exports.checkEmailVerification = async (req, res) => {
 exports.signup = async (req, res) => {
   try {
     const {
-      username, email, password, phone_number, registered_owner, tin,
+      email, password, phone_number, registered_owner, tin,
       company_name, company_address, accommodation_type, number_of_rooms,
       region, province, municipality, barangay, dateEstablished
     } = req.body;
@@ -132,23 +132,39 @@ exports.signup = async (req, res) => {
 
     const accommodation_code = accommodationCodes[accommodation_type] || "OTH";
     const hashedPassword = await bcrypt.hash(password, 10);
-    
+
     // Determine approval state
     const is_approved = getAutoApproval();
-    
+
     const user = await userModel.createUser({
-      username, email, hashedPassword, phone_number, registered_owner, tin,
+      email, hashedPassword, phone_number, registered_owner, tin,
       company_name, company_address, accommodation_type, accommodation_code,
       number_of_rooms, region, province, municipality, barangay, dateEstablished,
       is_approved
     });
-    
-    res.json({ 
-      success: true, 
-      message: is_approved 
-        ? "Registration successful! You can now log in." 
+
+    // Send approval email if auto-approval is enabled
+    if (is_approved) {
+      const subject = "Your TDMS Account Has Been Approved";
+      const message = `
+        Dear Valued User,<br><br>
+        We are pleased to inform you that your account registration for the Tourism Data Management System (TDMS) has been approved.<br><br>
+        You may now log in and access the system using the following link:<br>
+        <a href="https://tdms-panglao-client.onrender.com">Login Link</a><br><br>
+        If you have any questions or require assistance, please do not hesitate to contact our office.<br><br>
+        Thank you for your interest in the TDMS.<br><br>
+        Best regards,<br>
+        Panglao Tourism Office
+      `;
+      await sendEmailNotification(email, subject, message);
+    }
+
+    res.json({
+      success: true,
+      message: is_approved
+        ? "Registration successful! You can now log in."
         : "Registration successful! Waiting for admin approval.",
-      user 
+      user,
     });
   } catch (err) {
     console.error(err.message);
@@ -161,8 +177,8 @@ exports.signup = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    const { username, password } = req.body;
-    const user = await userModel.findUserByUsername(username);
+    const { email, password } = req.body;
+    const user = await userModel.findUserByEmail(email);
     if (!user) return res.status(400).json("Invalid credentials");
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) return res.status(400).json("Invalid credentials");

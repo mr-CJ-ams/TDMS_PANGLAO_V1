@@ -81,36 +81,6 @@ const HelpSupport = () => {
 
        {/* Collaboration and System Information Section */} 
        <div className="p-4 sm:p-8">
-          <h4 className="text-xl sm:text-2xl font-semibold text-sky-900 mb-4 sm:mb-6">
-            About the System
-          </h4>
-          <p className="text-gray-600 mb-4 text-sm sm:text-base">
-            In pursuit of a smarter and more efficient tourism management system, the <strong>Integrated Tourist Data Management System (ITDMS)</strong> has been developed by students from the <strong>Computer Engineering Department of Bohol Island State University (BISU) Main Campus.</strong> This initiative is a product of <strong>innovation, research, and collaboration</strong> between the <strong>Panglao Local Government Unit (LGU), the Panglao Municipal Tourism Office, and BISU</strong> to address the evolving needs of the tourism sector.
-          </p>
-          <p className="text-gray-600 mb-4 text-sm sm:text-base">
-            Embracing modern <strong>technology and data-driven solutions</strong>, this system is designed to <strong>streamline, digitize, and enhance</strong> the collection, management, and organization of tourist accommodation data. It replaces the <strong>traditional manual recording system</strong> with an <strong>automated, real-time platform</strong> that ensures accuracy, efficiency, and accessibility.
-          </p>
-
-          {/* Innovative Features */}
-          <h4 className="text-xl sm:text-2xl font-semibold text-sky-900 mb-4">Innovative Features of the System</h4>
-          <ul className="list-disc list-inside text-gray-600 mb-4 text-sm sm:text-base">
-            <li><strong>Automated Tourist Data Collection & Management:</strong> Streamlines the process for accommodation establishments.</li>
-            <li><strong>Real-Time Monitoring & Reporting:</strong> Provides up-to-date insights into accommodation trends.</li>
-            <li><strong>Machine Learning-Powered Forecasting:</strong> Predicts tourist accommodation demand for data-driven decision-making.</li>
-            <li><strong>Sustainable & Smart Tourism Approach:</strong> Reduces reliance on paper-based logs, promoting eco-friendly tourism.</li>
-          </ul>
-
-          {/* Significance of the Initiative */}
-          <h4 className="text-xl sm:text-2xl font-semibold text-sky-900 mb-4">Significance of the Initiative</h4>
-          <ul className="list-disc list-inside text-gray-600 mb-4 text-sm sm:text-base">
-            <li>
-              <strong>For the Panglao LGU & Municipal Tourism Office:</strong> Provides accurate and timely data for planning, marketing strategies, and policy formulation. Helps understand carrying capacity and trends for sustainable tourism development.
-            </li>
-            <li>
-              <strong>For Accommodation Establishments:</strong> Simplifies submission processes, reducing administrative burdens and improving efficiency.
-            </li>
-          </ul>
-
           {/* User Guide Section */}
           <div className="mt-8 mb-8">
             <h4 className="text-xl sm:text-2xl font-semibold text-sky-900 mb-6">User Guide</h4>
@@ -382,25 +352,6 @@ const HelpSupport = () => {
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Logos of Collaborating Organizations */}
-          <div className="mt-8">
-            <h4 className="text-xl sm:text-2xl font-semibold text-sky-900 mb-4 sm:mb-6">Our Collaborators</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-              <div className="flex items-center justify-center bg-sky-50 p-3 sm:p-6 rounded-lg shadow-sm">
-                <img src={Panglao_lgu_logo} alt="Panglao LGU Logo" className="h-20" />
-              </div>
-              <div className="flex items-center justify-center bg-sky-50 p-3 sm:p-6 rounded-lg shadow-sm">
-                <img src={Panglao_tourism_logo} alt="Panglao Municipal Tourism Office Logo" className="h-20" />
-              </div>
-              <div className="flex items-center justify-center bg-sky-50 p-3 sm:p-6 rounded-lg shadow-sm">
-                <img src={BISU_logo} alt="Bohol Island State University Logo" className="h-20" />
-              </div>
-              <div className="flex items-center justify-center bg-sky-50 p-3 sm:p-6 rounded-lg shadow-sm">
-                <img src={ICpEP_Logo} alt="Computer Engineering Department Logo" className="h-20" />
               </div>
             </div>
           </div>

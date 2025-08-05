@@ -116,10 +116,10 @@ const EmailVerification = () => {
 
         <div className="mt-6 text-center">
           <button
-            onClick={() => navigate("/login")}
+            onClick={() => navigate("/signup")}
             className="text-cyan-600 hover:text-cyan-700 text-sm"
           >
-            Back to Login
+            Back to Signup
           </button>
         </div>
       </div>

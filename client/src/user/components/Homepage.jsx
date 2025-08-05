@@ -150,7 +150,7 @@ const Homepage = () => {
                 <p className="text-lg md:text-xl text-gray-700 leading-relaxed">
                   The <strong className="text-cyan-600">Tourism Data Management System (TDMS)</strong> is a comprehensive digital platform designed to streamline 
                   tourism data collection, analysis, and reporting for the Municipality of Panglao, Bohol. This system modernizes 
-                  the traditional paper-based reporting process mandated by Municipal Ordinance No. 04, Series of 2020, providing 
+                  the traditional paper-based reporting process mandated by Municipal Ordinance No. 04, Series of 2020(Tourist Arrival Monitoring Ordinance of Panglao, Bohol), providing 
                   real-time insights and automated compliance monitoring.
                 </p>
               </div>
@@ -208,6 +208,59 @@ const Homepage = () => {
                     <span className="text-gray-700"><strong>Resource Optimization:</strong> Reduce administrative overhead and improve efficiency</span>
                   </li>
                 </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Compliance Information */}
+      <section className="py-16 px-4 md:px-8">
+        <div className="max-w-6xl mx-auto">
+          <div 
+            ref={el => sectionsRef.current['compliance'] = el}
+            className={`transition-all duration-1000 ease-out ${
+              isVisible['compliance'] 
+                ? 'opacity-100 translate-y-0' 
+                : 'opacity-0 translate-y-20'
+            }`}
+          >
+            <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 bg-gradient-to-r from-amber-600 to-cyan-600 bg-clip-text text-transparent">
+              Compliance Information
+            </h2>
+            <div className="bg-gradient-to-br from-orange-50 to-red-50 p-8 md:p-12 rounded-3xl shadow-2xl border border-orange-200 relative overflow-hidden">
+              {/* Sunset Gradient */}
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-200/20 to-red-200/20"></div>
+              <div className="relative z-10">
+                <p className="text-lg text-gray-700 mb-6 text-center">
+                  This system implements the requirements of <strong className="text-orange-600">Municipal Ordinance No. 04, Series of 2020</strong> 
+                  (Tourist Arrival Monitoring Ordinance of Panglao, Bohol).
+                </p>
+                <div className="grid md:grid-cols-2 gap-8">
+                  <div>
+                    <h4 className="font-bold text-orange-700 mb-4">All tourism establishments are required to:</h4>
+                    <ul className="space-y-3">
+                      {[
+                        "Submit monthly reports not later than the 10th day of each month",
+                        "Provide accurate and complete tourism statistical data",
+                        "Cooperate with tourism office surveys and data collection efforts",
+                        "Maintain proper records of all tourism-related activities"
+                      ].map((requirement, index) => (
+                        <li key={index} className="flex items-start space-x-3">
+                          <div className="w-4 h-4 bg-orange-600 rounded-full flex-shrink-0 mt-1 shadow-sm"></div>
+                          <span className="text-gray-700">{requirement}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="bg-white/60 backdrop-blur-sm p-6 rounded-2xl">
+                    <h4 className="font-bold text-orange-700 mb-3">Important Note:</h4>
+                    <p className="text-gray-700">
+                      Failure to comply may result in penalties as specified in the ordinance. 
+                      The TDMS system helps ensure compliance and provides tools for timely and accurate reporting.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -472,58 +525,7 @@ const Homepage = () => {
         </div>
       </section>
 
-      {/* Compliance Information */}
-      <section className="py-16 px-4 md:px-8">
-        <div className="max-w-6xl mx-auto">
-          <div 
-            ref={el => sectionsRef.current['compliance'] = el}
-            className={`transition-all duration-1000 ease-out ${
-              isVisible['compliance'] 
-                ? 'opacity-100 translate-y-0' 
-                : 'opacity-0 translate-y-20'
-            }`}
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 bg-gradient-to-r from-amber-600 to-cyan-600 bg-clip-text text-transparent">
-              Compliance Information
-            </h2>
-            <div className="bg-gradient-to-br from-orange-50 to-red-50 p-8 md:p-12 rounded-3xl shadow-2xl border border-orange-200 relative overflow-hidden">
-              {/* Sunset Gradient */}
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-200/20 to-red-200/20"></div>
-              <div className="relative z-10">
-                <p className="text-lg text-gray-700 mb-6 text-center">
-                  This system implements the requirements of <strong className="text-orange-600">Municipal Ordinance No. 04, Series of 2020</strong> 
-                  (Tourist Arrival Monitoring Ordinance of Panglao, Bohol).
-                </p>
-                <div className="grid md:grid-cols-2 gap-8">
-                  <div>
-                    <h4 className="font-bold text-orange-700 mb-4">All tourism establishments are required to:</h4>
-                    <ul className="space-y-3">
-                      {[
-                        "Submit monthly reports not later than the 10th day of each month",
-                        "Provide accurate and complete tourism statistical data",
-                        "Cooperate with tourism office surveys and data collection efforts",
-                        "Maintain proper records of all tourism-related activities"
-                      ].map((requirement, index) => (
-                        <li key={index} className="flex items-start space-x-3">
-                          <div className="w-4 h-4 bg-orange-600 rounded-full flex-shrink-0 mt-1 shadow-sm"></div>
-                          <span className="text-gray-700">{requirement}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="bg-white/60 backdrop-blur-sm p-6 rounded-2xl">
-                    <h4 className="font-bold text-orange-700 mb-3">Important Note:</h4>
-                    <p className="text-gray-700">
-                      Failure to comply may result in penalties as specified in the ordinance. 
-                      The TDMS system helps ensure compliance and provides tools for timely and accurate reporting.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      
 
       {/* Data Privacy Notice */}
       <section className="py-16 px-4 md:px-8">
@@ -628,15 +630,21 @@ const Homepage = () => {
                   <ul className="text-gray-300 space-y-1 text-sm">
                     <li><a href="#" className="hover:text-cyan-400 transition-colors">Municipality of Panglao</a></li>
                     <li><a href="#" className="hover:text-cyan-400 transition-colors">Panglao Online Business Permit</a></li>
+                    <li><a href="#" className="hover:text-cyan-400 transition-colors">Applicant Registration</a></li>
                     <li><a href="#" className="hover:text-cyan-400 transition-colors">Establishment Registration</a></li>
+                    <li><a href="#" className="hover:text-cyan-400 transition-colors">Registration</a></li>
                   </ul>
                 </div>
                 <div>
                   <h5 className="font-medium mb-2 text-white">Government Links</h5>
                   <ul className="text-gray-300 space-y-1 text-sm">
                     <li><a href="#" className="hover:text-cyan-400 transition-colors">Office of the President</a></li>
-                    <li><a href="#" className="hover:text-cyan-400 transition-colors">Department of Tourism</a></li>
+                    <li><a href="#" className="hover:text-cyan-400 transition-colors">Office of the Vice President</a></li>
+                    <li><a href="#" className="hover:text-cyan-400 transition-colors">Senate of the Philippines</a></li>
+                    <li><a href="#" className="hover:text-cyan-400 transition-colors">House of Representatives</a></li>
                     <li><a href="#" className="hover:text-cyan-400 transition-colors">Supreme Court</a></li>
+                    <li><a href="#" className="hover:text-cyan-400 transition-colors">Court of Appeals</a></li>
+                    <li><a href="#" className="hover:text-cyan-400 transition-colors">Sandiganbayan</a></li>
                   </ul>
                 </div>
               </div>

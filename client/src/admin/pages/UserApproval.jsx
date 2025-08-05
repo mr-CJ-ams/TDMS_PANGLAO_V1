@@ -90,7 +90,8 @@ const UserApproval = ({
               Company Name {sortDirection === "asc" ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </div>
           </th>
-          {["Username", "Email", "Phone Number", "Registered Owner", "TIN", "Region", "Province", "Municipality", "Barangay", "Date Established", "Accommodation Type", "Accommodation Code", "Number of Rooms", "Status"]
+          {/* Remove Username from headers */}
+          {["Email", "Phone Number", "Registered Owner", "TIN", "Region", "Province", "Municipality", "Barangay", "Date Established", "Accommodation Type", "Accommodation Code", "Number of Rooms", "Status"]
             .map(h => <th key={h} className="p-4 text-left font-medium">{h}</th>)}
           {isActive && <th className="p-4 text-left font-medium">Actions</th>}
         </tr>
@@ -98,14 +99,14 @@ const UserApproval = ({
       <tbody className="divide-y divide-sky-100">
         {userList.length === 0 ? (
           <tr>
-            <td colSpan={isActive ? 16 : 15} className="p-4 text-center text-gray-500">
+            <td colSpan={isActive ? 15 : 14} className="p-4 text-center text-gray-500">
               {isActive ? "No active users found matching your criteria" : "No deactivated users found"}
             </td>
           </tr>
         ) : userList.map(user => (
           <tr key={user.user_id} className="hover:bg-sky-50 transition-colors">
             <td className="p-4 font-medium">{user.company_name || "N/A"}</td>
-            <td className="p-4">{user.username}</td>
+            {/* Remove Username cell */}
             <td className="p-4">{user.email}</td>
             <td className="p-4">{user.phone_number}</td>
             <td className="p-4">{user.registered_owner}</td>

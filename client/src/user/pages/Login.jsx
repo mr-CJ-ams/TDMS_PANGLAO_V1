@@ -9,7 +9,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000
 const LOGIN_TIMEOUT = 30000;
 
 const Login = () => {
-  const [username, setUsername] = useState(""),
+  const [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
     [showPassword, setShowPassword] = useState(false),
     [isSubmitting, setIsSubmitting] = useState(false),
@@ -25,7 +25,7 @@ const Login = () => {
       setError("Login is taking longer than expected. Please try again.");
     }, LOGIN_TIMEOUT);
     try {
-      const { data } = await axios.post(`${API_BASE_URL}/auth/login`, { username, password });
+      const { data } = await axios.post(`${API_BASE_URL}/auth/login`, { email, password });
       clearTimeout(timeoutId);
       if (data.message === "Account is deactivated") {
         setError("Your account has been deactivated. Please contact the administrator.");
@@ -56,13 +56,13 @@ const Login = () => {
         </div>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input
-              type="text"
-              value={username}
-              onChange={e => setUsername(e.target.value)}
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
               required
-              autoComplete="username"
+              autoComplete="email"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
             />
           </div>

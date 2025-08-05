@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import { Download } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
@@ -158,7 +159,8 @@ const UserGuestDemographics = ({ user, selectedYear, selectedMonth, formatMonth 
           }}
           onClick={exportGuestDemographics}
         >
-          Export to Excel
+          {/* Button: Export Guest Demographics and Nationality Counts */}
+          <Download size={16}/>
         </button>
       </div>
       <div style={{ marginBottom: 20 }}>

@@ -17,7 +17,8 @@ const accommodationTypes = [
 const Signup = () => {
   const location = useLocation();
   const [formData, setFormData] = useState({
-    username: "", email: "", password: "", confirmPassword: "", phoneNumber: "",
+    // Removed username
+    email: "", password: "", confirmPassword: "", phoneNumber: "",
     registeredOwner: "", tin: "", companyName: "", companyAddress: "",
     accommodationType: "", numberOfRooms: "", region: "", province: "", municipality: "", barangay: "", dateEstablished: "",
   });
@@ -134,7 +135,8 @@ const Signup = () => {
     }, SIGNUP_TIMEOUT);
     try {
       const response = await axios.post(`${API_BASE_URL}/auth/signup`, {
-        username: formData.username, email: formData.email, password: formData.password,
+        // Removed username from payload
+        email: formData.email, password: formData.password,
         phone_number: formData.phoneNumber, registered_owner: formData.registeredOwner, tin: formData.tin,
         company_name: formData.companyName, company_address: formData.companyAddress,
         accommodation_type: formData.accommodationType, number_of_rooms: formData.numberOfRooms,
@@ -221,28 +223,59 @@ const Signup = () => {
 
           {/* Rest of the form fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[
-              { label: "Username *", name: "username", type: "text", autoComplete: "username" },
-              { label: "Phone Number *", name: "phoneNumber", type: "tel", autoComplete: "tel" },
-              { label: "Company Name *", name: "companyName", type: "text", autoComplete: "organization" },
-              { label: "Registered Owner *", name: "registeredOwner", type: "text", autoComplete: "name" },
-              { label: "Date Established *", name: "dateEstablished", type: "date", autoComplete: "off" },
-              { label: "Tax Identification No. (TIN) *", name: "tin", type: "text", autoComplete: "off" }
-            ].map(({ label, name, type, autoComplete }) => (
-              <div key={name}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-                <input
-                  type={type}
-                  name={name}
-                  value={formData[name]}
-                  onChange={handleChange}
-                  required
-                  autoComplete={autoComplete}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
-                />
-              </div>
-            ))}
-            {/* Password */}
+            {/* Phone Number */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
+              <input
+                type="tel"
+                name="phoneNumber"
+                value={formData.phoneNumber}
+                onChange={handleChange}
+                required
+                autoComplete="tel"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
+              />
+            </div>
+            {/* Company Name */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Company Name *</label>
+              <input
+                type="text"
+                name="companyName"
+                value={formData.companyName}
+                onChange={handleChange}
+                required
+                autoComplete="organization"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
+              />
+            </div>
+            {/* Registered Owner */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Registered Owner *</label>
+              <input
+                type="text"
+                name="registeredOwner"
+                value={formData.registeredOwner}
+                onChange={handleChange}
+                required
+                autoComplete="name"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
+              />
+            </div>
+            {/* Date Established */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Date Established *</label>
+              <input
+                type="date"
+                name="dateEstablished"
+                value={formData.dateEstablished}
+                onChange={handleChange}
+                required
+                autoComplete="off"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
+              />
+            </div>
+            {/* Password (was previously TIN position) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
               <div className="relative">
@@ -273,7 +306,7 @@ const Signup = () => {
                 ))}
               </div>
             </div>
-            {/* Confirm Password */}
+            {/* Confirm Password (was previously Password position) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password *</label>
               <div className="relative">
@@ -296,6 +329,19 @@ const Signup = () => {
                   <ValidationIcon isValid={doPasswordsMatch} /><span>Passwords match</span>
                 </div>
               )}
+            </div>
+            {/* TIN (was previously Confirm Password position) */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tax Identification No. (TIN) *</label>
+              <input
+                type="text"
+                name="tin"
+                value={formData.tin}
+                onChange={handleChange}
+                required
+                autoComplete="off"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
+              />
             </div>
             {/* Region */}
             <div>

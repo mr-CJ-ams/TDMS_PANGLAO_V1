@@ -1,6 +1,7 @@
 import React from "react";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import {Download} from "lucide-react"
 
 const UserMonthlyMetrics = ({ monthlyMetrics, selectedYear, formatMonth, toNumber, user }) => {
   const exportMonthlyMetrics = () => {
@@ -75,7 +76,8 @@ const UserMonthlyMetrics = ({ monthlyMetrics, selectedYear, formatMonth, toNumbe
           }}
           onClick={exportMonthlyMetrics}
         >
-          Export to Excel
+          {/* Button: Export Monthly Metrics */}
+          <Download size={16}/>
         </button>
       </div>
       <div className="overflow-x-auto">
