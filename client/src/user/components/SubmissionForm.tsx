@@ -8,6 +8,7 @@ import SaveButton from "./SaveButton";
 import RoomSearchBar from "./RoomSearchBar";
 import DolphinSpinner from "./DolphinSpinner";
 import { FixedSizeGrid as VirtualizedGrid } from "react-window";
+import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
@@ -72,126 +73,36 @@ const SubmissionForm = () => {
     (async () => {
       try {
         const token = sessionStorage.getItem("token");
-        if (!token) {
-          throw new Error("No authentication token found");
-        }
+        if (!token) throw new Error("No authentication token found");
 
-        const [serverRes, localData] = await Promise.all([
-          axios.get(`${API_BASE_URL}/api/submissions/draft/${user.user_id}/${selectedMonth}/${selectedYear}`, { 
-            headers: { Authorization: `Bearer ${token}` },
-            timeout: 10000 // 10 second timeout
-          }),
-          loadDataFromLocalStorage(user.user_id)
-        ]);
-        
+        // Always fetch from server first
+        const serverRes = await axios.get(
+          `${API_BASE_URL}/api/submissions/draft/${user.user_id}/${selectedMonth}/${selectedYear}`,
+          { headers: { Authorization: `Bearer ${token}` }, timeout: 10000 }
+        );
         const serverData = Array.isArray(serverRes.data?.days) ? serverRes.data.days : [];
-        const localMonthData = Array.isArray(localData[key]) ? localData[key] : [];
-        const getRoomKey = (r: any) => `${r.day}-${r.room}`;
-        const uniqueRooms = new Map<string, any>();
-        localMonthData.forEach(r => uniqueRooms.set(getRoomKey(r), r));
-        serverData.forEach(r => uniqueRooms.set(getRoomKey(r), r));
-        let mergedRooms = Array.from(uniqueRooms.values());
 
-        // Load previous month's continuing stays - FIXED LOGIC
-        const prevMonth = selectedMonth === 1 ? 12 : selectedMonth - 1, prevYear = selectedMonth === 1 ? selectedYear - 1 : selectedYear;
-        try {
-          const prevRes = await axios.get(`${API_BASE_URL}/api/submissions/draft/${user.user_id}/${prevMonth}/${prevYear}`, { 
-            headers: { Authorization: `Bearer ${token}` },
-            timeout: 10000
-          });
-          const prevData = Array.isArray(prevRes.data?.days) ? prevRes.data.days : [];
-          // const prevMonthDays = getDaysInMonth(prevMonth, prevYear);
-          
-          // Find continuing stays that extend into the current month - FIXED LOGIC
-          const continuingStays = new Map();
-          prevData.forEach(entry => {
-            if (entry.startDay && entry.lengthOfStay && entry.stayId && entry.startMonth && entry.startYear) {
-              // Calculate the actual end day of the stay from the original start date
-              const originalStartDate = new Date(entry.startYear, entry.startMonth - 1, entry.startDay);
-              const endDate = new Date(originalStartDate);
-              endDate.setDate(originalStartDate.getDate() + entry.lengthOfStay - 1);
-              
-              // Calculate the end day in the previous month
-              const prevMonthEndDate = new Date(prevYear, prevMonth, 0); // Last day of previous month
-              
-              // Check if the stay extends beyond the previous month
-              if (endDate > prevMonthEndDate) {
-                // Calculate how many days this stay should have in the current month
-                const currentMonthStartDate = new Date(selectedYear, selectedMonth - 1, 1);
-                const daysInCurrentMonth = getDaysInMonth(selectedMonth, selectedYear);
-                const currentMonthEndDate = new Date(selectedYear, selectedMonth - 1, daysInCurrentMonth);
-                
-                // Calculate the actual days this stay should occupy in the current month
-                const nextDayAfterPrevMonth = new Date(prevMonthEndDate);
-                nextDayAfterPrevMonth.setDate(prevMonthEndDate.getDate() + 1);
-                
-                const stayStartInCurrentMonth = new Date(Math.max(currentMonthStartDate.getTime(), nextDayAfterPrevMonth.getTime()));
-                const stayEndInCurrentMonth = new Date(Math.min(currentMonthEndDate.getTime(), endDate.getTime()));
-                
-                const daysInCurrentMonthForThisStay = Math.max(0, Math.floor((stayEndInCurrentMonth.getTime() - stayStartInCurrentMonth.getTime()) / (24 * 60 * 60 * 1000)) + 1);
-                
-                if (daysInCurrentMonthForThisStay > 0) {
-                  // console.log(`Continuing stay ${entry.stayId}: ${daysInCurrentMonthForThisStay} days in ${selectedMonth}/${selectedYear}`);
-                  
-                  // Create entries for each day in the current month
-                  for (let day = 1; day <= daysInCurrentMonthForThisStay; day++) {
-                    const key = `${day}-${entry.room}`;
-                    if (!continuingStays.has(key)) {
-                      continuingStays.set(key, {
-                        ...entry,
-                        day: day,
-                        isCheckIn: false, // Not a check-in day in current month
-                        isStartDay: false // Not the start day in current month
-                      });
-                    }
-                  }
-                }
-              }
-            }
-          });
-          
-          // Add continuing stays to merged rooms, avoiding duplicates
-          const continuingEntries = Array.from(continuingStays.values());
-          if (continuingEntries.length > 0) {
-            // console.log(`Found ${continuingEntries.length} continuing stay entries from previous month`);
-            mergedRooms = [...mergedRooms, ...continuingEntries];
-          }
-        } catch (prevErr) {
-          console.warn("Could not load previous month data:", prevErr);
-        }
-
-        // Clean up any duplicate entries before setting the data
-        const cleanedRooms = removeDuplicateEntries(mergedRooms);
-        const mergedData = { ...localData, [key]: cleanedRooms };
-        setMonthlyData(mergedData);
-        setOccupiedRooms(cleanedRooms);
-
-        // If no draft, check for submitted data
-        if (mergedRooms.length === 0) {
-          try {
-            const subRes = await axios.get(`${API_BASE_URL}/api/submissions/${user.user_id}/${selectedMonth}/${selectedYear}`, { 
-              headers: { Authorization: `Bearer ${token}` },
-              timeout: 10000
-            });
-            if (subRes.data) {
-              const submittedData = Array.isArray(subRes.data.days) ? subRes.data.days : [];
-              const updatedData = { ...mergedData, [key]: submittedData };
-              setMonthlyData(updatedData);
-              setOccupiedRooms(submittedData);
-              saveDataToLocalStorage(user.user_id, updatedData);
-            }
-          } catch (subErr) {
-            console.warn("Could not load submitted data:", subErr);
-          }
+        // If server draft exists, use it
+        if (serverData.length > 0) {
+          setMonthlyData({ [key]: serverData });
+          setOccupiedRooms(serverData);
+          saveDataToLocalStorage(user.user_id, { [key]: serverData }); // Optional: update local backup
+        } else {
+          // If no server draft, try localStorage as backup
+          const localData = loadDataFromLocalStorage(user.user_id);
+          const localMonthData = Array.isArray(localData[key]) ? localData[key] : [];
+          setMonthlyData({ [key]: localMonthData });
+          setOccupiedRooms(localMonthData);
         }
       } catch (err) {
-        console.error("Error loading data:", err);
-        const cachedData = loadDataFromLocalStorage(user.user_id);
-        const fallbackData = Array.isArray(cachedData[key]) ? cachedData[key] : [];
-        setMonthlyData({ ...cachedData, [key]: fallbackData });
+        // If server fails, fallback to localStorage
+        console.error("Error loading data, falling back to localStorage:", err);
+        const localData = loadDataFromLocalStorage(user.user_id);
+        const fallbackData = Array.isArray(localData[key]) ? localData[key] : [];
+        setMonthlyData({ [key]: fallbackData });
         setOccupiedRooms(fallbackData);
-      } finally { 
-        setIsLoading(false); 
+      } finally {
+        setIsLoading(false);
       }
     })();
   }, [user, selectedMonth, selectedYear]);
@@ -449,7 +360,7 @@ const SubmissionForm = () => {
         })),
       };
       await axios.post(`${API_BASE_URL}/api/submissions/submit`, submissionData, { headers: { Authorization: `Bearer ${token}` } });
-      await axios.delete(`${API_BASE_URL}/api/submissions/draft/${user.user_id}/${selectedMonth}/${selectedYear}`, { headers: { Authorization: `Bearer ${token}` } });
+      // await axios.delete(`${API_BASE_URL}/api/submissions/draft/${user.user_id}/${selectedMonth}/${selectedYear}`, { headers: { Authorization: `Bearer ${token}` } });
       const metrics = calculateOverallTotals();
       setAverageGuestNights(metrics.averageGuestNights);
       setAverageRoomOccupancyRate(metrics.averageRoomOccupancyRate);
@@ -920,17 +831,30 @@ const SubmissionForm = () => {
       />
       <div className="d-flex align-items-center gap-2 mb-3">
         <RoomSearchBar onSearch={handleSearch} disabled={isLoading} />
-        <button 
-          onClick={() => handleScrollToTotals()}
-          className="btn btn-outline-primary"
+        {/* Go to Room 1 Button */}
+        <button
+          onClick={() => handleSearch(1)}
+          className="btn btn-outline-secondary"
           disabled={isLoading}
           style={{
             whiteSpace: 'nowrap',
             padding: '0.375rem 0.75rem',
-            height: '38px' // Match the search bar height
+            height: '38px'
           }}
         >
-          <i className="bi bi-bar-chart-fill me-1"></i> Show Summary
+          <ArrowBigLeft size={16}/>
+        </button>
+        <button 
+          onClick={() => handleSearch(numberOfRooms)}
+          className="btn btn-outline-secondary"
+          disabled={isLoading}
+          style={{
+            whiteSpace: 'nowrap',
+            padding: '0.375rem 0.75rem',
+            height: '38px'
+          }}
+        >
+           <ArrowBigRight size={16}/>
         </button>
       </div>
       <div ref={gridRef}>

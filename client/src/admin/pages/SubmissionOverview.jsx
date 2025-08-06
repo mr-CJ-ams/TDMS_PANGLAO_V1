@@ -23,6 +23,10 @@ const SubmissionOverview = ({
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 const ACCESS_CODE = import.meta.env.VITE_ACCESS_CODE;
 
+  // Add these states for pagination
+  const [roomPage, setRoomPage] = useState(1);
+  const roomsPerPage = 20; // Adjust as needed
+
   useEffect(() => {
     if (activeSection !== "submission-overview") return;
     (async () => {
@@ -36,6 +40,28 @@ const ACCESS_CODE = import.meta.env.VITE_ACCESS_CODE;
       } catch (err) { console.error("Error fetching submissions:", err); }
     })();
   }, [filters, page, activeSection, API_BASE_URL, setSubmissions]);
+
+  // When opening the modal, reset roomPage and highlightedRoom
+  useEffect(() => {
+    if (showSubmissionModal) {
+      setRoomPage(1);
+      setHighlightedRoom(null);
+    }
+  }, [showSubmissionModal]);
+
+  // Calculate pagination for rooms
+  const totalRoomPages = selectedSubmission
+    ? Math.ceil((selectedSubmission.number_of_rooms || 1) / roomsPerPage)
+    : 1;
+  const startRoom = (roomPage - 1) * roomsPerPage + 1;
+  const endRoom = Math.min(
+    startRoom + roomsPerPage - 1,
+    selectedSubmission?.number_of_rooms || 1
+  );
+  const visibleRooms = Array.from(
+    { length: endRoom - startRoom + 1 },
+    (_, i) => startRoom + i
+  );
 
   const handleFilterChange = e => { setFilters(f => ({ ...f, [e.target.name]: e.target.value })); setPage(1); };
 
@@ -75,22 +101,36 @@ const ACCESS_CODE = import.meta.env.VITE_ACCESS_CODE;
     const roomNumber = parseInt(roomSearchTerm);
     if (roomNumber && roomNumber >= 1 && roomNumber <= selectedSubmission?.number_of_rooms) {
       setHighlightedRoom(roomNumber);
-      
-      // Scroll to the room column
-      const roomElement = document.getElementById(`admin-room-${roomNumber}`);
-      if (roomElement) {
-        roomElement.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'nearest',
-          inline: 'center'
-        });
-        
-        // Add a temporary highlight effect
-        roomElement.classList.add('bg-yellow-100', 'border-2', 'border-yellow-400');
-        setTimeout(() => {
-          roomElement.classList.remove('bg-yellow-100', 'border-2', 'border-yellow-400');
-        }, 3000);
-      }
+
+      // Calculate which page the room is on
+      const targetPage = Math.ceil(roomNumber / roomsPerPage);
+      setRoomPage(targetPage);
+
+      // Wait for page update, then scroll to the room column
+      setTimeout(() => {
+        const roomElement = document.getElementById(`admin-room-${roomNumber}`);
+        if (roomElement) {
+          roomElement.scrollIntoView({
+            behavior: "smooth",
+            block: "nearest",
+            inline: "center",
+          });
+
+          // Add a temporary highlight effect
+          roomElement.classList.add(
+            "bg-yellow-100",
+            "border-2",
+            "border-yellow-400"
+          );
+          setTimeout(() => {
+            roomElement.classList.remove(
+              "bg-yellow-100",
+              "border-2",
+              "border-yellow-400"
+            );
+          }, 3000);
+        }
+      }, 200);
     } else {
       setHighlightedRoom(null);
     }
@@ -591,8 +631,8 @@ const ACCESS_CODE = import.meta.env.VITE_ACCESS_CODE;
                 <div className="flex justify-between items-center mb-4">
                   <h4 className="text-xl font-semibold text-sky-900">Daily Metrics</h4>
                   
-                  {/* Room Quick Search */}
-                  <div className="flex items-center gap-2">
+                  {/* Room Quick Search and Pagination Controls */}
+                  <div className="flex items-center gap-2 flex-wrap">
                     <input
                       type="number"
                       placeholder="Room #"
@@ -615,6 +655,26 @@ const ACCESS_CODE = import.meta.env.VITE_ACCESS_CODE;
                     >
                       Clear
                     </button>
+                    {/* Pagination Controls */}
+                    <div className="flex items-center gap-2 ml-auto">
+                      <button
+                        disabled={roomPage === 1}
+                        onClick={() => setRoomPage(roomPage - 1)}
+                        className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                      >
+                        Prev
+                      </button>
+                      <span>
+                        Page {roomPage} of {totalRoomPages}
+                      </span>
+                      <button
+                        disabled={roomPage === totalRoomPages}
+                        onClick={() => setRoomPage(roomPage + 1)}
+                        className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                      >
+                        Next
+                      </button>
+                    </div>
                   </div>
                 </div>
                 
@@ -623,61 +683,57 @@ const ACCESS_CODE = import.meta.env.VITE_ACCESS_CODE;
                     <table className="w-full">
                       <thead>
                         <tr className="bg-sky-50">
-                          <th className="p-3 text-left text-sm font-medium text-sky-900 border-r">
+                          <th className="p-3 text-left text-sm font-medium text-sky-900 border-r sticky left-0 bg-sky-50 z-10" style={{ minWidth: 80, maxWidth: 120 }}>
                             Day
                           </th>
-                          {Array.from({ length: selectedSubmission.number_of_rooms }, (_, i) => (
-                            <th 
-                              key={i + 1} 
-                              id={`admin-room-${i + 1}`}
+                          {visibleRooms.map((roomNum) => (
+                            <th
+                              key={roomNum}
+                              id={`admin-room-${roomNum}`}
                               className={`p-3 text-left text-sm font-medium text-sky-900 border-r ${
-                                highlightedRoom === i + 1 ? 'bg-yellow-100 border-yellow-400' : ''
+                                highlightedRoom === roomNum ? "bg-yellow-100 border-yellow-400" : ""
                               }`}
                             >
-                              Room {i + 1}
+                              Room {roomNum}
                             </th>
                           ))}
-                          <th className="p-3 text-left text-sm font-medium text-sky-900">
-                            Summary
-                          </th>
+                          <th className="p-3 text-left text-sm font-medium text-sky-900">Summary</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
                         {(() => {
-                          const getDaysInMonth = (month, year) => {
-                            return new Date(year, month, 0).getDate();
-                          };
+                          const getDaysInMonth = (month, year) => new Date(year, month, 0).getDate();
                           const daysInMonth = getDaysInMonth(selectedSubmission.month, selectedSubmission.year);
-                          
+
                           return Array.from({ length: daysInMonth }, (_, dayIndex) => {
                             const day = dayIndex + 1;
-                            const dayData = selectedSubmission.days.find(d => d.day === day);
+                            const dayData = selectedSubmission.days.find((d) => d.day === day);
                             const dayGuests = dayData?.guests || [];
-                            
-                            // Group guests by room
+
+                            // Group guests by room for visible rooms only
                             const guestsByRoom = {};
-                            for (let roomNum = 1; roomNum <= selectedSubmission.number_of_rooms; roomNum++) {
-                              guestsByRoom[roomNum] = dayGuests.filter(g => g.room_number === roomNum);
+                            for (let roomNum = startRoom; roomNum <= endRoom; roomNum++) {
+                              guestsByRoom[roomNum] = dayGuests.filter((g) => g.room_number === roomNum);
                             }
-                            
+
                             // Calculate summary
-                            const totalCheckIns = dayGuests.filter(g => g.isCheckIn).length;
+                            const totalCheckIns = dayGuests.filter((g) => g.isCheckIn).length;
                             const totalOvernight = dayGuests.length;
-                            const totalOccupied = Object.values(guestsByRoom).filter(guests => guests.length > 0).length;
-                            
+                            const totalOccupied = Object.values(guestsByRoom).filter((guests) => guests.length > 0).length;
+
                             return (
                               <tr key={day} className="hover:bg-sky-50">
-                                <td className="p-3 font-medium text-sky-900 border-r">{day}</td>
-                                {Array.from({ length: selectedSubmission.number_of_rooms }, (_, roomIndex) => {
-                                  const roomNum = roomIndex + 1;
+                                <td className="p-3 font-medium text-sky-900 border-r sticky left-0 bg-white z-10" style={{ minWidth: 80, maxWidth: 120 }}>
+                                  {day}
+                                </td>
+                                {visibleRooms.map((roomNum) => {
                                   const roomGuests = guestsByRoom[roomNum] || [];
-                                  
                                   return (
-                                    <td 
-                                      key={roomNum} 
+                                    <td
+                                      key={roomNum}
                                       id={`admin-room-${roomNum}-day-${day}`}
                                       className={`p-3 border-r ${
-                                        highlightedRoom === roomNum ? 'bg-yellow-50 border-yellow-300' : ''
+                                        highlightedRoom === roomNum ? "bg-yellow-50 border-yellow-300" : ""
                                       }`}
                                     >
                                       {roomGuests.length > 0 ? (
@@ -685,7 +741,7 @@ const ACCESS_CODE = import.meta.env.VITE_ACCESS_CODE;
                                           {roomGuests.map((guest, guestIndex) => (
                                             <div key={guestIndex} className="text-xs text-gray-600 p-1 bg-gray-50 rounded">
                                               <div className="font-medium">
-                                                {guest.isCheckIn ? '✓' : '●'} {guest.gender}, {guest.age}
+                                                {guest.isCheckIn ? "✓" : "●"} {guest.gender}, {guest.age}
                                               </div>
                                               <div className="text-gray-500">
                                                 {guest.status}, {guest.nationality}

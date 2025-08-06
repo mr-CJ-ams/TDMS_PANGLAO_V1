@@ -2,7 +2,7 @@ const pool = require("../db");
 
 exports.createUser = async (user) => {
   const {
-    username, email, hashedPassword, phone_number, registered_owner, tin,
+    email, hashedPassword, phone_number, registered_owner, tin,
     company_name, company_address, accommodation_type, accommodation_code,
     number_of_rooms, region, province, municipality, barangay, dateEstablished,
     is_approved = false
@@ -15,13 +15,13 @@ exports.createUser = async (user) => {
     // Update existing user with full registration data
     const res = await pool.query(
       `UPDATE users SET 
-        username = $1, password = $2, phone_number = $3, registered_owner = $4, 
-        tin = $5, company_name = $6, company_address = $7, accommodation_type = $8, 
-        accommodation_code = $9, number_of_rooms = $10, region = $11, province = $12, 
-        municipality = $13, barangay = $14, date_established = $15, is_approved = $16,
+        password = $1, phone_number = $2, registered_owner = $3, 
+        tin = $4, company_name = $5, company_address = $6, accommodation_type = $7, 
+        accommodation_code = $8, number_of_rooms = $9, region = $10, province = $11, 
+        municipality = $12, barangay = $13, date_established = $14, is_approved = $15,
         email_verification_token = NULL, email_verification_expires = NULL
-       WHERE email = $17 RETURNING *`,
-      [username, hashedPassword, phone_number, registered_owner, tin, company_name, 
+       WHERE email = $16 RETURNING *`,
+      [hashedPassword, phone_number, registered_owner, tin, company_name, 
        company_address, accommodation_type, accommodation_code, number_of_rooms, 
        region, province, municipality, barangay, dateEstablished, is_approved, email]
     );
@@ -29,16 +29,11 @@ exports.createUser = async (user) => {
   } else {
     // Create new user
     const res = await pool.query(
-      "INSERT INTO users (username, email, password, phone_number, registered_owner, tin, company_name, company_address, accommodation_type, accommodation_code, number_of_rooms, region, province, municipality, barangay, date_established, is_approved) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *",
-      [username, email, hashedPassword, phone_number, registered_owner, tin, company_name, company_address, accommodation_type, accommodation_code, number_of_rooms, region, province, municipality, barangay, dateEstablished, is_approved]
+      "INSERT INTO users (email, password, phone_number, registered_owner, tin, company_name, company_address, accommodation_type, accommodation_code, number_of_rooms, region, province, municipality, barangay, date_established, is_approved) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *",
+      [email, hashedPassword, phone_number, registered_owner, tin, company_name, company_address, accommodation_type, accommodation_code, number_of_rooms, region, province, municipality, barangay, dateEstablished, is_approved]
     );
     return res.rows[0];
   }
-};
-
-exports.findUserByUsername = async (username) => {
-  const res = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
-  return res.rows[0];
 };
 
 exports.findUserByEmail = async (email) => {
@@ -93,8 +88,8 @@ exports.createEmailVerification = async (email, token, expiresAt) => {
   } else {
     // Create a temporary user record with just email and verification data
     const res = await pool.query(
-      "INSERT INTO users (email, email_verification_token, email_verification_expires, username, password, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING email",
-      [email, token, expiresAt, `temp_${Date.now()}`, 'temp_password', 'user']
+      "INSERT INTO users (email, email_verification_token, email_verification_expires, password, role) VALUES ($1, $2, $3, $4, $5) RETURNING email",
+      [email, token, expiresAt, 'temp_password', 'user']
     );
     return res.rows[0];
   }

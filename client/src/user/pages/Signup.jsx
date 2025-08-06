@@ -17,7 +17,7 @@ const accommodationTypes = [
 const Signup = () => {
   const location = useLocation();
   const [formData, setFormData] = useState({
-    // Removed username
+
     email: "", password: "", confirmPassword: "", phoneNumber: "",
     registeredOwner: "", tin: "", companyName: "", companyAddress: "",
     accommodationType: "", numberOfRooms: "", region: "", province: "", municipality: "", barangay: "", dateEstablished: "",
@@ -135,7 +135,7 @@ const Signup = () => {
     }, SIGNUP_TIMEOUT);
     try {
       const response = await axios.post(`${API_BASE_URL}/auth/signup`, {
-        // Removed username from payload
+        
         email: formData.email, password: formData.password,
         phone_number: formData.phoneNumber, registered_owner: formData.registeredOwner, tin: formData.tin,
         company_name: formData.companyName, company_address: formData.companyAddress,
