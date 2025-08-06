@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Phone, Mail, MapPin, Clock } from "lucide-react"; // Icons for contact details
 import Panglao_lgu_logo from "./img/panglao-logo.png"
@@ -79,283 +78,41 @@ const HelpSupport = () => {
           </div>
         </div>
 
-       {/* Collaboration and System Information Section */} 
+       {/* User Guide Section */} 
        <div className="p-4 sm:p-8">
-          {/* User Guide Section */}
-          <div className="mt-8 mb-8">
-            <h4 className="text-xl sm:text-2xl font-semibold text-sky-900 mb-6">User Guide</h4>
-            
-            <div className="space-y-6">
-              {/* Guide Item 1 */}
-              <div className="bg-gradient-to-r from-sky-50 to-blue-50 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-all duration-300 border-l-4 border-blue-500">
-                <div className="flex items-start space-x-3 sm:space-x-4">
-                  <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold text-sm sm:text-base">
-                    1
-                  </div>
-                  <div className="flex-1">
-                    <h5 className="text-lg sm:text-xl font-semibold text-sky-900 mb-2">Registration</h5>
-                    <p className="text-gray-600 text-sm sm:text-base leading-relaxed mb-4">
-                      As illustrated in Screen View 1, new users representing accommodation establishments start by filling out a User Registration Form with the necessary details.
-                    </p>
-                    {/* Screen View 1 Image */}
-                    <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                      <h6 className="text-sm font-semibold text-sky-800 mb-2">Screen View 1: User Registration Form</h6>
-                      <div className="bg-gray-100 rounded-lg h-48 sm:h-64 flex items-center justify-center border-2 border-dashed border-gray-300">
-                        <div className="text-center text-gray-500">
-                          <div className="text-4xl mb-2">📝</div>
-                          <p className="text-sm">Registration Form Screenshot</p>
-                          <p className="text-xs text-gray-400 mt-1">Upload image here</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Guide Item 2 */}
-              <div className="bg-gradient-to-r from-sky-50 to-blue-50 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-all duration-300 border-l-4 border-blue-500">
-                <div className="flex items-start space-x-3 sm:space-x-4">
-                  <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold text-sm sm:text-base">
-                    2
-                  </div>
-                  <div className="flex-1">
-                    <h5 className="text-lg sm:text-xl font-semibold text-sky-900 mb-2">Approved Account and Login</h5>
-                    <p className="text-gray-600 text-sm sm:text-base leading-relaxed mb-4">
-                      Once the admin approves the request, the user receives confirmation (Screen View 4) and can now log in to the system using their credentials (Screen View 5).
-                    </p>
-                    {/* Screen View 4 & 5 Images */}
-                    <div className="space-y-4">
-                      <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                        <h6 className="text-sm font-semibold text-sky-800 mb-2">Screen View 4: Approval Confirmation</h6>
-                        <div className="bg-gray-100 rounded-lg h-40 sm:h-48 flex items-center justify-center border-2 border-dashed border-gray-300">
-                          <div className="text-center text-gray-500">
-                            <div className="text-3xl mb-2">✅</div>
-                            <p className="text-sm">Confirmation Screen</p>
-                            <p className="text-xs text-gray-400 mt-1">Upload image here</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                        <h6 className="text-sm font-semibold text-sky-800 mb-2">Screen View 5: Login Form</h6>
-                        <div className="bg-gray-100 rounded-lg h-40 sm:h-48 flex items-center justify-center border-2 border-dashed border-gray-300">
-                          <div className="text-center text-gray-500">
-                            <div className="text-3xl mb-2">🔐</div>
-                            <p className="text-sm">Login Form</p>
-                            <p className="text-xs text-gray-400 mt-1">Upload image here</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Guide Item 3 */}
-              <div className="bg-gradient-to-r from-sky-50 to-blue-50 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-all duration-300 border-l-4 border-blue-500">
-                <div className="flex items-start space-x-3 sm:space-x-4">
-                  <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold text-sm sm:text-base">
-                    3
-                  </div>
-                  <div className="flex-1">
-                    <h5 className="text-lg sm:text-xl font-semibold text-sky-900 mb-2">User Dashboard Access</h5>
-                    <p className="text-gray-600 text-sm sm:text-base leading-relaxed mb-4">
-                      After a successful login, users are redirected to their personalized User Dashboard. The dashboard features a clear and structured navigation panel designed to simplify the user experience.
-                    </p>
-                    {/* Dashboard Image */}
-                    <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                      <h6 className="text-sm font-semibold text-sky-800 mb-2">User Dashboard Overview</h6>
-                      <div className="bg-gray-100 rounded-lg h-48 sm:h-64 flex items-center justify-center border-2 border-dashed border-gray-300">
-                        <div className="text-center text-gray-500">
-                          <div className="text-4xl mb-2">📊</div>
-                          <p className="text-sm">Dashboard Interface</p>
-                          <p className="text-xs text-gray-400 mt-1">Upload image here</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Guide Item 4 */}
-              <div className="bg-gradient-to-r from-sky-50 to-blue-50 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-all duration-300 border-l-4 border-blue-500">
-                <div className="flex items-start space-x-3 sm:space-x-4">
-                  <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold text-sm sm:text-base">
-                    4
-                  </div>
-                  <div className="flex-1">
-                    <h5 className="text-lg sm:text-xl font-semibold text-sky-900 mb-2">Municipal Ordinance Section</h5>
-                    <p className="text-gray-600 text-sm sm:text-base leading-relaxed mb-4">
-                      This section provides an overview of the system's purpose and includes a visible summary of the Municipal Ordinance No. 04, Series of 2020 (Screen View 6). This ordinance mandates the submission of tourist accommodation data, and its placement on the dashboard reinforces the legal responsibility of each establishment to comply with the data reporting process.
-                    </p>
-                    {/* Screen View 6 Image */}
-                    <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                      <h6 className="text-sm font-semibold text-sky-800 mb-2">Screen View 6: Municipal Ordinance Display</h6>
-                      <div className="bg-gray-100 rounded-lg h-48 sm:h-64 flex items-center justify-center border-2 border-dashed border-gray-300">
-                        <div className="text-center text-gray-500">
-                          <div className="text-4xl mb-2">📜</div>
-                          <p className="text-sm">Ordinance Section</p>
-                          <p className="text-xs text-gray-400 mt-1">Upload image here</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Guide Item 5 */}
-              <div className="bg-gradient-to-r from-sky-50 to-blue-50 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-all duration-300 border-l-4 border-blue-500">
-                <div className="flex items-start space-x-3 sm:space-x-4">
-                  <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold text-sm sm:text-base">
-                    5
-                  </div>
-                  <div className="flex-1">
-                    <h5 className="text-lg sm:text-xl font-semibold text-sky-900 mb-2">Submission Input Section</h5>
-                    <p className="text-gray-600 text-sm sm:text-base leading-relaxed mb-4">
-                      This module is the core functionality of the user side. It allows establishments to input their tourist accommodation data. Users select a month and year and proceed to enter daily records for guest check-ins. For each day, they input the necessary data as illustrated in the Screen View 7, 8, and 9, they input data such as Length of Overnight Stay, Gender, Age, Marital Status, and Nationality. This automated feature reduces manual work and ensures accuracy in consolidation.
-                    </p>
-                    {/* Screen View 7, 8, 9 Images */}
-                    <div className="space-y-4">
-                      <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                        <h6 className="text-sm font-semibold text-sky-800 mb-2">Screen View 7: Month/Year Selection</h6>
-                        <div className="bg-gray-100 rounded-lg h-40 sm:h-48 flex items-center justify-center border-2 border-dashed border-gray-300">
-                          <div className="text-center text-gray-500">
-                            <div className="text-3xl mb-2">📅</div>
-                            <p className="text-sm">Date Selection</p>
-                            <p className="text-xs text-gray-400 mt-1">Upload image here</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                        <h6 className="text-sm font-semibold text-sky-800 mb-2">Screen View 8: Daily Input Form</h6>
-                        <div className="bg-gray-100 rounded-lg h-40 sm:h-48 flex items-center justify-center border-2 border-dashed border-gray-300">
-                          <div className="text-center text-gray-500">
-                            <div className="text-3xl mb-2">📋</div>
-                            <p className="text-sm">Input Form</p>
-                            <p className="text-xs text-gray-400 mt-1">Upload image here</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                        <h6 className="text-sm font-semibold text-sky-800 mb-2">Screen View 9: Guest Data Entry</h6>
-                        <div className="bg-gray-100 rounded-lg h-40 sm:h-48 flex items-center justify-center border-2 border-dashed border-gray-300">
-                          <div className="text-center text-gray-500">
-                            <div className="text-3xl mb-2">👥</div>
-                            <p className="text-sm">Guest Details</p>
-                            <p className="text-xs text-gray-400 mt-1">Upload image here</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Guide Item 6 */}
-              <div className="bg-gradient-to-r from-sky-50 to-blue-50 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-all duration-300 border-l-4 border-blue-500">
-                <div className="flex items-start space-x-3 sm:space-x-4">
-                  <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold text-sm sm:text-base">
-                    6
-                  </div>
-                  <div className="flex-1">
-                    <h5 className="text-lg sm:text-xl font-semibold text-sky-900 mb-2">Submission History Section</h5>
-                    <p className="text-gray-600 text-sm sm:text-base leading-relaxed mb-4">
-                      Once submitted, the system automatically consolidates and calculates total metrics for the month, such as Total Guest Check-Ins, Total Guests Staying Overnight, Estimated Room Occupancy Rate, Guest Demographic Distribution, Top Foreign Markets. This section provides users access to all previous submissions. Records are arranged by month and include all submitted details, allowing establishments to cross-check or print reports when needed.
-                    </p>
-                    {/* Submission History Image */}
-                    <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                      <h6 className="text-sm font-semibold text-sky-800 mb-2">Submission History & Reports</h6>
-                      <div className="bg-gray-100 rounded-lg h-48 sm:h-64 flex items-center justify-center border-2 border-dashed border-gray-300">
-                        <div className="text-center text-gray-500">
-                          <div className="text-4xl mb-2">📈</div>
-                          <p className="text-sm">History & Analytics</p>
-                          <p className="text-xs text-gray-400 mt-1">Upload image here</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Guide Item 7 */}
-              <div className="bg-gradient-to-r from-sky-50 to-blue-50 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-all duration-300 border-l-4 border-blue-500">
-                <div className="flex items-start space-x-3 sm:space-x-4">
-                  <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold text-sm sm:text-base">
-                    7
-                  </div>
-                  <div className="flex-1">
-                    <h5 className="text-lg sm:text-xl font-semibold text-sky-900 mb-2">Profile Management Section</h5>
-                    <p className="text-gray-600 text-sm sm:text-base leading-relaxed mb-4">
-                      Allows the establishment to update their basic information of relevant administrative details. This ensures that all records are attributed to the correct business entity.
-                    </p>
-                    {/* Profile Management Image */}
-                    <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                      <h6 className="text-sm font-semibold text-sky-800 mb-2">Profile Management Interface</h6>
-                      <div className="bg-gray-100 rounded-lg h-48 sm:h-64 flex items-center justify-center border-2 border-dashed border-gray-300">
-                        <div className="text-center text-gray-500">
-                          <div className="text-4xl mb-2">👤</div>
-                          <p className="text-sm">Profile Settings</p>
-                          <p className="text-xs text-gray-400 mt-1">Upload image here</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Guide Item 8 */}
-              <div className="bg-gradient-to-r from-sky-50 to-blue-50 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-all duration-300 border-l-4 border-blue-500">
-                <div className="flex items-start space-x-3 sm:space-x-4">
-                  <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold text-sm sm:text-base">
-                    8
-                  </div>
-                  <div className="flex-1">
-                    <h5 className="text-lg sm:text-xl font-semibold text-sky-900 mb-2">Panglao Statistics Section</h5>
-                    <p className="text-gray-600 text-sm sm:text-base leading-relaxed mb-4">
-                      While this module is primarily for the Admin Dashboard, users are granted viewing access. It allows establishments to see real-time tourist statistics of Panglao. This feature helps them analyze their own performance in relation to broader trends—whether they are aligned with peak seasons or falling behind. By doing so, establishments are encouraged to improve their service or marketing strategy.
-                    </p>
-                    {/* Statistics Image */}
-                    <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                      <h6 className="text-sm font-semibold text-sky-800 mb-2">Panglao Tourism Statistics</h6>
-                      <div className="bg-gray-100 rounded-lg h-48 sm:h-64 flex items-center justify-center border-2 border-dashed border-gray-300">
-                        <div className="text-center text-gray-500">
-                          <div className="text-4xl mb-2">🏝️</div>
-                          <p className="text-sm">Regional Statistics</p>
-                          <p className="text-xs text-gray-400 mt-1">Upload image here</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Guide Item 9 */}
-              <div className="bg-gradient-to-r from-sky-50 to-blue-50 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-all duration-300 border-l-4 border-blue-500">
-                <div className="flex items-start space-x-3 sm:space-x-4">
-                  <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold text-sm sm:text-base">
-                    9
-                  </div>
-                  <div className="flex-1">
-                    <h5 className="text-lg sm:text-xl font-semibold text-sky-900 mb-2">Help and Support Section</h5>
-                    <p className="text-gray-600 text-sm sm:text-base leading-relaxed mb-4">
-                      This module offers a contact form for technical support, a list of frequently asked questions (FAQs), and system guides. It ensures that users can resolve issues quickly and effectively without interrupting their workflow.
-                    </p>
-                    {/* Help Support Image */}
-                    <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                      <h6 className="text-sm font-semibold text-sky-800 mb-2">Help & Support Interface</h6>
-                      <div className="bg-gray-100 rounded-lg h-48 sm:h-64 flex items-center justify-center border-2 border-dashed border-gray-300">
-                        <div className="text-center text-gray-500">
-                          <div className="text-4xl mb-2">❓</div>
-                          <p className="text-sm">Support Center</p>
-                          <p className="text-xs text-gray-400 mt-1">Upload image here</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+         {/* Tutorial Video Section */}
+         <div className="mb-8">
+           <h4 className="text-xl sm:text-2xl font-semibold text-sky-900 mb-4">
+             Watch the TDMS Tutorial
+           </h4>
+           <div
+             className="w-full max-w-2xl mx-auto rounded-lg overflow-hidden shadow-lg border border-blue-200"
+             style={{
+               aspectRatio: "16/9",
+               minHeight: "200px",
+               height: "auto",
+               maxHeight: "60vw"
+             }}
+           >
+             <iframe
+               src="https://www.youtube.com/embed/tESZX530Av4?si=7-72btxkwTngeRdH"
+               title="TDMS Tutorial"
+               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+               allowFullScreen
+               className="w-full h-full min-h-[200px]"
+               style={{
+                 aspectRatio: "16/9",
+                 minHeight: "200px",
+                 height: "100%",
+                 maxHeight: "60vw"
+               }}
+             ></iframe>
+           </div>
+           <p className="text-gray-600 text-sm sm:text-base mt-2 text-center">
+             Need help? Watch our step-by-step video guide on how to use the Panglao Tourist Data Management System.
+           </p>
+         </div>
+       </div>
       </div>
     </div>
   );

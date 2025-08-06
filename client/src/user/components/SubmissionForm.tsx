@@ -271,23 +271,6 @@ const SubmissionForm = () => {
       }
     };
 
-    const handleScrollToTotals = () => {
-      if (mainGridRef.current) {
-        // Calculate the column index for the first totals column (Check-ins)
-        const totalsStartColumn = numberOfRooms;
-        
-        // Scroll to the first totals column (Check-ins)
-        mainGridRef.current.scrollToItem({
-          columnIndex: totalsStartColumn,
-          align: "center"
-        });
-        
-        // If you want to scroll to a specific totals column, you can adjust the index:
-        // Check-ins: numberOfRooms
-        // Overnight: numberOfRooms + 1
-        // Occupied: numberOfRooms + 2
-      }
-    };
 
   // Cell click
   const handleCellClick = (day: number, room: number) => {
