@@ -103,11 +103,8 @@ const Homepage = () => {
             </div>
 
             <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-amber-600 via-orange-500 to-cyan-600 bg-clip-text text-transparent">
-              Tourism Data Management System
+              Panglao Tourist Data Management System
             </h1>
-            <p className="text-xl md:text-2xl text-gray-700 mb-8 font-medium">
-              Panglao, Bohol - <span className="text-cyan-600 font-bold">Beach Paradise</span> Digital Platform
-            </p>
             
             {/* Download Button with Beach Theme */}
             <div className="mb-12">
@@ -342,79 +339,6 @@ const Homepage = () => {
                       <span className="text-gray-700"><strong>User Management:</strong> Manage establishment accounts and permissions</span>
                     </li>
                   </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Data Collection Process */}
-      <section className="py-16 px-4 md:px-8">
-        <div className="max-w-6xl mx-auto">
-          <div 
-            ref={el => sectionsRef.current['process'] = el}
-            className={`transition-all duration-1000 ease-out ${
-              isVisible['process'] 
-                ? 'opacity-100 translate-y-0' 
-                : 'opacity-0 translate-y-20'
-            }`}
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 bg-gradient-to-r from-amber-600 to-cyan-600 bg-clip-text text-transparent">
-              Data Collection Process
-            </h2>
-            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 p-8 md:p-12 rounded-3xl shadow-2xl border border-blue-200 relative overflow-hidden">
-              {/* Ocean Wave Pattern */}
-              <div className="absolute top-0 left-0 w-full h-8 opacity-10">
-                <div className="w-full h-full bg-gradient-to-r from-blue-400 to-cyan-400 rounded-b-full"></div>
-              </div>
-              <div className="relative z-10">
-                <h3 className="text-2xl font-bold text-blue-700 mb-8 text-center">Monthly Reporting Workflow</h3>
-                <div className="grid md:grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    {[1, 2, 3, 4].map((step) => (
-                      <div key={step} className="flex items-start space-x-4">
-                        <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0 shadow-lg">
-                          {step}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-800">
-                            {step === 1 && "Login & Authentication"}
-                            {step === 2 && "Form Selection"}
-                            {step === 3 && "Data Entry"}
-                            {step === 4 && "Automated Calculations"}
-                          </p>
-                          <p className="text-gray-600 text-sm">
-                            {step === 1 && "Establishments access the system using secure credentials"}
-                            {step === 2 && "Choose appropriate form type (accommodation, attraction, convention)"}
-                            {step === 3 && "Input tourism statistics using validated digital forms"}
-                            {step === 4 && "System computes derived metrics automatically"}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="space-y-4">
-                    {[5, 6, 7].map((step) => (
-                      <div key={step} className="flex items-start space-x-4">
-                        <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0 shadow-lg">
-                          {step}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-800">
-                            {step === 5 && "Validation & Submission"}
-                            {step === 6 && "Confirmation"}
-                            {step === 7 && "Review Process"}
-                          </p>
-                          <p className="text-gray-600 text-sm">
-                            {step === 5 && "Data is validated and submitted to the tourism office"}
-                            {step === 6 && "Receipt of submission confirmation and reference number"}
-                            {step === 7 && "Tourism office reviews and approves submissions"}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
                 </div>
               </div>
             </div>

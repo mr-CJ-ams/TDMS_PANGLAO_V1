@@ -61,7 +61,14 @@ const UserDashboard = () => {
       <div className="container-fluid">
         <div className="row">
           <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} activeSection={activeSection} setActiveSection={setActiveSection} handleLogout={handleLogout} user={user} />
-          <div className="col-md-9">
+          <div
+            className="main-content"
+            style={{
+              marginLeft: 0,
+              transition: "margin-left 0.3s",
+              ...(window.innerWidth >= 768 && { marginLeft: "25vw", maxWidth: "75vw" }), // 25vw matches your sidebar width
+            }}
+          >
             <div className="p-4">
               {activeSection === "home" && <Homepage />}
               {activeSection === "submission-input" && <SubmissionForm />}

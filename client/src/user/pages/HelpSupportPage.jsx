@@ -51,8 +51,7 @@ const HelpSupportPage = () => {
                 </div>
                 <h5 className="text-base sm:text-lg font-semibold text-sky-900">Phone</h5>
               </div>
-              <p className="text-gray-600 text-sm sm:text-base">+1 (123) 456-7890</p>
-              <p className="text-gray-600 text-sm sm:text-base">+1 (987) 654-3210</p>
+              <p className="text-gray-600 text-sm sm:text-base">(038) 411 6731</p>
             </div>
 
             {/* Email */}

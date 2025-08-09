@@ -4,10 +4,10 @@ import { Link } from "react-router-dom";
 
 const navItems = [
   { key: "home", label: "Home", icon: "bi-house" },
-  { key: "submission-input", label: "Submission Input", icon: "bi-pencil-square" },
-  { key: "submission-history", label: "Submission History", icon: "bi-clock-history" },
+  { key: "submission-input", label: "Data Entry", icon: "bi-pencil-square" },
+  { key: "submission-history", label: "Submission Records", icon: "bi-clock-history" },
   { key: "user-statistics", label: "My Statistics", icon: "bi-graph-up" },
-  { key: "profile-management", label: "Profile Management", icon: "bi-person" },
+  { key: "profile-management", label: "Profile", icon: "bi-person" },
   { key: "admin-dashboard", label: "Panglao Statistics", icon: "bi-bar-chart" },
   { key: "help-support", label: "Help and Support", icon: "bi-question-circle" },
 ];
@@ -104,7 +104,22 @@ const Sidebar = ({ open, setOpen, activeSection, setActiveSection, handleLogout,
         </div>
       </div>
       {/* Desktop sidebar (always visible) */}
-      <div className="d-none d-md-block col-md-3 sidebar" style={{ backgroundColor: "#E0F7FA", minHeight: "50vh", boxShadow: "2px 0 8px rgba(0, 0, 0, 0.1)", padding: "20px 0" }}>
+      <div
+        className="d-none d-md-block sidebar"
+        style={{
+          backgroundColor: "#E0F7FA",
+          minHeight: "100vh", // Full viewport height
+          boxShadow: "2px 0 8px rgba(0, 0, 0, 0.1)",
+          padding: "20px 0",
+          position: "fixed", // Fixed position
+          top: 0,
+          left: 0,
+          width: "25vw", // Adjust as needed, or use a fixed px value
+          maxWidth: 320,
+          zIndex: 1040,
+          overflow: "hidden", // Prevent scrolling
+        }}
+      >
         <div className="sidebar-sticky">
           {/* User Profile Section */}
           <div className="text-center mb-4">

@@ -39,14 +39,14 @@ const ProfileSection = ({ user, onUpdateRooms }) => {
     <div className="min-h-screen bg-gradient-to-r from-cyan-500 to-teal-500 p-6">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white">Profile Management</h1>
+          <h1 className="text-3xl font-bold text-white">My Profile</h1>
         </div>
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-cyan-100">
           <div className="divide-y divide-cyan-100">
             {/* Basic Info */}
             <Section title="Basic Information">
               <Grid2>
-                <Field label="Username" value={user.username} />
+
                 <Field label="Email" value={user.email} />
                 <Field label="Phone Number" value={user.phone_number} />
                 <Field label="Registered Owner" value={user.registered_owner} />

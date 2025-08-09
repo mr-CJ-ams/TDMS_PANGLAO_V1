@@ -187,7 +187,10 @@ const SubmissionDetails = ({ submissionId }) => {
   }, [submission]);
 
   const sortedNationalities = React.useMemo(
-    () => Object.keys(nationalityCounts).sort((a, b) => a.localeCompare(b)),
+    () =>
+      Object.entries(nationalityCounts)
+        .sort(([, countA], [, countB]) => countB - countA)
+        .map(([nationality]) => nationality),
     [nationalityCounts]
   );
 
