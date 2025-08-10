@@ -1,6 +1,35 @@
 import { useState, useMemo, useEffect } from "react";
 import { X, Search, ChevronUp, ChevronDown } from "lucide-react";
 
+interface User {
+  user_id: string;
+  company_name: string | null;
+  email: string;
+  phone_number: string;
+  registered_owner: string;
+  tin: string;
+  region: string | null;
+  province: string | null;
+  municipality: string | null;
+  barangay: string | null;
+  date_established: string | null;
+  accommodation_type: string;
+  accommodation_code: string;
+  number_of_rooms: number;
+  is_approved: boolean;
+  is_active: boolean;
+}
+
+interface UserApprovalProps {
+  users: User[];
+  selectedUserId: string | null;
+  declineMessage: string;
+  approveUser: (userId: string) => void;
+  setSelectedUserId: (userId: string | null) => void;
+  declineUser: (userId: string) => void;
+  setDeclineMessage: (message: string) => void;
+}
+
 const UserApproval = ({
   users,
   selectedUserId,
@@ -9,12 +38,12 @@ const UserApproval = ({
   setSelectedUserId,
   declineUser,
   setDeclineMessage,
-}) => {
-  const [searchTerm, setSearchTerm] = useState(""),
-    [activeFilter, setActiveFilter] = useState("all"),
-    [sortDirection, setSortDirection] = useState("asc"),
-    [showDeactivateModal, setShowDeactivateModal] = useState(false),
-    [userToDeactivate, setUserToDeactivate] = useState(null);
+}: UserApprovalProps) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeFilter, setActiveFilter] = useState<"all" | "pending" | "approved">("all");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+  const [userToDeactivate, setUserToDeactivate] = useState<string | null>(null);
   const [autoApproval, setAutoApproval] = useState(false);
   const [loadingAutoApproval, setLoadingAutoApproval] = useState(false);
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
@@ -55,33 +84,42 @@ const UserApproval = ({
         return sortDirection === "asc" ? cmp : -cmp;
       }), [users, searchTerm, activeFilter, sortDirection]);
 
-  const activeUsers = filteredAndSortedUsers.filter(u => u.is_active),
-    deactivatedUsers = filteredAndSortedUsers.filter(u => !u.is_active);
+  const activeUsers = filteredAndSortedUsers.filter(u => u.is_active);
+  const deactivatedUsers = filteredAndSortedUsers.filter(u => !u.is_active);
 
-  const handleDeactivateClick = userId => { setUserToDeactivate(userId); setShowDeactivateModal(true); };
+  const handleDeactivateClick = (userId: string) => { 
+    setUserToDeactivate(userId); 
+    setShowDeactivateModal(true); 
+  };
 
-  const formatDate = dateString => {
+  const formatDate = (dateString: string | null): string => {
     if (!dateString) return "N/A";
     const d = new Date(dateString);
     return `${String(d.getDate()).padStart(2, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${d.getFullYear()}`;
   };
 
-  const deactivateUser = async userId => {
+  const deactivateUser = async (userId: string | null) => {
+    if (!userId) return;
+    
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/deactivate/${userId}`, { method: "PUT", headers: { "Content-Type": "application/json" } });
+      const res = await fetch(`${API_BASE_URL}/admin/deactivate/${userId}`, { 
+        method: "PUT", 
+        headers: { "Content-Type": "application/json" } 
+      });
       const data = await res.json();
       if (res.ok) {
         alert("User deactivated successfully");
         setShowDeactivateModal(false);
-        // To update users in parent, pass a setUsers prop and call it here if needed
-      } else alert(`Failed to deactivate user: ${data.message || "Unknown error"}`);
+      } else {
+        alert(`Failed to deactivate user: ${data.message || "Unknown error"}`);
+      }
     } catch (error) {
       console.error("Error deactivating user:", error);
       alert("An error occurred while deactivating the user");
     }
   };
 
-  const userTable = (userList, isActive) => (
+  const userTable = (userList: User[], isActive: boolean) => (
     <table className="w-full">
       <thead>
         <tr className="bg-sky-100 text-sky-900">
@@ -132,11 +170,28 @@ const UserApproval = ({
               <td className="p-4">
                 {!user.is_approved ? (
                   <div className="space-x-2">
-                    <button onClick={() => approveUser(user.user_id)} className="px-4 py-2 bg-emerald-500 text-white rounded hover:bg-emerald-600 transition-colors">Approve</button>
-                    <button onClick={() => setSelectedUserId(user.user_id)} className="px-4 py-2 bg-rose-500 text-white rounded hover:bg-rose-600 transition-colors">Decline</button>
+                    <button 
+                      onClick={() => approveUser(user.user_id)} 
+                      className="px-4 py-2 bg-emerald-500 text-white rounded hover:bg-emerald-600 transition-colors"
+                    >
+                      Approve
+                    </button>
+                    <button 
+                      onClick={() => setSelectedUserId(user.user_id)} 
+                      className="px-4 py-2 bg-rose-500 text-white rounded hover:bg-rose-600 transition-colors"
+                    >
+                      Decline
+                    </button>
                   </div>
                 ) : (
-                  <button onClick={() => handleDeactivateClick(user.user_id)} className="px-4 py-2 bg-rose-500 text-white rounded hover:bg-rose-600 transition-colors">Deactivate</button>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => handleDeactivateClick(user.user_id)} 
+                      className="px-4 py-2 bg-rose-500 text-white rounded hover:bg-rose-600 transition-colors"
+                    >
+                      Deactivate
+                    </button>
+                  </div>
                 )}
               </td>
             )}
@@ -145,6 +200,9 @@ const UserApproval = ({
       </tbody>
     </table>
   );
+
+  const activeUsersCount = activeUsers.length;
+  const deactivatedUsersCount = deactivatedUsers.length;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-50 to-white p-8">
@@ -169,12 +227,19 @@ const UserApproval = ({
       <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="relative w-full sm:w-96">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-          <input type="text" placeholder="Search by company name..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-sky-200 focus:border-sky-500 transition-all" />
+          <input 
+            type="text" 
+            placeholder="Search by company name..." 
+            value={searchTerm} 
+            onChange={e => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-sky-200 focus:border-sky-500 transition-all" 
+          />
         </div>
         <div className="flex gap-2">
-          {["all", "pending", "approved"].map(f => (
-            <button key={f} onClick={() => setActiveFilter(f)}
+          {(["all", "pending", "approved"] as const).map(f => (
+            <button 
+              key={f} 
+              onClick={() => setActiveFilter(f)}
               className={`px-4 py-2 rounded-lg transition-colors ${
                 activeFilter === f
                   ? f === "all"
@@ -187,16 +252,17 @@ const UserApproval = ({
                   : f === "pending"
                   ? "bg-white text-gray-600 hover:bg-amber-50"
                   : "bg-white text-gray-600 hover:bg-emerald-50"
-              }`}>
+              }`}
+            >
               {f.charAt(0).toUpperCase() + f.slice(1)}
             </button>
           ))}
         </div>
       </div>
       <div className="mb-4 text-sky-900 font-medium">
-        Showing {activeUsers.length} active {activeUsers.length === 1 ? "user" : "users"}
-        {deactivatedUsers.length > 0 && (
-          <span className="text-gray-500 ml-2">({deactivatedUsers.length} deactivated)</span>
+        Showing {activeUsersCount} active {activeUsersCount === 1 ? "user" : "users"}
+        {deactivatedUsersCount > 0 && (
+          <span className="text-gray-500 ml-2">({deactivatedUsersCount} deactivated)</span>
         )}
       </div>
       <div className="overflow-x-auto rounded-lg shadow-lg bg-white mb-8">{userTable(activeUsers, true)}</div>
@@ -211,12 +277,29 @@ const UserApproval = ({
                 <h3 className="text-xl font-semibold text-sky-900">Decline User</h3>
                 <button onClick={() => setSelectedUserId(null)} className="text-gray-400 hover:text-gray-600"><X size={24} /></button>
               </div>
-              <textarea className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-sky-200 focus:border-sky-500 transition-all"
-                placeholder="Enter reason for declining..." value={declineMessage} onChange={e => setDeclineMessage(e.target.value)} rows={4} />
+              <textarea 
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-sky-200 focus:border-sky-500 transition-all"
+                placeholder="Enter reason for declining..." 
+                value={declineMessage} 
+                onChange={e => setDeclineMessage(e.target.value)} 
+                rows={4} 
+              />
               <div className="flex justify-end space-x-3 mt-6">
-                <button onClick={() => setSelectedUserId(null)} className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors">Cancel</button>
-                <button onClick={() => { declineUser(selectedUserId); setSelectedUserId(null); }}
-                  className="px-4 py-2 bg-rose-500 text-white rounded hover:bg-rose-600 transition-colors">Confirm Decline</button>
+                <button 
+                  onClick={() => setSelectedUserId(null)} 
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={() => { 
+                    declineUser(selectedUserId); 
+                    setSelectedUserId(null); 
+                  }}
+                  className="px-4 py-2 bg-rose-500 text-white rounded hover:bg-rose-600 transition-colors"
+                >
+                  Confirm Decline
+                </button>
               </div>
             </div>
           </div>
@@ -233,8 +316,18 @@ const UserApproval = ({
               </div>
               <p className="text-gray-600 mb-6">Are you sure you want to deactivate this user?</p>
               <div className="flex justify-end space-x-3">
-                <button onClick={() => setShowDeactivateModal(false)} className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors">Cancel</button>
-                <button onClick={() => deactivateUser(userToDeactivate)} className="px-4 py-2 bg-rose-500 text-white rounded hover:bg-rose-600 transition-colors">Confirm Deactivate</button>
+                <button 
+                  onClick={() => setShowDeactivateModal(false)} 
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={() => deactivateUser(userToDeactivate)} 
+                  className="px-4 py-2 bg-rose-500 text-white rounded hover:bg-rose-600 transition-colors"
+                >
+                  Confirm Deactivate
+                </button>
               </div>
             </div>
           </div>

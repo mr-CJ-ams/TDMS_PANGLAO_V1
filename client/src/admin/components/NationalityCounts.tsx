@@ -1,7 +1,27 @@
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import React from "react";
 
-const NationalityCounts = ({ nationalityCounts, selectedYear, selectedMonth, formatMonth }) => {
+interface NationalityCount {
+  nationality: string;
+  count: number | string;
+  male_count: number | string;
+  female_count: number | string;
+}
+
+interface NationalityCountsProps {
+  nationalityCounts: NationalityCount[];
+  selectedYear: number;
+  selectedMonth: number;
+  formatMonth: (month: number) => string;
+}
+
+const NationalityCounts: React.FC<NationalityCountsProps> = ({
+  nationalityCounts,
+  selectedYear,
+  selectedMonth,
+  formatMonth
+}) => {
   const exportNationalityCounts = () => {
     const worksheet = XLSX.utils.json_to_sheet(
       nationalityCounts.map(n => ({
@@ -14,7 +34,8 @@ const NationalityCounts = ({ nationalityCounts, selectedYear, selectedMonth, for
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, worksheet, "Nationality Counts");
     const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-    saveAs(new Blob([buf], { type: "application/octet-stream" }),
+    saveAs(
+      new Blob([buf], { type: "application/octet-stream" }),
       `Nationality_Counts_${selectedYear}_${formatMonth(selectedMonth)}.xlsx`
     );
   };
@@ -23,8 +44,13 @@ const NationalityCounts = ({ nationalityCounts, selectedYear, selectedMonth, for
     <div style={{ padding: 20, backgroundColor: "#E0F7FA" }}>
       <button
         style={{
-          backgroundColor: "#00BCD4", color: "#FFF", border: "none",
-          padding: "10px 20px", borderRadius: 8, cursor: "pointer", marginBottom: 20
+          backgroundColor: "#00BCD4", 
+          color: "#FFF", 
+          border: "none",
+          padding: "10px 20px", 
+          borderRadius: 8, 
+          cursor: "pointer", 
+          marginBottom: 20
         }}
         onClick={exportNationalityCounts}
       >
@@ -44,14 +70,19 @@ const NationalityCounts = ({ nationalityCounts, selectedYear, selectedMonth, for
           <thead>
             <tr style={{ backgroundColor: "#00BCD4", color: "#FFF" }}>
               {["Nationality", "Count", "Male", "Female"].map(label => (
-                <th key={label} style={{ padding: 12, textAlign: "left" }}>{label}</th>
+                <th 
+                  key={label} 
+                  style={{ padding: 12, textAlign: "left" }}
+                >
+                  {label}
+                </th>
               ))}
             </tr>
           </thead>
           <tbody>
             {nationalityCounts.map((n, i) => (
               <tr
-                key={n.nationality}
+                key={`${n.nationality}-${i}`}
                 style={{
                   borderBottom: "1px solid #B0BEC5",
                   backgroundColor: i % 2 === 0 ? "#F5F5F5" : "#FFF",

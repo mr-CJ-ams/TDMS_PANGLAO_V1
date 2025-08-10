@@ -6,42 +6,124 @@ import AccessCodePrompt from "../components/AccessCodePrompt";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
-const SubmissionOverview = ({
-  submissions, setSubmissions, getMonthName, isSubmissionLate,
-  fetchSubmissionDetails, selectedSubmission, showSubmissionModal,
-  setShowSubmissionModal, calculateMetrics, activeSection,
-}) => {
-  const [filters, setFilters] = useState({ month: "", year: "", status: "", penaltyStatus: "", search: "" });
-  const [page, setPage] = useState(1), [total, setTotal] = useState(0), limit = 20;
-  const [showNationalityCountsModal, setShowNationalityCountsModal] = useState(false);
-  const [loadingPenalty, setLoadingPenalty] = useState({});
-  const [showAccessCodePrompt, setShowAccessCodePrompt] = useState(false);
-  const [currentSubmissionId, setCurrentSubmissionId] = useState(null);
-  const [roomSearchTerm, setRoomSearchTerm] = useState("");
-  const [highlightedRoom, setHighlightedRoom] = useState(null);
-  const [receiptNumbers, setReceiptNumbers] = useState({}); // Add this state
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
-const ACCESS_CODE = import.meta.env.VITE_ACCESS_CODE;
+// Define types for the submission data
+interface Guest {
+  room_number: number;
+  isCheckIn: boolean;
+  gender: string;
+  age: string;
+  status: string;
+  nationality: string;
+}
 
-  // Add these states for pagination
+interface DayData {
+  day: number;
+  guests: Guest[];
+}
+
+interface Submission {
+  submission_id: string;
+  user_id: string;
+  company_name: string;
+  month: number;
+  year: number;
+  submitted_at: string;
+  penalty?: boolean;
+  receipt_number?: string;
+  accommodation_type?: string;
+  number_of_rooms: number;
+  days: DayData[];
+  nationalityCounts?: Record<string, number>;
+}
+
+interface Metrics {
+  totalCheckIns: number;
+  totalOvernight: number;
+  totalOccupied: number;
+  averageGuestNights: number;  // Changed from string to number
+  averageRoomOccupancyRate: number;  // Changed from string to number
+  averageGuestsPerRoom: number;  // Changed from string to number
+}
+
+interface SubmissionOverviewProps {
+  submissions: Submission[];
+  setSubmissions: React.Dispatch<React.SetStateAction<Submission[]>>;
+  getMonthName: (m: number) => string;
+  isSubmissionLate: (submission: Submission) => boolean;
+  fetchSubmissionDetails: (submissionId: string) => void;
+  handlePenaltyPayment: (submissionId: string, penaltyStatus: boolean) => void;
+  selectedSubmission: Submission | null;
+  showSubmissionModal: boolean;
+  setShowSubmissionModal: (show: boolean) => void;
+  calculateMetrics: (submission: Submission) => Metrics;
+  activeSection: string;
+}
+
+interface Filters {
+  month: string;
+  year: string;
+  status: string;
+  penaltyStatus: string;
+  search: string;
+}
+
+const SubmissionOverview: React.FC<SubmissionOverviewProps> = ({
+  submissions,
+  setSubmissions,
+  getMonthName,
+  isSubmissionLate,
+  fetchSubmissionDetails,
+  selectedSubmission,
+  showSubmissionModal,
+  setShowSubmissionModal,
+  calculateMetrics,
+  activeSection,
+}) => {
+  const [filters, setFilters] = useState<Filters>({ 
+    month: "", 
+    year: "", 
+    status: "", 
+    penaltyStatus: "", 
+    search: "" 
+  });
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const limit = 20;
+  const [showNationalityCountsModal, setShowNationalityCountsModal] = useState(false);
+  const [loadingPenalty, setLoadingPenalty] = useState<Record<string, boolean>>({});
+  const [showAccessCodePrompt, setShowAccessCodePrompt] = useState(false);
+  const [currentSubmissionId, setCurrentSubmissionId] = useState<string | null>(null);
+  const [roomSearchTerm, setRoomSearchTerm] = useState("");
+  const [highlightedRoom, setHighlightedRoom] = useState<number | null>(null);
+  const [receiptNumbers, setReceiptNumbers] = useState<Record<string, string>>({});
+  
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+  const ACCESS_CODE = import.meta.env.VITE_ACCESS_CODE;
+
+  // Pagination states for rooms
   const [roomPage, setRoomPage] = useState(1);
-  const roomsPerPage = 20; // Adjust as needed
+  const roomsPerPage = 20;
 
   useEffect(() => {
     if (activeSection !== "submission-overview") return;
-    (async () => {
+    
+    const fetchSubmissions = async () => {
       try {
         const token = sessionStorage.getItem("token");
         const { data } = await axios.get(`${API_BASE_URL}/admin/submissions`, {
           headers: { Authorization: `Bearer ${token}` },
           params: { ...filters, page, limit },
         });
-        setSubmissions(data.submissions); setTotal(data.total);
-      } catch (err) { console.error("Error fetching submissions:", err); }
-    })();
+        setSubmissions(data.submissions); 
+        setTotal(data.total);
+      } catch (err) { 
+        console.error("Error fetching submissions:", err); 
+      }
+    };
+    
+    fetchSubmissions();
   }, [filters, page, activeSection, API_BASE_URL, setSubmissions]);
 
-  // When opening the modal, reset roomPage and highlightedRoom
   useEffect(() => {
     if (showSubmissionModal) {
       setRoomPage(1);
@@ -63,17 +145,23 @@ const ACCESS_CODE = import.meta.env.VITE_ACCESS_CODE;
     (_, i) => startRoom + i
   );
 
-  const handleFilterChange = e => { setFilters(f => ({ ...f, [e.target.name]: e.target.value })); setPage(1); };
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => { 
+    setFilters(f => ({ ...f, [e.target.name]: e.target.value })); 
+    setPage(1); 
+  };
 
-  const handlePenaltyPayment = submissionId => {
+  const handlePenaltyPayment = (submissionId: string) => {
     setCurrentSubmissionId(submissionId);
     setShowAccessCodePrompt(true);
   };
 
-  const confirmPenaltyPayment = async (accessCode, receiptNumber) => {
+  const confirmPenaltyPayment = async (accessCode: string, receiptNumber: string) => {
     if (accessCode !== ACCESS_CODE) return alert("Invalid access code");
+    if (!currentSubmissionId) return;
+    
     setShowAccessCodePrompt(false);
     setLoadingPenalty(p => ({ ...p, [currentSubmissionId]: true }));
+    
     try {
       const token = sessionStorage.getItem("token");
       await axios.put(
@@ -98,8 +186,10 @@ const ACCESS_CODE = import.meta.env.VITE_ACCESS_CODE;
   };
 
   const handleRoomSearch = () => {
+    if (!selectedSubmission) return;
+    
     const roomNumber = parseInt(roomSearchTerm);
-    if (roomNumber && roomNumber >= 1 && roomNumber <= selectedSubmission?.number_of_rooms) {
+    if (roomNumber && roomNumber >= 1 && roomNumber <= selectedSubmission.number_of_rooms) {
       setHighlightedRoom(roomNumber);
 
       // Calculate which page the room is on
@@ -136,7 +226,7 @@ const ACCESS_CODE = import.meta.env.VITE_ACCESS_CODE;
     }
   };
 
-  const handleRoomSearchKeyPress = (e) => {
+  const handleRoomSearchKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleRoomSearch();
     }
@@ -150,7 +240,7 @@ const ACCESS_CODE = import.meta.env.VITE_ACCESS_CODE;
   const exportDailyMetricsToExcel = () => {
     if (!selectedSubmission) return;
     
-    const getDaysInMonth = (month, year) => {
+    const getDaysInMonth = (month: number, year: number) => {
       return new Date(year, month, 0).getDate();
     };
     const daysInMonth = getDaysInMonth(selectedSubmission.month, selectedSubmission.year);
@@ -205,7 +295,7 @@ const ACCESS_CODE = import.meta.env.VITE_ACCESS_CODE;
       const dayGuests = dayData?.guests || [];
       
       // Group guests by room
-      const guestsByRoom = {};
+      const guestsByRoom: Record<number, Guest[]> = {};
       for (let roomNum = 1; roomNum <= selectedSubmission.number_of_rooms; roomNum++) {
         guestsByRoom[roomNum] = dayGuests.filter(g => g.room_number === roomNum);
       }
@@ -215,7 +305,7 @@ const ACCESS_CODE = import.meta.env.VITE_ACCESS_CODE;
       const totalOvernight = dayGuests.length;
       const totalOccupied = Object.values(guestsByRoom).filter(guests => guests.length > 0).length;
       
-      const row = [day];
+      const row: (string | number)[] = [day];
       
       // Add room data
       for (let roomNum = 1; roomNum <= selectedSubmission.number_of_rooms; roomNum++) {
@@ -233,7 +323,7 @@ const ACCESS_CODE = import.meta.env.VITE_ACCESS_CODE;
       // Add summary data
       row.push(totalCheckIns, totalOvernight, totalOccupied);
       
-      data.push(row);
+      data.push(row.map(String));
     }
     
     const dailyMetricsWs = XLSX.utils.aoa_to_sheet(data);
@@ -270,7 +360,7 @@ const ACCESS_CODE = import.meta.env.VITE_ACCESS_CODE;
     }
     
     // Sheet 3: Nationality Counts
-    const nationalityCounts = {};
+    const nationalityCounts: Record<string, number> = {};
     selectedSubmission.days?.forEach((day) =>
       day.guests?.forEach((g) => {
         if (g.isCheckIn) nationalityCounts[g.nationality] = (nationalityCounts[g.nationality] || 0) + 1;
@@ -702,7 +792,7 @@ const ACCESS_CODE = import.meta.env.VITE_ACCESS_CODE;
                       </thead>
                       <tbody className="divide-y divide-gray-200">
                         {(() => {
-                          const getDaysInMonth = (month, year) => new Date(year, month, 0).getDate();
+                          const getDaysInMonth = (month: number, year: number) => new Date(year, month, 0).getDate();
                           const daysInMonth = getDaysInMonth(selectedSubmission.month, selectedSubmission.year);
 
                           return Array.from({ length: daysInMonth }, (_, dayIndex) => {
@@ -711,7 +801,7 @@ const ACCESS_CODE = import.meta.env.VITE_ACCESS_CODE;
                             const dayGuests = dayData?.guests || [];
 
                             // Group guests by room for visible rooms only
-                            const guestsByRoom = {};
+                            const guestsByRoom: Record<number, Guest[]> = {};
                             for (let roomNum = startRoom; roomNum <= endRoom; roomNum++) {
                               guestsByRoom[roomNum] = dayGuests.filter((g) => g.room_number === roomNum);
                             }
@@ -801,4 +891,5 @@ const ACCESS_CODE = import.meta.env.VITE_ACCESS_CODE;
     </div>
   );
 };
+
 export default SubmissionOverview;

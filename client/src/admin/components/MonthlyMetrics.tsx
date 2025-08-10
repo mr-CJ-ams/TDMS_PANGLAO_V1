@@ -1,9 +1,33 @@
-// src/admin/components/MonthlyMetrics.js
 import React from "react";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
-const MonthlyMetrics = ({ monthlyMetrics, selectedYear, formatMonth, toNumber }) => {
+interface MonthlyMetric {
+  month: number;
+  total_check_ins: number | string;
+  total_overnight: number | string;
+  total_occupied: number | string;
+  average_guest_nights: number | string;
+  average_room_occupancy_rate: number | string;
+  average_guests_per_room: number | string;
+  total_rooms: number | string;
+  total_submissions: number | string;
+  submission_rate: number | string;
+}
+
+interface MonthlyMetricsProps {
+  monthlyMetrics: MonthlyMetric[];
+  selectedYear: number;
+  formatMonth: (month: number) => string;
+  toNumber: (value: number | string) => number;
+}
+
+const MonthlyMetrics: React.FC<MonthlyMetricsProps> = ({
+  monthlyMetrics,
+  selectedYear,
+  formatMonth,
+  toNumber
+}) => {
   const exportMonthlyMetrics = () => {
     const worksheet = XLSX.utils.json_to_sheet(
       monthlyMetrics.map(m => ({

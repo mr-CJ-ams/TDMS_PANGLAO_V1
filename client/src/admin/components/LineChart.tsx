@@ -1,7 +1,24 @@
 import { useMemo, useCallback } from "react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, TooltipProps } from "recharts";
+import { ValueType, NameType } from "recharts/types/component/DefaultTooltipContent";
 
-const LineChartComponent = ({ monthlyCheckIns, selectedYear, formatMonth }) => {
+interface MonthlyCheckIn {
+  month: number;
+  total_check_ins: number;
+  isPredicted?: boolean;
+}
+
+interface LineChartComponentProps {
+  monthlyCheckIns: MonthlyCheckIn[];
+  selectedYear: number;
+  formatMonth: (month: number) => string;
+}
+
+const LineChartComponent: React.FC<LineChartComponentProps> = ({ 
+  monthlyCheckIns, 
+  selectedYear, 
+  formatMonth 
+}) => {
   // Memoize predicted data to avoid filtering on every render
   const predictedData = useMemo(
     () => monthlyCheckIns.filter((d) => d.isPredicted),
@@ -9,9 +26,11 @@ const LineChartComponent = ({ monthlyCheckIns, selectedYear, formatMonth }) => {
   );
 
   // Memoize CustomTooltip to avoid recreation
-  const CustomTooltip = useCallback(({ active, payload, label }) => {
+  const CustomTooltip = useCallback((
+    { active, payload, label }: TooltipProps<ValueType, NameType>
+  ) => {
     if (active && payload && payload.length) {
-      const month = formatMonth(label);
+      const month = formatMonth(Number(label));
       const actualArrivals = payload.find((entry) => entry.name === "Actual Arrivals")?.value;
       const predictedArrivals = payload.find((entry) => entry.name === "Prediction of Arrivals")?.value;
 
@@ -40,7 +59,7 @@ const LineChartComponent = ({ monthlyCheckIns, selectedYear, formatMonth }) => {
       <div style={{ width: "100%", overflowX: "auto" }}>
         <div style={{ minWidth: 700, width: "100%" }}>
           <ResponsiveContainer width="100%" height={400}>
-            <LineChart
+            <RechartsLineChart
               data={monthlyCheckIns}
               margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
             >
@@ -106,7 +125,7 @@ const LineChartComponent = ({ monthlyCheckIns, selectedYear, formatMonth }) => {
                   data={predictedData}
                 />
               )}
-            </LineChart>
+            </RechartsLineChart>
           </ResponsiveContainer>
         </div>
       </div>
