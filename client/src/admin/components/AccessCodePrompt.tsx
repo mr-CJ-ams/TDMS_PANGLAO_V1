@@ -1,32 +1,44 @@
-import React, { useState } from "react";
+import React, { useState, FormEvent } from "react";
 
-const AccessCodePrompt = ({ onConfirm, onCancel }) => {
-  const [accessCode, setAccessCode] = useState("");
-  const [receiptNumber, setReceiptNumber] = useState("");
+interface AccessCodePromptProps {
+  onConfirm: (accessCode: string, receiptNumber: string) => void;
+  onCancel: () => void;
+}
+
+const AccessCodePrompt: React.FC<AccessCodePromptProps> = ({
+  onConfirm,
+  onCancel,
+}) => {
+  const [accessCode, setAccessCode] = useState<string>("");
+  const [receiptNumber, setReceiptNumber] = useState<string>("");
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    onConfirm(accessCode, receiptNumber);
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl shadow-xl p-6">
-        <h3 className="text-2xl font-semibold text-sky-900 mb-4">Enter Receipt Number</h3>
-        <form
-          onSubmit={e => {
-            e.preventDefault();
-            onConfirm(accessCode, receiptNumber);
-          }}
-        >
+        <h3 className="text-2xl font-semibold text-sky-900 mb-4">
+          Enter Receipt Number
+        </h3>
+        <form onSubmit={handleSubmit}>
           <input
             type="text"
             value={receiptNumber}
-            onChange={e => setReceiptNumber(e.target.value)}
+            onChange={(e) => setReceiptNumber(e.target.value)}
             className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-sky-200 focus:border-sky-500 mb-4"
             placeholder="Receipt Number"
             required
           />
-          <h3 className="text-xl font-semibold text-sky-900 mb-2">Enter Access Code</h3>
+          <h3 className="text-xl font-semibold text-sky-900 mb-2">
+            Enter Access Code
+          </h3>
           <input
             type="password"
             value={accessCode}
-            onChange={e => setAccessCode(e.target.value)}
+            onChange={(e) => setAccessCode(e.target.value)}
             className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-sky-200 focus:border-sky-500 mb-4"
             placeholder="Access Code"
             required

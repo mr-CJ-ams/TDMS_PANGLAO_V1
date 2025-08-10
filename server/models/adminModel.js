@@ -64,6 +64,7 @@ class AdminModel {
       SELECT s.submission_id, s.user_id, s.month, s.year, 
              s.submitted_at, s.is_late, s.penalty, s.deadline,
              s.average_guest_nights, s.average_room_occupancy_rate, s.average_guests_per_room,
+             s.receipt_number,  -- <-- ADD THIS LINE
              u.company_name, u.accommodation_type
       FROM submissions s
       JOIN users u ON s.user_id = u.user_id

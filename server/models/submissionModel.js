@@ -74,8 +74,10 @@ class SubmissionModel {
   static async getSubmissionHistory(userId) {
     const result = await pool.query(
       `SELECT s.submission_id, s.month, s.year, s.submitted_at, s.is_late, s.penalty,
-              s.average_guest_nights, s.average_room_occupancy_rate, s.average_guests_per_room
+              s.average_guest_nights, s.average_room_occupancy_rate, s.average_guests_per_room,
+              s.receipt_number, s.user_id, u.company_name
        FROM submissions s
+       LEFT JOIN users u ON s.user_id = u.user_id
        WHERE s.user_id = $1
        ORDER BY s.submitted_at DESC`,
       [userId]
@@ -150,10 +152,10 @@ class SubmissionModel {
     return result.rows[0];
   }
 
-  static async updatePenaltyStatus(submissionId, penalty) {
+  static async updatePenaltyStatus(submissionId, penalty, receipt_number) {
     await pool.query(
-      `UPDATE submissions SET penalty = $1 WHERE submission_id = $2`,
-      [penalty, submissionId]
+      `UPDATE submissions SET penalty = $1, receipt_number = $2 WHERE submission_id = $3`,
+      [penalty, receipt_number, submissionId]
     );
   }
 

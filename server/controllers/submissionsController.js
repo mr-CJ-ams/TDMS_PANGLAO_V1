@@ -128,11 +128,11 @@ exports.details = async (req, res) => {
 exports.updatePenalty = async (req, res) => {
   try {
     const { submissionId } = req.params;
-    const { penalty } = req.body;
+    const { penalty, receipt_number } = req.body;
     if (typeof penalty !== "boolean") {
       return res.status(400).json({ error: "Invalid penalty status" });
     }
-    await SubmissionModel.updatePenaltyStatus(submissionId, penalty);
+    await SubmissionModel.updatePenaltyStatus(submissionId, penalty, receipt_number);
     res.json({ message: "Penalty status updated successfully" });
   } catch (err) {
     console.error("Penalty error:", err);

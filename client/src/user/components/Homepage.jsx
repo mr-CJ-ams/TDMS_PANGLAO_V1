@@ -584,7 +584,7 @@ const Homepage = () => {
                   <img src="/src/user/components/img/Coat_of_arms_of_the_Philippines.png" alt="Philippine Tourism" className="w-12 h-12 mr-3" />
                   <div>
                     <h5 className="font-semibold text-cyan-400">Republic of the Philippines</h5>
-                    <p className="text-sm text-gray-300">Department of Tourism</p>
+                    
                   </div>
                 </div>
                 <p className="text-sm text-gray-300">
