@@ -46,6 +46,12 @@ const UserApproval = ({
   const [userToDeactivate, setUserToDeactivate] = useState<string | null>(null);
   const [autoApproval, setAutoApproval] = useState(false);
   const [loadingAutoApproval, setLoadingAutoApproval] = useState(false);
+  const [modal, setModal] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    onClose?: () => void;
+  }>({ show: false, title: "", message: "" });
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
   // Fetch auto-approval state on mount
@@ -67,7 +73,11 @@ const UserApproval = ({
       const data = await res.json();
       setAutoApproval(data.enabled);
     } catch {
-      alert("Failed to update auto-approval setting.");
+      setModal({
+        show: true,
+        title: "Error",
+        message: "Failed to update auto-approval setting.",
+      });
     } finally {
       setLoadingAutoApproval(false);
     }
@@ -100,7 +110,6 @@ const UserApproval = ({
 
   const deactivateUser = async (userId: string | null) => {
     if (!userId) return;
-    
     try {
       const res = await fetch(`${API_BASE_URL}/admin/deactivate/${userId}`, { 
         method: "PUT", 
@@ -108,14 +117,29 @@ const UserApproval = ({
       });
       const data = await res.json();
       if (res.ok) {
-        alert("User deactivated successfully");
-        setShowDeactivateModal(false);
+        setModal({
+          show: true,
+          title: "Success",
+          message: "User deactivated successfully",
+          onClose: () => {
+            setShowDeactivateModal(false);
+            setModal(m => ({ ...m, show: false }));
+          }
+        });
       } else {
-        alert(`Failed to deactivate user: ${data.message || "Unknown error"}`);
+        setModal({
+          show: true,
+          title: "Error",
+          message: `Failed to deactivate user: ${data.message || "Unknown error"}`,
+        });
       }
     } catch (error) {
       console.error("Error deactivating user:", error);
-      alert("An error occurred while deactivating the user");
+      setModal({
+        show: true,
+        title: "Error",
+        message: "An error occurred while deactivating the user",
+      });
     }
   };
 
@@ -329,6 +353,37 @@ const UserApproval = ({
                   Confirm Deactivate
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Modal for alerts */}
+      {modal.show && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-sky-900">{modal.title}</h3>
+              <button
+                onClick={() => {
+                  setModal(m => ({ ...m, show: false }));
+                  modal.onClose && modal.onClose();
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <p className="mb-6 text-gray-700">{modal.message}</p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => {
+                  setModal(m => ({ ...m, show: false }));
+                  modal.onClose && modal.onClose();
+                }}
+                className="px-4 py-2 bg-sky-500 text-white rounded hover:bg-sky-600 transition-colors"
+              >
+                OK
+              </button>
             </div>
           </div>
         </div>

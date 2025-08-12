@@ -96,6 +96,7 @@ const SubmissionOverview: React.FC<SubmissionOverviewProps> = ({
   const [roomSearchTerm, setRoomSearchTerm] = useState("");
   const [highlightedRoom, setHighlightedRoom] = useState<number | null>(null);
   const [receiptNumbers, setReceiptNumbers] = useState<Record<string, string>>({});
+  const [invalidAccessCodeModal, setInvalidAccessCodeModal] = useState(false);
   
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
   const ACCESS_CODE = import.meta.env.VITE_ACCESS_CODE;
@@ -156,7 +157,10 @@ const SubmissionOverview: React.FC<SubmissionOverviewProps> = ({
   };
 
   const confirmPenaltyPayment = async (accessCode: string, receiptNumber: string) => {
-    if (accessCode !== ACCESS_CODE) return alert("Invalid access code");
+    if (accessCode !== ACCESS_CODE) {
+      setInvalidAccessCodeModal(true);
+      return;
+    }
     if (!currentSubmissionId) return;
     
     setShowAccessCodePrompt(false);
@@ -887,6 +891,23 @@ const SubmissionOverview: React.FC<SubmissionOverviewProps> = ({
           onConfirm={confirmPenaltyPayment}
           onCancel={() => setShowAccessCodePrompt(false)}
         />
+      )}
+      {/* Invalid Access Code Modal */}
+      {invalidAccessCodeModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full">
+            <h3 className="text-xl font-semibold text-rose-700 mb-4">Invalid Access Code</h3>
+            <p className="mb-6 text-gray-700">The access code you entered is incorrect. Please try again.</p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setInvalidAccessCodeModal(false)}
+                className="px-4 py-2 bg-sky-500 text-white rounded hover:bg-sky-600 transition-colors"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

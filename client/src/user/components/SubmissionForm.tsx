@@ -32,6 +32,10 @@ const SubmissionForm = () => {
     const mainGridRef = useRef<VirtualizedGrid>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
 
+  // Modal state
+  const [modal, setModal] = useState<{ show: boolean; title: string; message: string; onClose?: () => void }>({ show: false, title: "", message: "" });
+  const [confirmModal, setConfirmModal] = useState(false);
+
   // Fetch user profile
   useEffect(() => {
     (async () => {
@@ -254,35 +258,38 @@ const SubmissionForm = () => {
   }, [monthlyData, user, selectedMonth, selectedYear, isLoading]);
 
   // Room search
-    const handleSearch = (roomNumber: number) => {
-      if (roomNumber > 0 && roomNumber <= numberOfRooms) {
-        // Calculate the column index (0-based)
-        const columnIndex = roomNumber - 1;
-        
-        // Scroll the main grid to the room column
-        if (mainGridRef.current) {
-          mainGridRef.current.scrollToItem({
-            columnIndex,
-            align: "center"
-          });
-        }
-      } else {
-        alert("Invalid room number");
+  const handleSearch = (roomNumber: number) => {
+    if (roomNumber > 0 && roomNumber <= numberOfRooms) {
+      // Calculate the column index (0-based)
+      const columnIndex = roomNumber - 1;
+      if (mainGridRef.current) {
+        mainGridRef.current.scrollToItem({
+          columnIndex,
+          align: "center"
+        });
       }
-    };
-
+    } else {
+      setModal({
+        show: true,
+        title: "Invalid Room",
+        message: "Invalid room number",
+      });
+    }
+  };
 
   // Cell click
   const handleCellClick = (day: number, room: number) => {
-    // Check if this is a following day (non-editable)
     const roomData = occupiedRooms.find(r => r.day === day && r.room === room);
     if (roomData && !roomData.isStartDay) {
-      // Find the start day for this stay
       const startDayData = occupiedRooms.find(r => 
         r.stayId === roomData.stayId && r.isStartDay
       );
       if (startDayData) {
-        alert(`This day is part of a stay starting on Day ${startDayData.day}. Please edit the start day to modify this stay.`);
+        setModal({
+          show: true,
+          title: "Edit Stay",
+          message: `This day is part of a stay starting on Day ${startDayData.day}. Please edit the start day to modify this stay.`,
+        });
         return;
       }
     }
@@ -294,51 +301,49 @@ const SubmissionForm = () => {
   // Save guest data for a day/room
   const handleSaveGuests = (day: number, room: number, guestData: any) => {
     const { guests, lengthOfStay, isCheckIn } = guestData;
-    if (!guests?.length) return alert("Please add at least one guest");
+    if (!guests?.length) {
+      setModal({
+        show: true,
+        title: "Missing Guests",
+        message: "Please add at least one guest",
+      });
+      return;
+    }
     const stayLength = parseInt(lengthOfStay);
-    if (isNaN(stayLength) || stayLength <= 0) return alert("Please enter a valid length of stay");
-    
-    // Check if we're editing an existing stay
+    if (isNaN(stayLength) || stayLength <= 0) {
+      setModal({
+        show: true,
+        title: "Invalid Length of Stay",
+        message: "Please enter a valid length of stay",
+      });
+      return;
+    }
     const existingEntry = occupiedRooms.find(r => r.day === day && r.room === room);
     const currentStayId = existingEntry?.stayId || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
-    // Check for conflicts (excluding current stay)
     const conflictDetails = findRoomConflictAcrossMonths(day, room, stayLength, occupiedRooms, monthlyData, currentStayId);
     if (conflictDetails.hasConflict) {
-      return alert(`⚠️ This Length of Overnight Stay overlaps with existing occupied rooms. Conflict found in ${conflictDetails.month}/${conflictDetails.year}`);
+      setModal({
+        show: true,
+        title: "Room Conflict",
+        message: `⚠️ This Length of Overnight Stay overlaps with existing occupied rooms. Conflict found in ${conflictDetails.month}/${conflictDetails.year}`,
+      });
+      return;
     }
-    
     const updatedGuests = guests.map(g => ({ ...g, isCheckIn }));
-    
-    // If editing an existing stay, remove excess days first
     let updatedMonthlyData = monthlyData;
     if (existingEntry?.stayId) {
-      // console.log(`Editing existing stay: ${existingEntry.stayId}, new length: ${stayLength}`);
-      // Remove all entries for this stay across all months
       updatedMonthlyData = removeExistingStay(currentStayId, monthlyData);
-      // console.log('Removed existing stay data, updating with new length');
     }
-    
-    // Add the new/updated stay
     const newMonthlyData = addStayToMonthlyData(
       updatedMonthlyData, day, room, stayLength, updatedGuests, isCheckIn, currentStayId, selectedMonth, selectedYear
     );
-    
-    // Update all affected months in the state
     setMonthlyData(newMonthlyData);
-    
-    // Update the current month's view
     const currentMonthKey = `${selectedYear}-${selectedMonth}`;
     setOccupiedRooms(newMonthlyData[currentMonthKey] || []);
-    
-    // Force refresh of other months that might be affected
     const affectedMonths = getAffectedMonths(day, selectedMonth, selectedYear, stayLength);
-    // console.log(`Affected months for stay:`, affectedMonths);
     affectedMonths.forEach(({ month, year }) => {
       const monthKey = `${year}-${month}`;
       if (monthKey !== currentMonthKey && newMonthlyData[monthKey]) {
-        // console.log(`Refreshing data for ${monthKey}`);
-        // Trigger a re-render for other affected months
         setTimeout(() => {
           setMonthlyData(prev => ({ ...prev }));
         }, 100);
@@ -413,8 +418,19 @@ const SubmissionForm = () => {
 
   // Submit form
   const handleSaveForm = async () => {
-    if (!window.confirm("Are you sure you want to submit the form? This action cannot be undone.")) return;
-    if (hasSubmitted) return alert("You have already submitted for this month and year.");
+    setConfirmModal(true);
+  };
+
+  // The actual submission logic, previously inside handleSaveForm
+  const doSubmitForm = async () => {
+    if (hasSubmitted) {
+      setModal({
+        show: true,
+        title: "Already Submitted",
+        message: "You have already submitted for this month and year.",
+      });
+      return;
+    }
     try {
       const token = sessionStorage.getItem("token");
       const user = JSON.parse(sessionStorage.getItem("user"));
@@ -440,10 +456,18 @@ const SubmissionForm = () => {
       setAverageGuestsPerRoom(metrics.averageGuestsPerRoom);
       setIsFormSaved(true);
       setHasSubmitted(true);
-      alert("Submission saved successfully!");
+      setModal({
+        show: true,
+        title: "Success",
+        message: "Submission saved successfully!",
+      });
     } catch (err) {
       console.error("Submission failed:", err);
-      alert("Failed to save submission. Please try again.");
+      setModal({
+        show: true,
+        title: "Error",
+        message: "Failed to save submission. Please try again.",
+      });
     }
   };
 
@@ -962,6 +986,67 @@ const SubmissionForm = () => {
           averageRoomOccupancyRate={averageRoomOccupancyRate}
           averageGuestsPerRoom={averageGuestsPerRoom}
         />
+      )}
+
+      {/* Confirmation Modal */}
+      {confirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full">
+            <h3 className="text-xl font-semibold text-sky-900 mb-4">Confirm Submission</h3>
+            <p className="mb-6 text-gray-700">
+              Are you sure you want to submit the form? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setConfirmModal(false)}
+                className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  setConfirmModal(false);
+                  await doSubmitForm();
+                }}
+                className="px-4 py-2 bg-sky-500 text-white rounded hover:bg-sky-600 transition-colors"
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal for alerts */}
+      {modal.show && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-sky-900">{modal.title}</h3>
+              <button
+                onClick={() => {
+                  setModal(m => ({ ...m, show: false }));
+                  modal.onClose && modal.onClose();
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ×
+              </button>
+            </div>
+            <p className="mb-6 text-gray-700">{modal.message}</p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => {
+                  setModal(m => ({ ...m, show: false }));
+                  modal.onClose && modal.onClose();
+                }}
+                className="px-4 py-2 bg-sky-500 text-white rounded hover:bg-sky-600 transition-colors"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

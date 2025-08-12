@@ -33,6 +33,11 @@ const GuestModal = ({
   const [guests, setGuests] = useState(initialData?.guests || []);
   const [isCheckIn, setIsCheckIn] = useState(initialData?.isCheckIn !== false); // Default to true, but can be false
   const [error, setError] = useState("");
+  const [confirmModal, setConfirmModal] = useState<{
+    show: boolean;
+    message: string;
+    onConfirm: () => void;
+  }>({ show: false, message: "", onConfirm: () => {} });
 
   const handleSave = () => {
     if (!guests.length) return setError("Please add at least one guest before saving.");
@@ -45,12 +50,33 @@ const GuestModal = ({
     const endDate = new Date(startDate);
     endDate.setDate(startDate.getDate() + parseInt(lengthOfStay) - 1);
 
+    // Replace window.confirm with modal
     if (endDate.getFullYear() !== startDate.getFullYear()) {
-      if (!window.confirm(`This stay crosses into the next year (ending ${endDate.toLocaleDateString()}). Continue?`)) return;
+      setConfirmModal({
+        show: true,
+        message: `This stay crosses into the next year (ending ${endDate.toLocaleDateString()}). Continue?`,
+        onConfirm: () => {
+          setConfirmModal({ ...confirmModal, show: false });
+          proceedSave();
+        }
+      });
+      return;
     } else if (endDate.getMonth() !== startDate.getMonth()) {
-      if (!window.confirm(`This stay crosses into ${endDate.toLocaleString('default', { month: 'long' })}. Continue?`)) return;
+      setConfirmModal({
+        show: true,
+        message: `This stay crosses into ${endDate.toLocaleString('default', { month: 'long' })}. Continue?`,
+        onConfirm: () => {
+          setConfirmModal({ ...confirmModal, show: false });
+          proceedSave();
+        }
+      });
+      return;
     }
 
+    proceedSave();
+  };
+
+  const proceedSave = () => {
     setError("");
     onSave(day, room, {
       guests: guests.map(g => ({ ...g, roomNumber: room })),
@@ -216,6 +242,31 @@ const GuestModal = ({
           </div>
         </div>
       </div>
+      {/* Confirmation Modal */}
+      {confirmModal.show && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full">
+            <h3 className="text-xl font-semibold text-sky-900 mb-4">Confirm</h3>
+            <p className="mb-6 text-gray-700">{confirmModal.message}</p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setConfirmModal({ ...confirmModal, show: false })}
+                className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  confirmModal.onConfirm();
+                }}
+                className="px-4 py-2 bg-sky-500 text-white rounded hover:bg-sky-600 transition-colors"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

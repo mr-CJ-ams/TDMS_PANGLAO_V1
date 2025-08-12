@@ -148,7 +148,7 @@ exports.signup = async (req, res) => {
       const subject = "Your TDMS Account Has Been Approved";
       const message = `
         Dear Valued User,<br><br>
-        We are pleased to inform you that your account registration for the Tourism Data Management System (TDMS) has been approved.<br><br>
+        We are pleased to inform you that your account registration for the Panglao Tourist Data Management System (TDMS) has been approved.<br><br>
         You may now log in and access the system using the following link:<br>
         <a href="https://tdms-panglao-client.onrender.com">Login Link</a><br><br>
         If you have any questions or require assistance, please do not hesitate to contact our office.<br><br>

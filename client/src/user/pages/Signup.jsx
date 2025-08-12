@@ -31,6 +31,7 @@ const Signup = () => {
   const [emailVerified, setEmailVerified] = useState(false);
   const [emailVerificationStatus, setEmailVerificationStatus] = useState("checking"); // "checking", "verified", "unverified"
   const navigate = useNavigate();
+  const [modal, setModal] = useState({ show: false, title: "", message: "", onClose: null });
 
   // Check if email is verified on component mount
   useEffect(() => {
@@ -146,8 +147,15 @@ const Signup = () => {
       clearTimeout(timeoutId);
       
       if (response.data.success) {
-        alert(response.data.message);
-        navigate("/login");
+        setModal({
+          show: true,
+          title: "Registration Successful",
+          message: response.data.message,
+          onClose: () => {
+            setModal(m => ({ ...m, show: false }));
+            navigate("/login");
+          }
+        });
       } else {
         setSubmitError(response.data.message || "Signup failed. Please try again.");
       }
@@ -457,6 +465,38 @@ const Signup = () => {
           </p>
         </div>
       </div>
+
+      {/* Modal for registration success */}
+      {modal.show && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-sky-900">{modal.title}</h3>
+              <button
+                onClick={() => {
+                  setModal(m => ({ ...m, show: false }));
+                  modal.onClose && modal.onClose();
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ×
+              </button>
+            </div>
+            <p className="mb-6 text-gray-700">{modal.message}</p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => {
+                  setModal(m => ({ ...m, show: false }));
+                  modal.onClose && modal.onClose();
+                }}
+                className="px-4 py-2 bg-sky-500 text-white rounded hover:bg-sky-600 transition-colors"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
