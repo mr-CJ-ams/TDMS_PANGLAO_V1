@@ -1,4 +1,3 @@
-
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import processNationalityCounts from "../utils/processNationalityCounts";
@@ -37,13 +36,13 @@ const RegionalDistribution = ({ nationalityCounts, selectedYear, selectedMonth, 
   };
 
   const exportToExcel = () => {
-    const workbook = XLSX.utils.book_new(); // <-- Move this to the top!
+    const workbook = XLSX.utils.book_new();
     const worksheetData = [];
 
     // Add headers
     worksheetData.push(["REGIONAL DISTRIBUTION OF TRAVELLERS"]);
     worksheetData.push(["Year =", selectedYear]);
-    worksheetData.push(["Month =", getMonthName(selectedMonth)]); // Add month name
+    worksheetData.push(["Month =", getMonthName(selectedMonth)]);
     worksheetData.push(["(PANGLAO REPORT)"]);
     worksheetData.push([]);
 
@@ -53,33 +52,42 @@ const RegionalDistribution = ({ nationalityCounts, selectedYear, selectedMonth, 
     worksheetData.push(["NON-PHILIPPINE RESIDENTS =", processedData.NON_PHILIPPINE_RESIDENTS]);
     worksheetData.push([]);
 
-    // Add regions and sub-regions
-    const addRegion = (region, label) => {
+    // Helper to add all countries in a region/subregion
+    const addRegionAllCountries = (regionCountries, regionData, label) => {
       worksheetData.push([label]);
-      Object.entries(region).forEach(([country, count]) => {
-        if (country !== "SUBTOTAL") {
-          worksheetData.push([`   ${country} =`, count]);
-        }
+      regionCountries.forEach(country => {
+        // Try to get the count from regionData, fallback to 0
+        const count = regionData && Object.prototype.hasOwnProperty.call(regionData, country)
+          ? regionData[country]
+          : 0;
+        worksheetData.push([`   ${country} =`, count]);
       });
-      if (region.SUBTOTAL) {
-        worksheetData.push(["                 SUB-TOTAL =", region.SUBTOTAL]);
+      if (regionData && regionData.SUBTOTAL !== undefined) {
+        worksheetData.push(["                 SUB-TOTAL =", regionData.SUBTOTAL]);
       }
       worksheetData.push([]);
     };
 
-    addRegion(processedData.ASIA.ASEAN, "ASIA - ASEAN");
-    addRegion(processedData.ASIA.EAST_ASIA, "ASIA - EAST ASIA");
-    addRegion(processedData.ASIA.SOUTH_ASIA, "ASIA - SOUTH ASIA");
-    addRegion(processedData.MIDDLE_EAST, "MIDDLE EAST");
-    addRegion(processedData.AMERICA.NORTH_AMERICA, "AMERICA - NORTH AMERICA");
-    addRegion(processedData.AMERICA.SOUTH_AMERICA, "AMERICA - SOUTH AMERICA");
-    addRegion(processedData.EUROPE.WESTERN_EUROPE, "EUROPE - WESTERN EUROPE");
-    addRegion(processedData.EUROPE.NORTHERN_EUROPE, "EUROPE - NORTHERN EUROPE");
-    addRegion(processedData.EUROPE.SOUTHERN_EUROPE, "EUROPE - SOUTHERN EUROPE");
-    addRegion(processedData.EUROPE.EASTERN_EUROPE, "EUROPE - EASTERN EUROPE");
-    addRegion(processedData.AUSTRALASIA_PACIFIC, "AUSTRALASIA/PACIFIC");
-    addRegion(processedData.AFRICA, "AFRICA");
-    addRegion(processedData.OTHERS, "OTHERS AND UNSPECIFIED RESIDENCES");
+    // ASIA
+    addRegionAllCountries(regions.ASIA.ASEAN, processedData.ASIA.ASEAN, "ASIA - ASEAN");
+    addRegionAllCountries(regions.ASIA.EAST_ASIA, processedData.ASIA.EAST_ASIA, "ASIA - EAST ASIA");
+    addRegionAllCountries(regions.ASIA.SOUTH_ASIA, processedData.ASIA.SOUTH_ASIA, "ASIA - SOUTH ASIA");
+    // MIDDLE EAST
+    addRegionAllCountries(regions.MIDDLE_EAST, processedData.MIDDLE_EAST, "MIDDLE EAST");
+    // AMERICA
+    addRegionAllCountries(regions.AMERICA.NORTH_AMERICA, processedData.AMERICA.NORTH_AMERICA, "AMERICA - NORTH AMERICA");
+    addRegionAllCountries(regions.AMERICA.SOUTH_AMERICA, processedData.AMERICA.SOUTH_AMERICA, "AMERICA - SOUTH AMERICA");
+    // EUROPE
+    addRegionAllCountries(regions.EUROPE.WESTERN_EUROPE, processedData.EUROPE.WESTERN_EUROPE, "EUROPE - WESTERN EUROPE");
+    addRegionAllCountries(regions.EUROPE.NORTHERN_EUROPE, processedData.EUROPE.NORTHERN_EUROPE, "EUROPE - NORTHERN EUROPE");
+    addRegionAllCountries(regions.EUROPE.SOUTHERN_EUROPE, processedData.EUROPE.SOUTHERN_EUROPE, "EUROPE - SOUTHERN EUROPE");
+    addRegionAllCountries(regions.EUROPE.EASTERN_EUROPE, processedData.EUROPE.EASTERN_EUROPE, "EUROPE - EASTERN EUROPE");
+    // AUSTRALASIA/PACIFIC
+    addRegionAllCountries(regions.AUSTRALASIA_PACIFIC, processedData.AUSTRALASIA_PACIFIC, "AUSTRALASIA/PACIFIC");
+    // AFRICA
+    addRegionAllCountries(regions.AFRICA, processedData.AFRICA, "AFRICA");
+    // OTHERS
+    addRegionAllCountries(regions.OTHERS, processedData.OTHERS, "OTHERS AND UNSPECIFIED RESIDENCES");
 
     // Add totals
     worksheetData.push(["TOTAL NON-PHILIPPINE RESIDENTS =", processedData.NON_PHILIPPINE_RESIDENTS]);

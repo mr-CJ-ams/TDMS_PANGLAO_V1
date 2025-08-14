@@ -2,6 +2,8 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const pool = require("./db");
+const cron = require("node-cron");
+const { sendEmailNotification } = require("./utils/email");
 
 const app = express();
 
@@ -43,6 +45,65 @@ app.use((err, req, res, next) => {
     // Optionally, include stack trace in development only
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   });
+});
+
+// 1st day of the month: Reminder to start submitting
+cron.schedule("0 8 1 * *", async () => {
+  try {
+    const result = await pool.query("SELECT email FROM users WHERE is_active = TRUE AND email_verified = TRUE");
+    const emails = result.rows.map(row => row.email);
+
+    const now = new Date();
+    const lastMonth = now.getMonth() === 0 ? 12 : now.getMonth();
+    const year = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+    const deadline = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-10 11:59 PM`;
+
+    const subject = "TDMS Monthly Submission Reminder";
+    const message = `
+      <p>Dear TDMS User,</p>
+      <p>This is a friendly reminder that you can now start submitting your data for <strong>${year}-${String(lastMonth).padStart(2, "0")}</strong> in the Tourism Data Management System (TDMS).</p>
+      <p><strong>Deadline for submission is on the 10th day of this month (${deadline}).</strong></p>
+      <p>Please log in and complete your submission as soon as possible to avoid penalties.</p>
+      <p>If you have any questions, please contact the Panglao Tourism Office.</p>
+      <br>
+      <p>Thank you,<br>Panglao Tourism Office</p>
+    `;
+
+    for (const email of emails) {
+      await sendEmailNotification(email, subject, message);
+    }
+    console.log(`[CRON] 1st-day reminder emails sent to ${emails.length} users.`);
+  } catch (err) {
+    console.error("[CRON] Failed to send 1st-day reminder emails:", err);
+  }
+});
+
+// 9th day of the month: Deadline is tomorrow
+cron.schedule("0 8 9 * *", async () => {
+  try {
+    const result = await pool.query("SELECT email FROM users WHERE is_active = TRUE AND email_verified = TRUE");
+    const emails = result.rows.map(row => row.email);
+
+    const now = new Date();
+    const deadline = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-10 11:59 PM`;
+
+    const subject = "TDMS Submission Deadline Reminder";
+    const message = `
+      <p>Dear TDMS User,</p>
+      <p>This is a reminder that <strong>the deadline for submitting your data is tomorrow (${deadline})</strong> in the Tourism Data Management System (TDMS).</p>
+      <p>Please log in and complete your submission to avoid penalties.</p>
+      <p>If you have already submitted, please disregard this message.</p>
+      <br>
+      <p>Thank you,<br>Panglao Tourism Office</p>
+    `;
+
+    for (const email of emails) {
+      await sendEmailNotification(email, subject, message);
+    }
+    console.log(`[CRON] 9th-day deadline reminder emails sent to ${emails.length} users.`);
+  } catch (err) {
+    console.error("[CRON] Failed to send 9th-day deadline reminder emails:", err);
+  }
 });
 
 // Start the server
