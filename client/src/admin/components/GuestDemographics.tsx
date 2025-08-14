@@ -1,6 +1,7 @@
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import React from "react";
+import { Download } from "lucide-react";
 
 interface GuestDemographic {
   gender: string;
@@ -125,11 +126,15 @@ const GuestDemographics: React.FC<GuestDemographicsProps> = ({
           padding: "10px 20px", 
           borderRadius: 8, 
           cursor: "pointer", 
-          marginBottom: 20
+          marginBottom: 20,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "8px", // space between icon and text
         }}
         onClick={exportGuestDemographics}
       >
-        Export Guest Demographics to Excel
+        <Download size={16}/>Guest Demographics
       </button>
       <div style={{ marginBottom: 20 }}>
         <h4 style={{ color: "#00BCD4", marginBottom: 10 }}>Summary</h4>

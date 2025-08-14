@@ -5,6 +5,7 @@ import processNationalityCounts from "../utils/processNationalityCounts";
 import axios from "axios";
 import React from "react";
 import regions from "../utils/regions";
+import { Download } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
@@ -242,11 +243,17 @@ const RegionalDistribution = ({ nationalityCounts, selectedYear, selectedMonth, 
             borderRadius: "8px",
             cursor: "pointer",
             marginBottom: "20px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px", // space between icon and text
           }}
           onClick={exportToExcel}
         >
-          Export DAE-form 2
+          <Download size={16} />
+          DAE-form 2
         </button>
+
       )}
       {/* <pre>{JSON.stringify(processedData, null, 2)}</pre> For debugging */}
     </div>

@@ -1,6 +1,7 @@
 import React from "react";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import { Download } from "lucide-react";
 
 interface MonthlyMetric {
   month: number;
@@ -61,10 +62,14 @@ const MonthlyMetrics: React.FC<MonthlyMetricsProps> = ({
           borderRadius: 8,
           cursor: "pointer",
           marginBottom: 20,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "8px", // space between icon and text
         }}
         onClick={exportMonthlyMetrics}
       >
-        Export Monthly Metrics to Excel
+        <Download size={16}/> Monthly Metrics
       </button>
       <div className="table-responsive">
         <table

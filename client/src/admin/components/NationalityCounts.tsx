@@ -1,6 +1,7 @@
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import React from "react";
+import { Download } from "lucide-react";
 
 interface NationalityCount {
   nationality: string;
@@ -50,11 +51,15 @@ const NationalityCounts: React.FC<NationalityCountsProps> = ({
           padding: "10px 20px", 
           borderRadius: 8, 
           cursor: "pointer", 
-          marginBottom: 20
+          marginBottom: 20,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "8px", // space between icon and text
         }}
         onClick={exportNationalityCounts}
       >
-        Export Nationality Counts to Excel
+        <Download size={16}/>Nationality Counts
       </button>
       <div className="table-responsive">
         <table

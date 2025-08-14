@@ -38,6 +38,7 @@ interface DemographicData {
   // Define the structure based on your actual data
   age_group: string;
   gender: string;
+  status: string;
   count: number;
 }
 
@@ -177,10 +178,7 @@ const MainDashboard = ({ user }: MainDashboardProps) => {
         toNumber={toNumber}
       />
       <GuestDemographics
-        guestDemographics={guestDemographics.map(d => ({
-          ...d,
-          status: "N/A"
-        }))}
+        guestDemographics={guestDemographics}
         selectedYear={selectedYear}
         selectedMonth={selectedMonth}
         formatMonth={formatMonth}

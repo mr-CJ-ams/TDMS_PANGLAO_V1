@@ -12,7 +12,7 @@ const transporter = nodemailer.createTransport({
 // Function to send email notification (Promise-based)
 const sendEmailNotification = (email, subject, message) => {
   const mailOptions = {
-    from: process.env.EMAIL_USER || "ubshsgr12stemamaquinc@gmail.com", // Use environment variable with fallback
+    from: process.env.EMAIL_USER, // Use environment variable with fallback
     to: email,
     subject: subject,
     text: message,

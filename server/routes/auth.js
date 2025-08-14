@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require("multer");
 const path = require("path");
 const authController = require("../controllers/authController");
+const { authenticateToken } = require("../middleware/auth");
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -14,9 +15,9 @@ const upload = multer({ storage });
 // Auth routes
 router.post("/signup", authController.signup);
 router.post("/login", authController.login);
-router.get("/user", authController.getUser);
-router.post("/upload-profile-picture", upload.single("profile_picture"), authController.uploadProfilePicture);
-router.put("/update-rooms", authController.updateRooms);
+router.get("/user", authenticateToken, authController.getUser);
+router.post("/upload-profile-picture", authenticateToken, upload.single("profile_picture"), authController.uploadProfilePicture);
+router.put("/update-rooms", authenticateToken, authController.updateRooms);
 router.post("/forgot-password", authController.forgotPassword);
 router.post("/reset-password", authController.resetPassword);
 

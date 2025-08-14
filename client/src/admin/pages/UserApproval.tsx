@@ -62,12 +62,16 @@ const UserApproval = ({
       .catch(() => setAutoApproval(false));
   }, [API_BASE_URL]);
 
-  const handleToggleAutoApproval = async () => {
+   const handleToggleAutoApproval = async () => {
     setLoadingAutoApproval(true);
     try {
+      const token = sessionStorage.getItem("token");
       const res = await fetch(`${API_BASE_URL}/admin/auto-approval`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}` 
+        },
         body: JSON.stringify({ enabled: !autoApproval })
       });
       const data = await res.json();
@@ -147,6 +151,7 @@ const UserApproval = ({
     <table className="w-full">
       <thead>
         <tr className="bg-sky-100 text-sky-900">
+          <th className="p-4 text-left font-medium">User ID</th>
           <th className="p-4 text-left font-medium cursor-pointer" onClick={() => setSortDirection(sortDirection === "asc" ? "desc" : "asc")}>
             <div className="flex items-center gap-2">
               Company Name {sortDirection === "asc" ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -160,12 +165,13 @@ const UserApproval = ({
       <tbody className="divide-y divide-sky-100">
         {userList.length === 0 ? (
           <tr>
-            <td colSpan={isActive ? 15 : 14} className="p-4 text-center text-gray-500">
+            <td colSpan={isActive ? 16 : 15} className="p-4 text-center text-gray-500">
               {isActive ? "No active users found matching your criteria" : "No deactivated users found"}
             </td>
           </tr>
         ) : userList.map(user => (
           <tr key={user.user_id} className="hover:bg-sky-50 transition-colors">
+            <td className="p-4 font-mono text-xs">{user.user_id}</td>
             <td className="p-4 font-medium">{user.company_name || "N/A"}</td>
             <td className="p-4">{user.email}</td>
             <td className="p-4">{user.phone_number}</td>
@@ -232,7 +238,7 @@ const UserApproval = ({
     <div className="min-h-screen bg-gradient-to-b from-sky-50 to-white p-8">
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-2">
-          <label className="font-semibold text-sky-900 text-lg">Auto-Approval Mode:</label>
+          <label className="font-semibold text-sky-900 text-lg"></label>
           <button
             onClick={handleToggleAutoApproval}
             disabled={loadingAutoApproval}
@@ -240,7 +246,7 @@ const UserApproval = ({
               autoApproval ? "bg-emerald-500 text-white hover:bg-emerald-600" : "bg-gray-200 text-gray-700 hover:bg-gray-300"
             }`}
           >
-            {autoApproval ? "Enabled" : "Disabled"}
+            {autoApproval ? "" : ""}
           </button>
         </div>
         {autoApproval && (
