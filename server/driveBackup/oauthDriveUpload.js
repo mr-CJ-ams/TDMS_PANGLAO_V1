@@ -33,8 +33,8 @@
  * - node-cron
  * - dotenv (if using .env for environment variables)
  * 
- * Author: [Your Name/Team]
- * Date: [YYYY-MM-DD]
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-19]
  */
 
 const fs = require("fs");
