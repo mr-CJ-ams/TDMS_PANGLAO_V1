@@ -3,6 +3,8 @@ node_modules/
 package-lock.json
 yarn.lock
 
+
+
 # Environment variables
 .env
 .env.local
@@ -31,3 +33,6 @@ uploads/
 *.tmp
 *.bak
 *.swp
+
+/driveBackup/token.json
+/config/*.json
