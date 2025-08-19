@@ -22,11 +22,11 @@ router.post("/auto-approval", authenticateToken, requireAdmin, (req, res) => {
 
 // Submissions and metrics
 router.get("/submissions", authenticateToken, requireAdmin, adminController.getSubmissions);
-router.get("/monthly-checkins", authenticateToken, requireAdmin, adminController.getMonthlyCheckins);
-router.get("/monthly-metrics", authenticateToken, requireAdmin, adminController.getMonthlyMetrics);
-router.get("/nationality-counts", authenticateToken, requireAdmin, adminController.getNationalityCounts);
+router.get("/monthly-checkins", authenticateToken, adminController.getMonthlyCheckins);
+router.get("/monthly-metrics", authenticateToken, adminController.getMonthlyMetrics);
+router.get("/nationality-counts", authenticateToken, adminController.getNationalityCounts);
 router.get("/nationality-counts-by-establishment", authenticateToken, requireAdmin, adminController.getNationalityCountsByEstablishment);
-router.get("/guest-demographics", authenticateToken, requireAdmin, adminController.getGuestDemographics);
+router.get("/guest-demographics", authenticateToken, adminController.getGuestDemographics);
 
 module.exports = router;
 
