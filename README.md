@@ -227,6 +227,196 @@ Want to contribute? Follow these steps:
 
 ---
 
+# 🛠️ Developer & Engineer Guide
+
+This section provides a **comprehensive technical reference** for software engineers, developers, and programmers working on the Panglao TDMS.  
+It covers architecture, workflow, setup, deployment, code structure, conventions, and troubleshooting for both production and local development.
+
+---
+
+## 📦 System Architecture
+
+- **Client-Server Model:**  
+  - **Frontend:** React (Vite), TypeScript/JavaScript, modular components.
+  - **Backend:** Node.js, Express, PostgreSQL, MVC pattern.
+  - **Authentication:** JWT, email verification, role-based access (admin/user).
+  - **Automated Tasks:** node-cron for scheduled backups and email reminders.
+  - **AI Forecasting:** Python ML models (XGBoost, Random Forest, LSTM, Prophet) for demand prediction.
+
+---
+
+## 🗂️ Folder Structure & Key Files
+
+```
+TDMS_PANGLAO_V1/
+├── server/
+│   ├── controllers/        # Express route handlers (business logic)
+│   ├── models/             # Database queries & business rules
+│   ├── routes/             # API route definitions
+│   ├── middleware/         # Auth & other Express middleware
+│   ├── utils/              # Email, auto-approval, verification utilities
+│   ├── driveBackup/        # Google Drive backup scripts
+│   ├── config/             # OAuth credentials
+│   ├── db.js               # PostgreSQL connection pool
+│   ├── index.js            # Main server entry point
+│   ├── .env                # Environment variables
+│   └── database.sql        # Database schema
+├── client/
+│   ├── src/
+│   │   ├── admin/          # Admin dashboard pages, components, utils
+│   │   ├── user/           # User dashboard pages, components, utils
+│   │   ├── components/     # Shared components
+│   │   ├── services/       # API service layer
+│   │   ├── hooks/          # Custom React hooks
+│   │   ├── pages/          # Main page components
+│   ├── public/             # Static assets
+│   ├── .env                # Frontend environment variables
+│   └── ...                 # Build, config, etc.
+└── README.md               # System documentation
+```
+
+---
+
+## 🚀 Local Development Workflow
+
+### 1. **Clone & Install**
+
+```sh
+git clone https://github.com/mr-CJ-ams/TDMS_PANGLAO_V1.git
+cd TDMS_PANGLAO_V1
+```
+
+#### Backend
+
+```sh
+cd server
+npm install
+```
+
+#### Frontend
+
+```sh
+cd ../client
+npm install
+```
+
+---
+
+### 2. **Configure Environment Variables**
+
+- **Backend:**  
+  Edit `server/.env`:
+  ```
+  DATABASE_URL=postgresql://username:password@localhost:5432/rbac
+  JWT_SECRET=your-secret-key
+  EMAIL_USER=your-email@gmail.com
+  EMAIL_PASSWORD=your-email-password
+  GOOGLE_OAUTH_CREDENTIALS_PATH=./config/client_secret_....json
+  PORT=5000
+  ```
+- **Frontend:**  
+  Edit `client/.env`:
+  ```
+  VITE_API_BASE_URL=http://localhost:5000
+  ```
+
+---
+
+### 3. **Database Setup**
+
+- Install PostgreSQL and create the database:
+  ```sql
+  CREATE DATABASE rbac;
+  ```
+- Run schema:
+  - Copy contents of `server/database.sql` and execute in your database.
+
+---
+
+### 4. **Run Backend & Frontend**
+
+- **Backend:**  
+  ```sh
+  cd server
+  node index.js
+  ```
+- **Frontend:**  
+  ```sh
+  cd client
+  npm run dev
+  ```
+- Access at [http://localhost:3000](http://localhost:3000)
+
+---
+
+### 5. **Google Drive Backup Setup**
+
+- Enable Google Drive API, create OAuth credentials, and download JSON to `server/config/`.
+- Run `node driveBackup/oauthDriveUpload.js` once to authenticate and generate `token.json`.
+- Backups will run automatically via cron jobs.
+
+---
+
+## 🏗️ Production Deployment
+
+- **Backend:** Deploy to a Node.js server/VM. Set environment variables securely.
+- **Frontend:** Build with `npm run build` and deploy static files to Netlify, Vercel, or similar.
+- **Database:** Use managed PostgreSQL (AWS RDS, Heroku, etc.).
+- **Email:** Use secure app password for Gmail or SMTP provider.
+- **Backups:** Ensure Google Drive credentials and token.json are present.
+
+---
+
+## 🧩 Code Conventions & Best Practices
+
+- **Documentation:**  
+  - Each major file (controllers, models, routes, utils, components) starts with a detailed docblock explaining its purpose, responsibilities, usage, and related files.
+- **Modularity:**  
+  - Keep business logic in controllers/models, not in routes.
+  - Use utility files for shared logic (email, verification, etc.).
+- **Security:**  
+  - Never commit secrets or passwords to source control.
+  - Use environment variables for sensitive config.
+- **Testing:**  
+  - Add unit/integration tests for critical logic.
+- **Error Handling:**  
+  - Use centralized error middleware in Express.
+  - Provide clear error messages for frontend users.
+
+---
+
+## 🛡️ Troubleshooting
+
+- **CORS errors:**  
+  - Ensure backend uses `cors` middleware and allows frontend origin.
+- **Database connection issues:**  
+  - Check `DATABASE_URL` and PostgreSQL status.
+- **Email issues:**  
+  - Verify credentials and SMTP settings.
+- **Google Drive backup issues:**  
+  - Re-run authentication if `token.json` is missing or invalid.
+- **Frontend/Backend communication:**  
+  - Confirm API base URL in frontend `.env`.
+
+---
+
+## 👥 Contributing
+
+- Fork, branch, and submit pull requests.
+- Follow code style and documentation conventions.
+- Update documentation for new features.
+
+---
+
+## 📚 Additional References
+
+- See file-level documentation in each major source file for deeper technical details.
+- For AI forecasting model details, see the referenced Colab notebook and tutorial video.
+
+---
+
+*This guide is designed to help you work efficiently, understand the system architecture, and maintain high code quality in both production and development environments. For any issues or suggestions, please contact the repository maintainer.*
+
 
 
 
