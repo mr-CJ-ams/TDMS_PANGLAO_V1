@@ -1,3 +1,57 @@
+/**
+ * ProfileSection.jsx
+ * 
+ * Panglao Tourist Data Management System - User Profile Section Component (Frontend)
+ * 
+ * =========================
+ * Overview:
+ * =========================
+ * This React component displays and manages the authenticated user's profile information in the user dashboard.
+ * It organizes user data into clear sections: basic info, company details, location, and accommodation details.
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - Renders user profile fields such as email, phone, owner, company, TIN, region, province, municipality, barangay, and date established.
+ * - Allows users to view and edit the number of rooms in their accommodation.
+ * - Handles form submission for updating the number of rooms, calling the provided onUpdateRooms callback.
+ * - Provides loading skeleton UI when user data is not yet available.
+ * - Formats dates for display in a user-friendly format.
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - Modular section layout for improved readability and maintainability.
+ * - Inline editing of the number of rooms with validation and cancel/save controls.
+ * - Responsive design using Tailwind CSS utility classes.
+ * - Uses Lucide icons for edit, save, and cancel actions.
+ * - Helper components (Section, Grid2, Field) for DRY and consistent UI.
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Used in the UserDashboard.jsx as the main profile display and edit section.
+ * - Allows users to keep their accommodation details up to date.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - Extend this component to support additional editable fields or profile features.
+ * - Ensure the onUpdateRooms callback updates the backend and user state correctly.
+ * - Update styling or layout as needed for new requirements or branding.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - src/user/pages/UserDashboard.jsx         (renders ProfileSection)
+ * - server/controllers/authController.js     (handles backend profile update logic)
+ * - server/routes/auth.js                    (defines backend profile update route)
+ * 
+ * =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-21]
+ */
+
 import React, { useState } from "react";
 import { Edit2, Save, X } from "lucide-react";
 

@@ -238,7 +238,7 @@ const UserApproval = ({
     <div className="min-h-screen bg-gradient-to-b from-sky-50 to-white p-8">
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-2">
-          <label className="font-semibold text-sky-900 text-lg"></label>
+          <label className="font-semibold text-sky-900 text-lg">Auto Approval Mode</label>
           <button
             onClick={handleToggleAutoApproval}
             disabled={loadingAutoApproval}
@@ -246,7 +246,7 @@ const UserApproval = ({
               autoApproval ? "bg-emerald-500 text-white hover:bg-emerald-600" : "bg-gray-200 text-gray-700 hover:bg-gray-300"
             }`}
           >
-            {autoApproval ? "" : ""}
+            {autoApproval ? "Enable" : "Disable"}
           </button>
         </div>
         {autoApproval && (

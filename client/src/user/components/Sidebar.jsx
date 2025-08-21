@@ -1,3 +1,60 @@
+/**
+ * Sidebar.jsx
+ * 
+ * Panglao Tourist Data Management System - User Sidebar Navigation Component (Frontend)
+ * 
+ * =========================
+ * Overview:
+ * =========================
+ * This React component renders the sidebar navigation for the user dashboard, providing access to all major user features.
+ * It supports both desktop (fixed sidebar) and mobile/tablet (off-canvas drawer) layouts, adapting responsively to screen size.
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - Displays navigation links for Home, Data Entry, Submission Records, My Statistics, Profile, Panglao Statistics, and Help/Support.
+ * - Highlights the active section and updates the dashboard view when a navigation item is clicked.
+ * - Shows the user's company name at the top of the sidebar.
+ * - Provides a logout button for ending the user session.
+ * - Handles sidebar open/close state for mobile/tablet devices.
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - Responsive design: off-canvas drawer for mobile/tablet, fixed sidebar for desktop.
+ * - Uses Bootstrap Icons for navigation item icons.
+ * - Modular navItems array for easy addition or modification of sidebar sections.
+ * - Integrates with React Router for navigation and accessibility.
+ * - Customizable styling using inline styles and utility classes.
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Used in UserDashboard.jsx as the main navigation component for authenticated users.
+ * - Allows users to switch between dashboard sections and log out.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - To add new sections, update the navItems array and corresponding dashboard logic.
+ * - Ensure handleLogout properly clears user session and redirects to login.
+ * - Update styling or layout as needed for branding or UX improvements.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - src/user/pages/UserDashboard.jsx         (renders Sidebar)
+ * - src/user/components/ProfileSection.jsx   (profile display)
+ * - src/user/components/SubmissionForm.tsx   (data entry)
+ * - src/user/components/SubmissionHistory.jsx (submission records)
+ * - src/user/components/UserStatistics.jsx   (user statistics)
+ * - src/admin/pages/MainDashboard.tsx        (Panglao Statistics section)
+ * 
+ * =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-21]
+ */
+
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import React from "react";
 import { Link } from "react-router-dom";

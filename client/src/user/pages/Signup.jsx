@@ -1,3 +1,62 @@
+/**
+ * Signup.jsx
+ * 
+ * Panglao Tourist Data Management System - User Signup Page
+ * 
+ * =========================
+ * Overview:
+ * =========================
+ * This file implements the user registration (signup) page for the Panglao TDMS frontend. It provides a form for new accommodation owners to create an account, including email verification, password validation, and detailed accommodation/business information.
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - Renders a responsive registration form for new users.
+ * - Handles input validation for all required fields, including password strength and matching.
+ * - Integrates with the backend API to check email verification status and submit registration data.
+ * - Supports region/province/municipality/barangay selection using hierarchical location data.
+ * - Manages email verification workflow, including redirecting to the verification request page.
+ * - Displays real-time feedback and error messages for form validation and submission status.
+ * - Shows a modal dialog on successful registration and redirects to the login page.
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - Uses React hooks for state management and side effects.
+ * - Validates password requirements (length, uppercase, lowercase, number).
+ * - Prevents registration until email is verified.
+ * - Dynamically loads location options based on user selection.
+ * - Handles API errors and provides user-friendly feedback.
+ * - Uses a custom spinner for loading states.
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Accessed via the "/signup" route in the frontend.
+ * - Used by new accommodation owners to register for the system.
+ * - Integrates with backend endpoints for email verification and registration.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - Update the accommodationTypes and location data as needed for new business types or regions.
+ * - For new fields or validation rules, extend the form and validation logic.
+ * - Ensure API_BASE_URL is set correctly for backend integration.
+ * - For custom UI/UX, modify the form layout and modal dialog as needed.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - components/DolphinSpinner.jsx      (loading spinner)
+ * - components/places.json             (location hierarchy data)
+ * - pages/EmailVerificationRequest.jsx (email verification workflow)
+ * - backend: routes/auth.js, controllers/authController.js (handles registration and verification)
+ * 
+ * =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-21]
+ */ 
+
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate, Link, useLocation } from "react-router-dom";

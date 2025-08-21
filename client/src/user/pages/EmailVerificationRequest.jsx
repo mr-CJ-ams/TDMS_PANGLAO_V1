@@ -1,3 +1,57 @@
+/**
+ * EmailVerificationRequest.jsx
+ * 
+ * Panglao Tourist Data Management System - Email Verification Request Page (Frontend)
+ * 
+ * =========================
+ * Overview:
+ * =========================
+ * This React component provides the user interface and logic for requesting a verification email during user registration.
+ * It allows users to enter their email address and receive a verification link to complete the registration process.
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - Accepts user email input and validates its format.
+ * - Submits a request to the backend API to send a verification email.
+ * - Displays loading, success, and error states based on the API response.
+ * - Provides navigation options to continue registration or return to the signup page.
+ * - Pre-fills the email field if the user arrives from the signup page.
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - Uses React Router's useNavigate and useLocation for navigation and state management.
+ * - Shows real-time feedback for form submission and errors.
+ * - Integrates with the backend via fetch API for sending verification requests.
+ * - Responsive and accessible UI with branding and visual feedback.
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Accessed by users who need to verify their email before completing registration.
+ * - Used after signup or when a user requests a new verification email.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - The backend endpoint for requesting email verification is POST /auth/request-email-verification.
+ * - Update this component if the verification flow or UI requirements change.
+ * - Ensure email validation matches backend requirements.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - src/user/pages/Signup.jsx                (initiates email verification flow)
+ * - server/controllers/authController.js     (handles backend verification logic)
+ * - server/routes/auth.js                    (defines backend verification routes)
+ * - utils/emailVerification.js               (generates and sends verification emails)
+ * 
+ * =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-21]
+ */
+
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Mail, ArrowLeft, CheckCircle } from "lucide-react";

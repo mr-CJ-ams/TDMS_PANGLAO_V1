@@ -1,9 +1,67 @@
+/**
+ * UserStatistics.jsx
+ * 
+ * Panglao Tourist Data Management System - User Statistics Component (Frontend)
+ * 
+ * =========================
+ * Overview:
+ * =========================
+ * This React component displays comprehensive statistics and analytics for the authenticated user's accommodation submissions.
+ * It includes a monthly line chart of guest check-ins, a metrics table, guest demographics, and nationality counts for the selected year and month.
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - Fetches monthly check-in data and metrics from the backend API for the authenticated user.
+ * - Renders a responsive line chart showing monthly guest check-ins for the selected year.
+ * - Provides year and month filters for viewing statistics and analytics.
+ * - Displays monthly metrics, guest demographics, and nationality counts using dedicated subcomponents.
+ * - Handles loading, error, and empty states gracefully.
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - Uses recharts for interactive and responsive charting.
+ * - Modular design with subcomponents for metrics, demographics, and nationality breakdowns.
+ * - Uses axios for API communication and sessionStorage for authentication.
+ * - Custom tooltip and year/month selection for improved UX.
+ * - Ensures all months are shown in the chart and metrics table, filling missing data with zeroes.
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Used in the user dashboard to review and analyze monthly accommodation statistics.
+ * - Allows users to visualize trends, export metrics, and review guest demographics and nationality breakdowns.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - The backend endpoints for fetching data are:
+ *     GET /api/submissions/statistics/:userId
+ *     GET /api/submissions/metrics/:userId?year=YYYY
+ * - Extend this component to support additional analytics, export features, or custom chart types.
+ * - Update year/month filter logic as business requirements change.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - src/user/components/UserMonthlyMetrics.jsx      (monthly metrics table)
+ * - src/user/components/UserGuestDemographics.jsx   (guest demographics table)
+ * - src/user/components/UserNationalityCounts.jsx   (nationality counts table)
+ * - server/controllers/submissionsController.js     (handles backend statistics logic)
+ * - server/routes/submissions.js                    (defines backend endpoints)
+ * 
+ * =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-21]
+ */
+
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import axios from "axios";
-import UserMonthlyMetrics from "./UserMonthlyMetrics";
-import UserGuestDemographics from "./UserGuestDemographics";
-import UserNationalityCounts from "./UserNationalityCounts";
+import UserMonthlyMetrics from "../components/UserMonthlyMetrics";
+import UserGuestDemographics from "../components/UserGuestDemographics";
+import UserNationalityCounts from "../components/UserNationalityCounts";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 

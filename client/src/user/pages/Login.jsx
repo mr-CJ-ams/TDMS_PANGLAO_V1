@@ -1,3 +1,61 @@
+/**
+ * Login.jsx
+ * 
+ * Panglao Tourist Data Management System - User Login Page
+ * 
+ * =========================
+ * Overview:
+ * =========================
+ * This file implements the login page for users of the Panglao TDMS frontend. It provides a secure, user-friendly interface for users to authenticate with their email and password, and handles navigation based on user roles (admin or regular user).
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - Renders the login form with email and password fields, including password visibility toggle.
+ * - Handles form submission, sending login credentials to the backend API for authentication.
+ * - Displays loading spinner and error messages for failed login attempts or deactivated accounts.
+ * - Stores JWT token and user information in sessionStorage upon successful login.
+ * - Redirects users to the appropriate dashboard (admin or user) based on their role.
+ * - Provides navigation links for signup, password recovery, and help/support.
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - Uses React hooks for state management and navigation.
+ * - Integrates with axios for HTTP requests to the backend API.
+ * - Implements a login timeout to handle slow or failed requests gracefully.
+ * - Shows a branded logo and styled UI for a professional user experience.
+ * - Supports password visibility toggle for better usability.
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Accessed via the "/login" route in the frontend application.
+ * - Used by both new and returning users to access their accounts.
+ * - Redirects to "/admin/dashboard" for admins and "/user/dashboard" for regular users.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - Update API_BASE_URL as needed for different environments.
+ * - Extend error handling for more granular feedback if required.
+ * - For additional authentication features (e.g., social login), add logic here.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - ../components/DolphinSpinner.jsx   (loading spinner component)
+ * - ../components/img/Tourism_logo.png (logo image)
+ * - src/user/pages/Signup.jsx          (signup page)
+ * - src/user/pages/ForgotPassword.jsx  (password recovery page)
+ * - src/user/pages/HelpSupportPage.jsx (help/support page)
+ * 
+ * =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-21]
+ */
+
+
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";

@@ -1,3 +1,54 @@
+/**
+ * ForgotPassword.jsx
+ * 
+ * Panglao Tourist Data Management System - Forgot Password Page (Frontend)
+ * 
+ * =========================
+ * Overview:
+ * =========================
+ * This React component provides the user interface and logic for initiating a password reset request.
+ * Users enter their email address, and the system sends a password reset link to their email if the address is registered.
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - Accepts user email input and validates its format.
+ * - Submits a request to the backend API to send a password reset email.
+ * - Displays loading, success, and error states based on the API response.
+ * - Provides navigation to return to the login page.
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - Uses axios for API communication with the backend.
+ * - Shows real-time feedback for form submission and errors.
+ * - Responsive and accessible UI with branding and visual feedback.
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Accessed by users who have forgotten their password and need to reset it.
+ * - Used before the ResetPassword.jsx page, which handles the actual password change.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - The backend endpoint for password reset requests is POST /auth/forgot-password.
+ * - Ensure the backend sends a secure reset link and handles email delivery.
+ * - Update this component if password reset flow or UI requirements change.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - src/user/pages/ResetPassword.jsx        (handles password change after receiving reset link)
+ * - server/controllers/authController.js    (handles backend password reset logic)
+ * - server/routes/auth.js                   (defines backend password reset route)
+ * 
+ * =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-21]
+ */
+
 import React, { useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";

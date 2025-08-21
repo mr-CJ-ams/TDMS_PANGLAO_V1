@@ -1,3 +1,62 @@
+/**
+ * AdminDashboard.tsx
+ * 
+ * Panglao Tourist Data Management System - Admin Dashboard Page (Frontend)
+ * 
+ * =========================
+ * Overview:
+ * =========================
+ * This React component serves as the main dashboard for administrators in the Panglao TDMS frontend.
+ * It provides navigation and access to all major admin features, including user approval, submission overview, and Panglao statistics.
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - Fetches and manages lists of users and submissions from the backend for admin review and management.
+ * - Handles sidebar navigation and active section state for switching between dashboard features.
+ * - Renders the appropriate page/component based on the selected sidebar section (dashboard, user approval, submission overview).
+ * - Supports user approval and decline workflows, including messaging and state updates.
+ * - Displays submission details, calculates metrics, and manages penalty status for late submissions.
+ * - Handles admin logout and session management.
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - Responsive sidebar navigation for switching between admin dashboard sections.
+ * - Integrates with backend authentication via JWT stored in sessionStorage.
+ * - Modular rendering of admin features: MainDashboard (statistics), UserApproval, SubmissionOverview.
+ * - Uses axios for API communication and React Router for navigation.
+ * - Helper functions for calculating metrics, handling penalties, and formatting dates.
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Accessed by authenticated administrators after login.
+ * - Provides the main interface for admins to manage users, review submissions, and view system-wide statistics.
+ * - Allows admins to approve/decline users, review and manage monthly submissions, and handle penalties.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - Add new admin dashboard sections by updating the sidebar and main content render logic.
+ * - Ensure backend endpoints are protected and return the necessary admin data.
+ * - For user-only features, restrict access or hide sections as needed.
+ * - Update the sidebar and activeSection logic to support new admin features.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - src/admin/components/AdminSidebar.tsx         (sidebar navigation)
+ * - src/admin/pages/MainDashboard.tsx             (Panglao statistics)
+ * - src/admin/pages/UserApproval.tsx              (user approval workflow)
+ * - src/admin/pages/SubmissionOverview.tsx        (submission management)
+ * - server/controllers/adminController.js         (backend admin logic)
+ * 
+ * =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-21]
+ */
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";

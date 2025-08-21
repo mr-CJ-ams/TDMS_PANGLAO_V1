@@ -1,3 +1,57 @@
+/**
+ * ResetPassword.jsx
+ * 
+ * Panglao Tourist Data Management System - User Password Reset Page (Frontend)
+ * 
+ * =========================
+ * Overview:
+ * =========================
+ * This React component provides the user interface and logic for resetting a user's password after they have requested a password reset.
+ * It is accessed via a special link sent to the user's email, containing a secure token as a URL parameter.
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - Validates the new password against security requirements (length, uppercase, lowercase, number).
+ * - Ensures the new password and confirmation match before submission.
+ * - Submits the new password and token to the backend API to complete the password reset.
+ * - Displays success or error messages based on the backend response.
+ * - Redirects the user to the login page after a successful reset.
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - Real-time password validation feedback with icons for each requirement.
+ * - Handles loading state and disables the submit button until all requirements are met.
+ * - Uses React Router's useParams to extract the reset token from the URL.
+ * - Uses axios for API communication with the backend.
+ * - Responsive and accessible UI with clear feedback for users.
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Accessed via a password reset link sent to the user's email (e.g., /reset-password/:token).
+ * - Used by users who have forgotten their password and need to set a new one.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - The backend endpoint for password reset is POST /auth/reset-password.
+ * - Ensure the backend validates the token and updates the user's password securely.
+ * - Update this component if password requirements change or if additional validation is needed.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - src/user/pages/ForgotPassword.jsx      (initiates password reset request)
+ * - server/controllers/authController.js   (handles backend password reset logic)
+ * - server/routes/auth.js                  (defines backend password reset route)
+ * 
+ * =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-21]
+ */
+
 import { useEffect, useState } from "react";
 import { Check, X, Loader2 } from "lucide-react";
 import axios from "axios";

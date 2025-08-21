@@ -1,3 +1,59 @@
+/**
+ * UserGuestDemographics.jsx
+ * 
+ * Panglao Tourist Data Management System - User Guest Demographics Component (Frontend)
+ * 
+ * =========================
+ * Overview:
+ * =========================
+ * This React component displays guest demographics and nationality counts for a user's monthly accommodation submission.
+ * It fetches, summarizes, and presents guest data (gender, age group, marital status) and nationality breakdowns for the selected year and month.
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - Fetches guest demographics and nationality counts from the backend API for the authenticated user, year, and month.
+ * - Calculates summary statistics (totals by gender, age group, marital status) from the raw data.
+ * - Renders summary and detailed tables for guest demographics.
+ * - Renders a nationality counts table in a separate Excel sheet for export.
+ * - Provides an export button to download both guest demographics and nationality counts as a multi-sheet Excel report.
+ * - Handles loading, error, and empty states gracefully.
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - Uses axios for API communication and sessionStorage for authentication.
+ * - Utilizes XLSX and file-saver libraries to export multi-sheet Excel reports.
+ * - Responsive and accessible UI with clear feedback and export functionality.
+ * - Modular summary calculation for easy extension or customization.
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Used in the user dashboard to review monthly guest demographics and nationality breakdowns.
+ * - Allows users to export official reports for record-keeping or submission.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - The backend endpoints for fetching data are:
+ *     GET /api/submissions/guest-demographics/:userId?year=YYYY&month=MM
+ *     GET /api/submissions/nationality-counts/:userId?year=YYYY&month=MM
+ * - Update this component if guest categories or export requirements change.
+ * - Extend summaryTableData and export logic for new demographic or nationality fields as needed.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - src/user/pages/UserDashboard.jsx         (renders UserGuestDemographics)
+ * - server/controllers/submissionsController.js (handles backend guest and nationality logic)
+ * - server/routes/submissions.js                (defines backend endpoints)
+ * 
+ * =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-21]
+ */
+
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";

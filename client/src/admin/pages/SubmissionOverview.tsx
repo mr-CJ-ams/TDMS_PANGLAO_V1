@@ -1,3 +1,64 @@
+/**
+ * SubmissionOverview.tsx
+ * 
+ * Panglao Tourist Data Management System - Admin Submission Overview Page (Frontend)
+ * 
+ * =========================
+ * Overview:
+ * =========================
+ * This React component provides administrators with a comprehensive overview and management interface for all monthly accommodation submissions in the Panglao TDMS system.
+ * It supports filtering, searching, paginating, viewing details, handling penalties, and exporting submission data to Excel.
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - Fetches paginated and filtered submissions from the backend API for admin review.
+ * - Renders a responsive table listing all submissions with key metrics, status, penalty information, and actions.
+ * - Provides filters for month, year, status, penalty status, and company name search.
+ * - Allows admins to view detailed submission data in a modal, including daily metrics and guest details.
+ * - Handles penalty payment workflow, including access code verification and receipt number entry.
+ * - Supports quick room search and paginated room display for submissions with many rooms.
+ * - Exports submission details, daily metrics, and nationality counts to a multi-sheet Excel report.
+ * - Integrates with modals for viewing nationality counts and confirming access code for penalties.
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - Uses axios for API communication and sessionStorage for authentication.
+ * - Responsive table layout with color-coded status and penalty indicators.
+ * - Advanced modal for viewing and exporting detailed submission data.
+ * - Room quick search and pagination for efficient navigation in large submissions.
+ * - XLSX and file-saver integration for exporting multi-sheet Excel reports.
+ * - Modular design with helper functions for metrics calculation and data formatting.
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Used by administrators in the admin dashboard to review, manage, and export monthly accommodation submissions.
+ * - Allows admins to track submission status, handle penalties, and access detailed records for analytics and reporting.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - The backend endpoint for fetching submissions is GET /admin/submissions with filters and pagination.
+ * - The backend endpoint for updating penalty status is PUT /api/submissions/penalty/:submissionId.
+ * - Update this component if table columns, metrics, penalty logic, or export requirements change.
+ * - Extend modal logic or table rendering for new analytics or reporting features.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - src/admin/pages/AdminDashboard.tsx         (renders SubmissionOverview)
+ * - src/admin/pages/NationalityCountsModal.tsx (modal for nationality breakdown)
+ * - src/admin/components/AccessCodePrompt.tsx  (access code confirmation modal)
+ * - server/controllers/adminController.js      (handles backend submission logic)
+ * - server/routes/admin.js                     (defines backend endpoints)
+ * 
+ * =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-21]
+ */
+
 import React, { useEffect, useState } from "react";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import axios from "axios";

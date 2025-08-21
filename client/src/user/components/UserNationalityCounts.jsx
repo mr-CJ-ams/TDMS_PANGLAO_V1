@@ -1,3 +1,55 @@
+/**
+ * UserNationalityCounts.jsx
+ * 
+ * Panglao Tourist Data Management System - User Nationality Counts Component (Frontend)
+ * 
+ * =========================
+ * Overview:
+ * =========================
+ * This React component displays a table of guest nationality counts for a user's monthly accommodation submission.
+ * It fetches, summarizes, and presents nationality breakdowns (total, male, female) for the selected year and month.
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - Fetches nationality counts from the backend API for the authenticated user, year, and month.
+ * - Renders a responsive table showing nationality, total count, male count, and female count.
+ * - Handles loading, error, and empty states gracefully.
+ * - Displays contextual information (selected year and month) above the table.
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - Uses axios for API communication and sessionStorage for authentication.
+ * - Responsive and accessible UI with clear feedback and table styling.
+ * - Modular design for easy integration into the user dashboard.
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Used in the user dashboard to review monthly nationality breakdowns of guests.
+ * - Allows users to view official nationality counts for record-keeping or reporting.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - The backend endpoint for fetching data is:
+ *     GET /api/submissions/nationality-counts/:userId?year=YYYY&month=MM
+ * - Update this component if nationality categories or table columns change.
+ * - Extend table rendering or export logic as needed for new reporting requirements.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - src/user/pages/UserDashboard.jsx         (renders UserNationalityCounts)
+ * - server/controllers/submissionsController.js (handles backend nationality logic)
+ * - server/routes/submissions.js                (defines backend endpoints)
+ * 
+ * =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-21]
+ */
+
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 

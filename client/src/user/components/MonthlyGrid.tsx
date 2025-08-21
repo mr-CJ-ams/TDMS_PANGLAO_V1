@@ -1,3 +1,58 @@
+/**
+ * MonthlyGrid.tsx
+ * 
+ * Panglao Tourist Data Management System - Monthly Grid Component (Frontend)
+ * 
+ * =========================
+ * Overview:
+ * =========================
+ * This React component renders a virtualized grid for displaying and interacting with daily room occupancy and guest metrics for a given month.
+ * It is used in the monthly accommodation submission workflow, allowing users to view, select, and manage guest data for each room and day.
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - Displays a scrollable, virtualized grid of days (rows) and rooms (columns), plus daily totals.
+ * - Handles cell clicks to trigger guest entry or editing for a specific day and room.
+ * - Shows color-coded room cells based on occupancy or custom logic.
+ * - Calculates and displays daily totals for check-ins, overnight stays, and occupied rooms.
+ * - Synchronizes vertical scrolling between the fixed day column and the main grid.
+ * - Adapts grid size and layout responsively for desktop and mobile screens.
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - Uses react-window's FixedSizeGrid for efficient rendering of large grids.
+ * - Responsive design with dynamic sizing based on screen width and height.
+ * - Customizable cell rendering for both header and data rows.
+ * - Supports external refs for advanced parent component control.
+ * - Modular logic for calculating totals and determining cell colors.
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Used in the monthly submission form to allow users to enter and review guest data for each day and room.
+ * - Provides a visual overview of occupancy and guest metrics for the selected month.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - The parent component must provide functions for cell click handling, color logic, and daily totals calculation.
+ * - Extend this component to support additional metrics, custom cell rendering, or advanced interactions as needed.
+ * - Ensure performance by keeping props and state minimal and using memoization where appropriate.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - src/user/components/GuestModal.tsx         (handles guest entry/editing for selected cells)
+ * - src/user/pages/SubmissionDetails.jsx       (displays and manages submission details)
+ * - server/controllers/submissionsController.js (handles backend guest and stay logic)
+ * 
+ * =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-21]
+ */
+
 import React, { useMemo, useRef } from "react";
 import { FixedSizeGrid as VirtualizedGrid } from "react-window";
 import useMediaQuery from "../hooks/useMediaQuery";

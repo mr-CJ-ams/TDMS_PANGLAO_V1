@@ -1,3 +1,56 @@
+/**
+ * UserMonthlyMetrics.jsx
+ * 
+ * Panglao Tourist Data Management System - User Monthly Metrics Component (Frontend)
+ * 
+ * =========================
+ * Overview:
+ * =========================
+ * This React component displays monthly accommodation metrics for the authenticated user, including guest check-ins, overnight stays, room occupancy, and calculated averages.
+ * It provides a table view of metrics for each month of the selected year and allows users to export the data as an Excel report.
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - Renders a summary table of monthly metrics for the selected year.
+ * - Formats metric values and month names for display.
+ * - Provides an export button to download the metrics as an Excel file, including company and accommodation info.
+ * - Handles loading, empty, and error states gracefully.
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - Uses XLSX and file-saver libraries to export metrics as a styled Excel report.
+ * - Responsive and accessible UI with clear feedback and export functionality.
+ * - Modular design for easy integration into the user dashboard.
+ * - Customizable column widths and formatting for exported reports.
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Used in the user dashboard to review and export monthly accommodation metrics.
+ * - Allows users to generate official reports for record-keeping or submission.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - The monthlyMetrics prop should be an array of metric objects for each month.
+ * - The user prop provides company and accommodation details for the report header.
+ * - Extend the export logic to include additional fields or sheets as needed.
+ * - Update table columns or formatting if metric requirements change.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - src/user/pages/UserDashboard.jsx         (renders UserMonthlyMetrics)
+ * - server/controllers/submissionsController.js (handles backend metrics logic)
+ * - server/routes/submissions.js                (defines backend endpoints)
+ * 
+ * =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-21]
+ */
+
 import React from "react";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";

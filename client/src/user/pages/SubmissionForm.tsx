@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import MonthYearSelector from "./MonthYearSelector";
-import MonthlyGrid from "./MonthlyGrid";
-import GuestModal from "./GuestModal";
-import MetricsDisplay from "./MetricsDisplay";
-import SaveButton from "./SaveButton";
-import RoomSearchBar from "./RoomSearchBar";
-import DolphinSpinner from "./DolphinSpinner";
+import MonthYearSelector from "../components/MonthYearSelector";
+import MonthlyGrid from "../components/MonthlyGrid";
+import GuestModal from "../components/GuestModal";
+import MetricsDisplay from "../components/MetricsDisplay";
+import SaveButton from "../components/SubmitButton";
+import RoomSearchBar from "../components/RoomSearchBar";
+import DolphinSpinner from "../components/DolphinSpinner";
 import { FixedSizeGrid as VirtualizedGrid } from "react-window";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
 

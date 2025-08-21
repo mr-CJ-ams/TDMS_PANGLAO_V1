@@ -1,7 +1,63 @@
+/**
+ * SubmissionHistory.jsx
+ * 
+ * Panglao Tourist Data Management System - Submission History Component (Frontend)
+ * 
+ * =========================
+ * Overview:
+ * =========================
+ * This React component displays a table of the authenticated user's monthly accommodation submission history.
+ * It provides a summary of each submission, including metrics, status, penalty information, and actions to view detailed data.
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - Fetches submission history data from the backend API for the logged-in user.
+ * - Renders a responsive table listing all submissions with key metrics and status indicators.
+ * - Shows loading, empty, and error states for improved user experience.
+ * - Allows users to view detailed information for each submission via a modal dialog.
+ * - Displays penalty status for late submissions and highlights paid/unpaid penalties.
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - Uses axios for API communication and sessionStorage for authentication.
+ * - Responsive table layout with color-coded status and penalty indicators.
+ * - Integrates SubmissionDetailsModal for viewing detailed submission data.
+ * - Utilizes Lucide icons for visual cues and improved UX.
+ * - Modular design for easy integration into the user dashboard.
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Used in the user dashboard to review and manage monthly submission history.
+ * - Allows users to track submission status, penalties, and access detailed records.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - The backend endpoint for fetching submission history is:
+ *     GET /api/submissions/history/:userId
+ * - Update this component if table columns, metrics, or penalty logic change.
+ * - Extend modal logic or table rendering for new analytics or reporting features.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - src/user/pages/UserDashboard.jsx         (renders SubmissionHistory)
+ * - src/user/components/SubmissionDetailsModal.jsx (shows detailed submission info)
+ * - server/controllers/submissionsController.js (handles backend history logic)
+ * - server/routes/submissions.js                (defines backend endpoints)
+ * 
+ * =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-21]
+ */
+
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Loader2, ExternalLink } from "lucide-react";
-import SubmissionDetailsModal from "./SubmissionDetailsModal";
+import SubmissionDetailsModal from "../components/SubmissionDetailsModal";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 

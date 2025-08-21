@@ -1,3 +1,58 @@
+/**
+ * GuestDemographics.tsx
+ * 
+ * Panglao Tourist Data Management System - Guest Demographics Component (Frontend)
+ * 
+ * =========================
+ * Overview:
+ * =========================
+ * This React component displays and exports guest demographics for Panglao tourism statistics.
+ * It summarizes guest check-in data by gender, age group, and marital status, and provides both detailed and summary tables.
+ * Users can export the demographics data as a multi-sheet Excel report for analytics and official reporting.
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - Receives guest demographics data for a selected year and month.
+ * - Calculates totals for each demographic category (gender, age group, marital status).
+ * - Renders summary and detailed tables of guest demographics.
+ * - Provides an export button to download the data as a multi-sheet Excel file.
+ * - Formats tables and export sheets for clarity and official use.
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - Uses XLSX and file-saver libraries to export multi-sheet Excel reports.
+ * - Responsive and accessible UI with styled tables and export button.
+ * - Modular logic for calculating totals and formatting data.
+ * - Integrates with Lucide icons for improved UX.
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Used in admin and user dashboards to review and export guest demographics for monthly accommodation submissions.
+ * - Allows users and admins to generate official reports for record-keeping or government submission.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - The guestDemographics prop should be an array of demographic objects for the selected year and month.
+ * - Extend this component to support additional demographic categories or export formats as needed.
+ * - Update table columns or export logic if reporting requirements change.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - src/admin/pages/MainDashboard.tsx        (renders GuestDemographics)
+ * - src/user/components/UserGuestDemographics.jsx (user version)
+ * - server/controllers/adminController.js    (handles backend demographics logic)
+ * - server/routes/admin.js                   (defines backend endpoints)
+ * 
+ * =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-21]
+ */
+
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import React from "react";

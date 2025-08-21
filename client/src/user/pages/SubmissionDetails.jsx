@@ -1,3 +1,60 @@
+/**
+ * SubmissionDetails.jsx
+ * 
+ * Panglao Tourist Data Management System - Submission Details Page (Frontend)
+ * 
+ * =========================
+ * Overview:
+ * =========================
+ * This React component displays detailed information about a specific accommodation submission, including daily guest metrics, room occupancy, nationality counts, and summary statistics.
+ * It provides interactive features for searching, filtering, paginating, and exporting submission data, supporting both user and admin review workflows.
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - Fetches submission details from the backend API using the provided submissionId.
+ * - Displays daily metrics in a paginated, filterable table with room-level granularity.
+ * - Calculates and displays summary statistics (totals, averages) for the submission.
+ * - Shows guest check-in rankings by nationality and allows viewing detailed counts in a modal.
+ * - Supports searching and filtering by guest attributes (room, nationality, gender, status).
+ * - Allows exporting submission data and daily metrics to Excel, including nationality breakdowns.
+ * - Handles loading, error, and empty states gracefully.
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - Uses axios for API communication and sessionStorage for authentication.
+ * - Implements advanced table features: pagination, quick room search, summary navigation, and temporary cell highlighting.
+ * - Utilizes XLSX and file-saver libraries for exporting multi-sheet Excel reports.
+ * - Responsive and accessible UI with clear feedback and interactive controls.
+ * - Modular design with reusable components (MetricsCard, ActionButton, Nationality).
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Accessed by users or admins to review the details of a monthly accommodation submission.
+ * - Used for data validation, analytics, and reporting, including exporting to Excel for official records.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - The backend endpoint for fetching submission details is GET /api/submissions/details/:submissionId.
+ * - Update this component if table structure, metrics, or export requirements change.
+ * - Ensure guest data and metrics calculations match backend logic for consistency.
+ * - Extend filtering and export logic as needed for new analytics or reporting features.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - src/user/pages/SubmissionHistory.jsx        (lists submissions and links to details)
+ * - server/controllers/submissionsController.js (handles backend submission details logic)
+ * - server/routes/submissions.js                (defines backend submission details route)
+ * 
+ * =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-21]
+ */
+
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";

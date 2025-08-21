@@ -1,3 +1,56 @@
+/**
+ * NationalityCounts.tsx
+ * 
+ * Panglao Tourist Data Management System - Nationality Counts Component (Frontend)
+ * 
+ * =========================
+ * Overview:
+ * =========================
+ * This React component displays a table of guest nationality counts for Panglao tourism statistics.
+ * It summarizes and presents nationality breakdowns (total, male, female) for the selected year and month, and provides an export feature to generate an Excel report.
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - Renders a responsive table showing nationality, total count, male count, and female count for each guest nationality.
+ * - Provides an export button to download the nationality counts as an Excel file, including all relevant columns.
+ * - Handles loading, empty, and error states gracefully.
+ * - Displays contextual information (selected year and month) above the table.
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - Uses XLSX and file-saver libraries to export nationality counts as a styled Excel report.
+ * - Responsive and accessible UI with clear feedback and export functionality.
+ * - Modular design for easy integration into admin and user dashboards.
+ * - Customizable styling for table and export button.
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Used in the admin and user dashboards to review and export monthly nationality breakdowns of guests.
+ * - Allows users and admins to generate official reports for record-keeping or submission.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - The nationalityCounts prop should be an array of nationality count objects for the selected year and month.
+ * - Extend the export logic to include additional fields or sheets as needed.
+ * - Update table columns or formatting if reporting requirements change.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - src/admin/pages/MainDashboard.tsx        (renders NationalityCounts)
+ * - src/user/components/UserNationalityCounts.jsx (user version)
+ * - server/controllers/adminController.js    (handles backend nationality logic)
+ * - server/routes/admin.js                   (defines backend endpoints)
+ * 
+ * =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-21]
+ */
+
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import React from "react";

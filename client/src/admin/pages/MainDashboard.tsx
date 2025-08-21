@@ -1,3 +1,63 @@
+/**
+ * MainDashboard.tsx
+ * 
+ * Panglao Tourist Data Management System - Main Dashboard Component (Frontend)
+ * 
+ * =========================
+ * Overview:
+ * =========================
+ * This React component serves as the main statistics dashboard for both admin and authenticated users in the Panglao TDMS frontend.
+ * It aggregates, visualizes, and presents key analytics for Panglao tourism, including monthly check-ins, metrics, guest demographics, nationality counts, and regional distribution.
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - Fetches monthly check-in data, metrics, nationality counts, and guest demographics from the backend API.
+ * - Renders interactive charts and tables for visualizing tourism statistics.
+ * - Provides year and month filters for dynamic data selection.
+ * - Fills missing months with zeroes to ensure complete data visualization.
+ * - Displays predicted data for future months (e.g., 2025) when available.
+ * - Integrates subcomponents for line charts, metrics tables, demographics, regional distribution, and nationality breakdowns.
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - Uses axios for API communication and sessionStorage for authentication.
+ * - Responsive and modular UI with reusable subcomponents (LineChartComponent, MonthlyMetrics, GuestDemographics, NationalityCounts, RegionalDistribution).
+ * - Efficient data fetching with Promise.all and error handling.
+ * - Dynamic data filling for months with missing statistics.
+ * - Supports both admin and user roles for viewing Panglao-wide statistics.
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Used in the admin dashboard and user dashboard (Panglao Statistics section) to visualize system-wide tourism analytics.
+ * - Allows admins and users to analyze trends, review metrics, and export data for reporting.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - Update API endpoints or data structure as backend requirements change.
+ * - Extend subcomponents or add new analytics features as needed.
+ * - Ensure predicted data logic is updated for future years.
+ * - For new filters or metrics, update the Filters and MonthlyMetrics components accordingly.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - src/admin/components/LineChart.tsx           (monthly check-ins chart)
+ * - src/admin/components/MonthlyMetrics.tsx      (metrics table)
+ * - src/admin/components/GuestDemographics.tsx   (guest demographics table)
+ * - src/admin/components/NationalityCounts.tsx   (nationality breakdown)
+ * - src/admin/components/RegionalDistribution.jsx (regional distribution chart)
+ * - server/controllers/adminController.js        (backend analytics logic)
+ * - server/routes/admin.js                       (defines backend analytics endpoints)
+ * 
+ * =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-21]
+ */
+
 import { useState, useEffect } from "react";
 import axios from "axios";
 import Filters from "../components/Filters";

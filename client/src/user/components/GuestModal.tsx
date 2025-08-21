@@ -1,3 +1,58 @@
+/**
+ * GuestModal.tsx
+ * 
+ * Panglao Tourist Data Management System - Guest Modal Component (Frontend)
+ * 
+ * =========================
+ * Overview:
+ * =========================
+ * This React component provides a modal dialog for entering, editing, and managing guest check-in data for a specific day and room in a monthly accommodation submission.
+ * It is used by users to input guest details, length of stay, and check-in status, supporting both new entries and editing existing stays.
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - Allows users to add, edit, and remove individual guest records for a given day and room.
+ * - Validates guest data (age, gender, status, nationality) and length of overnight stay.
+ * - Handles check-in status toggle, affecting how the stay is counted in statistics.
+ * - Detects and warns about room conflicts (overlapping stays) using provided logic.
+ * - Supports removal of all guests for a day/room and confirmation for stays crossing months/years.
+ * - Communicates changes to parent components via onSave and onRemoveAllGuests callbacks.
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - Modal UI with responsive layout and clear feedback for validation errors and conflicts.
+ * - Dynamic guest list management with add/remove/edit functionality.
+ * - Confirmation modal for stays crossing into a new month or year.
+ * - Integrates with parent state for occupied rooms and conflict detection.
+ * - Uses Lucide icons for visual cues and improved UX.
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Accessed from the monthly grid or submission form when a user clicks to add or edit guests for a specific day/room.
+ * - Used during monthly accommodation submission to ensure accurate guest and stay data.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - The parent component must provide occupiedRooms and hasRoomConflict logic for conflict detection.
+ * - Extend this component to support additional guest attributes or validation rules as needed.
+ * - Ensure onSave and onRemoveAllGuests are implemented in the parent for proper data handling.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - src/user/components/MonthlyGrid.tsx         (invokes GuestModal for guest entry)
+ * - src/user/pages/SubmissionDetails.jsx        (displays and manages submission details)
+ * - server/controllers/submissionsController.js (handles backend guest and stay logic)
+ * 
+ * =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-21]
+ */
+
 import { useState } from "react";
 import nationalities from "./Nationality";
 import { Trash2, PlusIcon } from "lucide-react";

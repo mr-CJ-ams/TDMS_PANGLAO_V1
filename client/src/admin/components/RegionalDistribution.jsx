@@ -1,3 +1,59 @@
+/**
+ * RegionalDistribution.jsx
+ * 
+ * Panglao Tourist Data Management System - Regional Distribution Component (Frontend)
+ * 
+ * =========================
+ * Overview:
+ * =========================
+ * This React component displays and exports the regional distribution of guest nationalities for Panglao tourism statistics.
+ * It aggregates nationality counts by region and subregion, and provides an export feature to generate a multi-sheet Excel report for analytics and official reporting.
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - Fetches establishment-level nationality counts from the backend API for the selected year and month.
+ * - Processes raw nationality counts into regional and subregional breakdowns using utility functions.
+ * - Renders summary statistics for Philippine and Non-Philippine residents.
+ * - Provides an export button (for admins) to download the regional distribution and per-establishment nationality counts as an Excel file.
+ * - Formats and structures Excel sheets with region, subregion, and establishment data for reporting.
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - Uses axios for API communication and sessionStorage for authentication.
+ * - Utilizes XLSX and file-saver libraries to export multi-sheet Excel reports.
+ * - Modular logic for processing nationality counts and regional breakdowns.
+ * - Responsive UI with styled export button and summary display.
+ * - Supports both admin and user roles, with export functionality restricted to admins.
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Used in the admin and user dashboards to review and export regional distribution statistics for Panglao tourism.
+ * - Allows admins to generate official DAE-form 2 reports for analytics and government submission.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - The backend endpoint for establishment-level data is GET /admin/nationality-counts-by-establishment.
+ * - Update regions and subregions in ../utils/regions.jsx as needed for new reporting requirements.
+ * - Extend export logic to support additional sheets or custom formatting.
+ * - Ensure processedData structure matches backend and reporting needs.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - src/admin/utils/processNationalityCounts.jsx   (processes raw nationality counts)
+ * - src/admin/utils/regions.jsx                   (defines regions and subregions)
+ * - server/controllers/adminController.js         (handles backend nationality logic)
+ * - server/routes/admin.js                        (defines backend endpoints)
+ * 
+ * =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-21]
+ */
+
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import processNationalityCounts from "../utils/processNationalityCounts";
