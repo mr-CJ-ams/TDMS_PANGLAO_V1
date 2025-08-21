@@ -1,3 +1,58 @@
+/**
+ * userModel.js
+ * 
+ * Panglao Tourist Data Management System - User Model
+ * 
+ * =========================
+ * Overview:
+ * =========================
+ * This file defines the UserModel and related functions, which contain all database query logic and business rules for user management in the Panglao TDMS backend.
+ * It serves as the data access layer for authController.js and other controllers, encapsulating all SQL queries and transactional logic related to user registration, authentication, profile management, and email/password verification.
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - User Registration: Create new users, update existing users, and handle registration data.
+ * - Authentication: Find users by email or ID for login and session management.
+ * - Profile Management: Update user profile details such as profile picture and number of rooms.
+ * - Password Management: Handle password reset tokens, update passwords, and clear reset data.
+ * - Email Verification: Manage email verification tokens, mark emails as verified, and clean up expired tokens.
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - All methods are asynchronous and use parameterized SQL queries to prevent SQL injection.
+ * - Handles both new user creation and updating of partially registered users (e.g., after email verification).
+ * - Supports secure password and token management for authentication and recovery.
+ * - Designed for separation of concerns: all business/data logic is kept out of controllers.
+ * - Returns data in formats ready for use by controllers and API responses.
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Called by authController.js for all user-related backend operations.
+ * - Used by the authentication and profile management features in the frontend.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - Extend this file to add new user-related queries or business logic.
+ * - For new authentication or profile features, add methods here and expose them via the controller.
+ * - Use transactions for multi-step or critical updates if needed.
+ * - All methods should return plain JavaScript objects or arrays for easy consumption.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - controllers/authController.js   (calls these methods for API endpoints)
+ * - routes/auth.js                  (defines Express routes for authentication)
+ * - db.js                           (database connection pool)
+ * 
+ * =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-21]
+ */
+
 const pool = require("../db");
 
 exports.createUser = async (user) => {

@@ -1,3 +1,62 @@
+/**
+ * authController.js
+ * 
+ * Panglao Tourist Data Management System - Authentication Controller
+ * 
+ * =========================
+ * Overview:
+ * =========================
+ * This file contains all controller logic for user authentication and account management in the Panglao TDMS backend.
+ * It serves as the main interface between HTTP requests (from routes/auth.js) and the database/model layer (models/userModel.js).
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - User Registration: Handles user signup, including email verification and auto-approval logic.
+ * - User Login: Authenticates users and issues JWT tokens for session management.
+ * - Profile Management: Allows users to update profile information, upload profile pictures, and update accommodation details.
+ * - Password Management: Supports password reset via email, including secure token generation and validation.
+ * - Email Verification: Manages the process of sending, verifying, and checking email verification tokens.
+ * - User Retrieval: Provides endpoints for fetching authenticated user details.
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - Uses bcrypt for secure password hashing.
+ * - Uses JWT for stateless authentication and session management.
+ * - Integrates with email utilities for notifications and verification.
+ * - Handles file uploads (profile pictures) using multer.
+ * - All database access is delegated to userModel (models/userModel.js) for separation of concerns.
+ * - Implements robust error handling and returns appropriate HTTP status codes and messages.
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Called by routes defined in routes/auth.js (e.g., /auth/signup, /auth/login, /auth/forgot-password).
+ * - Used by the frontend for user registration, login, profile management, and password recovery.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - All methods are asynchronous and should be used with Express async error handling.
+ * - For new authentication features, add the controller logic here and expose it via routes/auth.js.
+ * - For business logic/data access, use or extend models/userModel.js.
+ * - For email notifications and verification, use the utilities in utils/email.js and utils/emailVerification.js.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - models/userModel.js         (database queries and business logic)
+ * - routes/auth.js              (Express route definitions)
+ * - middleware/auth.js          (JWT authentication middleware)
+ * - utils/email.js              (email notification utility)
+ * - utils/emailVerification.js  (email verification utility)
+ * 
+ * =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-21]
+ */
+
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { sendEmailNotification } = require("../utils/email");

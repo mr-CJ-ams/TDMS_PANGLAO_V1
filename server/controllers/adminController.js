@@ -1,3 +1,59 @@
+/**
+ * adminController.js
+ * 
+ * Panglao Tourist Data Management System - Admin Controller
+ * 
+ * =========================
+ * Overview:
+ * =========================
+ * This file contains all controller logic for admin-related operations in the Panglao TDMS backend.
+ * It acts as the main interface between HTTP requests (from routes/admin.js) and the database/model layer (models/adminModel.js).
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - User Management: Approve, decline, deactivate users, update accommodation types, and fetch user lists.
+ * - Submission Management: Retrieve, filter, and paginate submissions for admin review and reporting.
+ * - Analytics & Statistics: Provide endpoints for monthly check-ins, metrics, nationality counts, guest demographics, and more.
+ * - Auto-Approval: Get and set the system's auto-approval feature for new user registrations.
+ * - Notification: Integrates with the email utility to send notifications on user status changes.
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - Each exported function is an Express route handler, designed for use with async/await.
+ * - All database access is delegated to the AdminModel (models/adminModel.js) for separation of concerns.
+ * - Uses middleware for authentication and admin authorization (see middleware/auth.js).
+ * - Handles errors gracefully and returns appropriate HTTP status codes and messages.
+ * - Supports filtering, searching, and pagination for large data sets.
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Called by routes defined in routes/admin.js (e.g., /admin/users, /admin/monthly-checkins).
+ * - Used by the admin dashboard frontend to display and manage users, submissions, and analytics.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - All methods are asynchronous and should be used with Express async error handling.
+ * - For new admin features, add the controller logic here and expose it via routes/admin.js.
+ * - For business logic/data access, use or extend models/adminModel.js.
+ * - For email notifications, use the sendEmailNotification utility.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - models/adminModel.js      (database queries and business logic)
+ * - routes/admin.js           (Express route definitions)
+ * - middleware/auth.js        (JWT authentication and admin authorization)
+ * - utils/email.js            (email notification utility)
+ * 
+ * =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-21]
+ */
+
 const AdminModel = require("../models/adminModel");
 const { sendEmailNotification } = require("../utils/email");
 

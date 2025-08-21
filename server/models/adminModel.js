@@ -1,3 +1,57 @@
+/**
+ * adminModel.js
+ * 
+ * Panglao Tourist Data Management System - Admin Model
+ * 
+ * =========================
+ * Overview:
+ * =========================
+ * This file defines the AdminModel class, which contains all database query logic and business rules for admin-related operations in the Panglao TDMS backend.
+ * It serves as the data access layer for the adminController.js, encapsulating all SQL queries and transactional logic related to users, submissions, and analytics.
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - User Management: Query, approve, decline, deactivate users, and update accommodation types and codes.
+ * - Submission Management: Retrieve, filter, and paginate submissions for admin review and reporting.
+ * - Analytics & Statistics: Provide aggregated data for monthly check-ins, metrics, nationality counts, guest demographics, and more.
+ * - Data Integrity: Implements transactional logic for critical updates (e.g., user deactivation).
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - All methods are static and asynchronous, returning query results or processed data.
+ * - Uses parameterized SQL queries to prevent SQL injection.
+ * - Handles complex filtering, searching, and aggregation for analytics endpoints.
+ * - Designed for separation of concerns: all business/data logic is kept out of controllers.
+ * - Returns data in formats ready for use by controllers and API responses.
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Called by adminController.js for all admin-related backend operations.
+ * - Used by the admin dashboard frontend to display and manage users, submissions, and analytics.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - Extend this class to add new admin-related queries or business logic.
+ * - For new analytics or reporting features, add methods here and expose them via the controller.
+ * - Use transactions (BEGIN/COMMIT/ROLLBACK) for multi-step or critical updates.
+ * - All methods should return plain JavaScript objects or arrays for easy consumption.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - controllers/adminController.js   (calls these methods for API endpoints)
+ * - routes/admin.js                  (defines Express routes for admin endpoints)
+ * - db.js                            (database connection pool)
+ * 
+* =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-21]
+ */
+
 const pool = require("../db");
 
 class AdminModel {

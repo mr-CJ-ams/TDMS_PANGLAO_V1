@@ -1,3 +1,61 @@
+/**
+ * submissionsController.js
+ * 
+ * Panglao Tourist Data Management System - Submissions Controller
+ * 
+ * =========================
+ * Overview:
+ * =========================
+ * This file contains all controller logic for managing accommodation submissions and related data in the Panglao TDMS backend.
+ * It acts as the main interface between HTTP requests (from routes/submissions.js) and the database/model layer (models/submissionModel.js).
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - Submission Management: Handles creation, retrieval, updating, and deletion of monthly accommodation submissions.
+ * - Draft Management: Supports saving, retrieving, updating, and deleting draft submissions for in-progress reports.
+ * - Analytics & Statistics: Provides endpoints for user-specific statistics, monthly metrics, guest demographics, and nationality counts.
+ * - Penalty Management: Allows admins to update penalty status for late or incomplete submissions.
+ * - Stay Management: Supports removal of specific stays across all months for a user.
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - Each exported function is an Express route handler, designed for use with async/await.
+ * - All database access is delegated to SubmissionModel (models/submissionModel.js) for separation of concerns.
+ * - Uses middleware for authentication and (where needed) admin authorization (see middleware/auth.js).
+ * - Handles errors gracefully and returns appropriate HTTP status codes and messages.
+ * - Supports filtering, searching, and pagination for large data sets.
+ * - Implements transactional logic for multi-step operations (e.g., submission creation, deletion).
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Called by routes defined in routes/submissions.js (e.g., /submissions/submit, /submissions/history/:userId).
+ * - Used by both user and admin dashboards for managing and analyzing accommodation submissions.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - All methods are asynchronous and should be used with Express async error handling.
+ * - For new submission features, add the controller logic here and expose it via routes/submissions.js.
+ * - For business logic/data access, use or extend models/submissionModel.js.
+ * - For analytics/statistics, ensure queries are optimized for performance.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - models/submissionModel.js    (database queries and business logic)
+ * - routes/submissions.js        (Express route definitions)
+ * - middleware/auth.js           (JWT authentication and admin authorization)
+ * 
+ * =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-19]
+ */
+
+
+
 const { SubmissionModel, pool } = require("../models/submissionModel");
 exports.submit = async (req, res) => {
   const client = await pool.connect();

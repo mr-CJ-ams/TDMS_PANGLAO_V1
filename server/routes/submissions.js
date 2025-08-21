@@ -1,20 +1,54 @@
 /**
- * submissions.js
+ * submissions.js (Routes)
  * 
- * Purpose: Defines API routes for managing submissions in the application.
- * - Handles creating, viewing, updating, and deleting submissions.
- * - Manages submission drafts and penalty status.
- * - Connects HTTP endpoints to controller logic in submissionsController.
+ * Panglao Tourist Data Management System - Submissions API Routes
  * 
- * Endpoints:
- * - POST   /submit                : Submit a new submission
- * - GET    /history/:userId       : Get submission history for a user
- * - GET    /details/:submissionId : Get details of a specific submission
- * - PUT    /penalty/:submissionId : Update penalty status for a submission
- * - DELETE /:submissionId         : Delete a submission
- * - GET    /check-submission      : Check if user has submitted for a month/year
- * - GET    /:userId/:month/:year  : Get a specific submission
- * - Draft management endpoints (save, get, delete, list drafts)
+ * =========================
+ * Overview:
+ * =========================
+ * This file defines all Express routes for managing accommodation submissions, drafts, metrics, and related analytics in the Panglao TDMS backend.
+ * It acts as the main entry point for HTTP requests targeting submission functionality, connecting endpoints to controller logic in submissionsController.js.
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - Submission Management: Endpoints for creating, viewing, updating, and deleting accommodation submissions.
+ * - Draft Management: Endpoints for saving, retrieving, updating, and deleting draft submissions.
+ * - Analytics & Statistics: Endpoints for retrieving user statistics, monthly metrics, guest demographics, and nationality counts.
+ * - Penalty Management: Endpoints for updating penalty status and removing stays.
+ * - Access Control: Applies authentication middleware to protect user-specific endpoints and admin authorization for sensitive actions.
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - Uses Express Router for modular route definitions.
+ * - Integrates authentication (authenticateToken) and admin authorization (requireAdmin) middleware.
+ * - Delegates business logic to submissionsController.js and utility functions.
+ * - Supports both user and admin dashboard features for submission management and analytics.
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Imported and used in server/index.js as part of the main Express app.
+ * - Consumed by both user and admin frontends for submission, draft, and analytics features.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - For new submission or analytics features, add route definitions here and implement logic in submissionsController.js.
+ * - Use appropriate middleware to restrict access to authenticated users and admins as needed.
+ * - Ensure endpoints are RESTful and follow consistent naming conventions.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - controllers/submissionsController.js   (handles business logic for each route)
+ * - middleware/auth.js                     (provides authentication and authorization middleware)
+ * - models/submissionModel.js              (handles database queries and business logic)
+ * 
+ * =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-21]
  */
 
 const express = require("express");

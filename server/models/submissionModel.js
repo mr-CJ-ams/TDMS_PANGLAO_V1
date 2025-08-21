@@ -1,3 +1,60 @@
+/**
+ * submissionModel.js
+ * 
+ * Panglao Tourist Data Management System - Submission Model
+ * 
+ * =========================
+ * Overview:
+ * =========================
+ * This file defines the SubmissionModel class, which contains all database query logic and business rules for accommodation submissions and related data in the Panglao TDMS backend.
+ * It serves as the data access layer for submissionsController.js, encapsulating all SQL queries and transactional logic related to submissions, drafts, metrics, guests, and user statistics.
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - Submission Management: Create, retrieve, update, and delete monthly accommodation submissions.
+ * - Daily Metrics & Guests: Manage daily metrics and guest records associated with each submission.
+ * - Draft Management: Save, retrieve, update, and delete draft submissions for in-progress reports.
+ * - Analytics & Statistics: Provide user-specific statistics, monthly metrics, guest demographics, and nationality counts.
+ * - Penalty Management: Update penalty status and receipt numbers for late or incomplete submissions.
+ * - Stay Management: Remove specific stays across all months for a user.
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - All methods are static and asynchronous, returning query results or processed data.
+ * - Uses parameterized SQL queries to prevent SQL injection.
+ * - Handles complex data aggregation and transformation for analytics endpoints.
+ * - Implements transactional logic for multi-step operations (e.g., submission creation, deletion).
+ * - Designed for separation of concerns: all business/data logic is kept out of controllers.
+ * - Returns data in formats ready for use by controllers and API responses.
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Called by submissionsController.js for all submission-related backend operations.
+ * - Used by both user and admin dashboards for managing and analyzing accommodation submissions and drafts.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - Extend this class to add new submission-related queries or business logic.
+ * - For new analytics or reporting features, add methods here and expose them via the controller.
+ * - Use transactions (BEGIN/COMMIT/ROLLBACK) for multi-step or critical updates.
+ * - All methods should return plain JavaScript objects or arrays for easy consumption.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - controllers/submissionsController.js   (calls these methods for API endpoints)
+ * - routes/submissions.js                  (defines Express routes for submission endpoints)
+ * - db.js                                  (database connection pool)
+ * 
+ * =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-21]
+ */
+
 const pool = require("../db");
 
 class SubmissionModel {

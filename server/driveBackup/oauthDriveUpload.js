@@ -17,16 +17,47 @@
  * - Reads configuration (folder IDs, retention limits, credentials path) from environment variables for security and flexibility.
  * - Can be run as a persistent Node.js process (e.g., on a server or VM).
  * 
- * Usage:
- * 1. Ensure you have a valid OAuth2 credentials JSON file and have authenticated at least once (token.json).
- * 2. Set the required environment variables in your .env file:
- *      - GOOGLE_OAUTH_CREDENTIALS_PATH
- *      - GDRIVE_DAILY_FOLDER_ID
- *      - GDRIVE_MONTHLY_FOLDER_ID
- *      - MAX_DAILY_BACKUPS
- *      - MAX_MONTHLY_BACKUPS
- * 3. Place your backup files in the /backups directory.
- * 4. Run this script with Node.js.
+ * =========================
+ * Step-by-Step Setup Guide:
+ * =========================
+ * 
+ * 1. Enable Google Drive API and Create OAuth Credentials
+ *    - Go to https://console.cloud.google.com/apis/credentials
+ *    - Enable the Google Drive API for your project.
+ *    - Click "Create Credentials" > "OAuth client ID" > "Desktop app".
+ *    - Download the credentials JSON file and place it in /server/config.
+ * 
+ * 2. Install Required Packages
+ *    - In your /server directory, run:
+ *        npm install googleapis node-cron dotenv
+ * 
+ * 3. Configure Environment Variables
+ *    - In your /server/.env file, add:
+ *        GOOGLE_OAUTH_CREDENTIALS_PATH=./config/your_credentials_file.json
+ *        GDRIVE_DAILY_FOLDER_ID=your_daily_folder_id
+ *        GDRIVE_MONTHLY_FOLDER_ID=your_monthly_folder_id
+ *        MAX_DAILY_BACKUPS=31
+ *        MAX_MONTHLY_BACKUPS=12
+ * 
+ * 4. Authenticate and Generate token.json
+ *    - Run this script once manually:
+ *        node driveBackup/oauthDriveUpload.js
+ *    - Follow the prompt: open the URL, log in, allow access, and paste the code.
+ *    - This will create driveBackup/token.json for future automated runs.
+ * 
+ * 5. Place Your Backup Files
+ *    - Ensure your PostgreSQL backup files (.dump) are placed in /server/backups.
+ * 
+ * 6. Run the Script for Automated Uploads
+ *    - The script will automatically upload the latest backup to Google Drive at the scheduled times.
+ *    - It will also manage retention by deleting the oldest backups if the folder exceeds the set limit.
+ * 
+ * 7. (Optional) Run Manually for Immediate Upload
+ *    - You can invoke the upload logic manually for testing or on-demand backups.
+ * 
+ * 8. Troubleshooting
+ *    - If you change credentials or revoke access, delete token.json and repeat step 4.
+ *    - Ensure the Google account used has access to the target Drive folders.
  * 
  * Dependencies:
  * - googleapis

@@ -1,3 +1,60 @@
+/**
+ * index.js
+ * 
+ * Panglao Tourist Data Management System - Main Server Entry Point
+ * 
+ * =========================
+ * Overview:
+ * =========================
+ * This file serves as the main entry point for the Panglao TDMS backend server. It initializes the Express application, configures middleware, sets up static file serving, registers all API routes, handles errors, and schedules automated tasks (cron jobs) for system notifications.
+ * 
+ * =========================
+ * Responsibilities:
+ * =========================
+ * - Express App Initialization: Sets up the Express server and configures core middleware (CORS, JSON parsing).
+ * - Static File Serving: Serves uploaded files and the built React frontend from the appropriate directories.
+ * - API Routing: Registers all main API route modules for authentication, admin, and submissions.
+ * - Error Handling: Provides a global error handler for catching and formatting unhandled errors.
+ * - Cron Jobs: Schedules and executes automated email reminders for monthly data submissions using node-cron.
+ * - Server Startup: Listens on the configured port and logs server status.
+ * 
+ * =========================
+ * Key Features:
+ * =========================
+ * - Modular route structure for scalability and maintainability.
+ * - Centralized error handling for consistent API responses.
+ * - Automated monthly and deadline email reminders to users via cron jobs.
+ * - Serves both API and static frontend assets for a unified deployment.
+ * - Uses environment variables for configuration (port, database, etc.).
+ * 
+ * =========================
+ * Typical Usage:
+ * =========================
+ * - Run with `node index.js` or via a process manager (e.g., PM2, systemd) in production.
+ * - Handles all backend API requests and serves the frontend React app.
+ * - Automatically sends reminder emails to users at scheduled times.
+ * 
+ * =========================
+ * Developer Notes:
+ * =========================
+ * - Add new API routes by importing and registering them here.
+ * - Update cron job logic as needed for new notification or automation features.
+ * - Ensure environment variables are set in .env for configuration.
+ * - For custom error handling, modify the error middleware at the end of this file.
+ * 
+ * =========================
+ * Related Files:
+ * =========================
+ * - routes/auth.js, routes/admin.js, routes/submissions.js (API route definitions)
+ * - utils/email.js (email notification utility)
+ * - db.js (database connection pool)
+ * - client/build (React frontend static files)
+ * 
+ * =========================
+ * Author: Carlojead Amaquin
+ * Date: [2025-08-21]
+ */
+
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
