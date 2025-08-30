@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { X, Search, ChevronUp, ChevronDown } from "lucide-react";
 
 interface User {
@@ -44,8 +44,6 @@ const UserApproval = ({
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
   const [userToDeactivate, setUserToDeactivate] = useState<string | null>(null);
-  const [autoApproval, setAutoApproval] = useState(false);
-  const [loadingAutoApproval, setLoadingAutoApproval] = useState(false);
   const [modal, setModal] = useState<{
     show: boolean;
     title: string;
@@ -53,39 +51,6 @@ const UserApproval = ({
     onClose?: () => void;
   }>({ show: false, title: "", message: "" });
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
-
-  // Fetch auto-approval state on mount
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/admin/auto-approval`)
-      .then(res => res.json())
-      .then(data => setAutoApproval(data.enabled))
-      .catch(() => setAutoApproval(false));
-  }, [API_BASE_URL]);
-
-   const handleToggleAutoApproval = async () => {
-    setLoadingAutoApproval(true);
-    try {
-      const token = sessionStorage.getItem("token");
-      const res = await fetch(`${API_BASE_URL}/admin/auto-approval`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}` 
-        },
-        body: JSON.stringify({ enabled: !autoApproval })
-      });
-      const data = await res.json();
-      setAutoApproval(data.enabled);
-    } catch {
-      setModal({
-        show: true,
-        title: "Error",
-        message: "Failed to update auto-approval setting.",
-      });
-    } finally {
-      setLoadingAutoApproval(false);
-    }
-  };
 
   const filteredAndSortedUsers = useMemo(() =>
     users
@@ -236,23 +201,6 @@ const UserApproval = ({
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-50 to-white p-8">
-      <div className="mb-8">
-        <div className="flex items-center gap-4 mb-2">
-          <label className="font-semibold text-sky-900 text-lg">Auto Approval Mode</label>
-          <button
-            onClick={handleToggleAutoApproval}
-            disabled={loadingAutoApproval}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              autoApproval ? "bg-emerald-500 text-white hover:bg-emerald-600" : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-            }`}
-          >
-            {autoApproval ? "Enable" : "Disable"}
-          </button>
-        </div>
-        {autoApproval && (
-          <div className="text-amber-600 font-medium text-sm">Warning: All new user registrations will be automatically approved!</div>
-        )}
-      </div>
       <h2 className="text-3xl font-semibold text-sky-900 mb-8">User Approval</h2>
       <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="relative w-full sm:w-96">
