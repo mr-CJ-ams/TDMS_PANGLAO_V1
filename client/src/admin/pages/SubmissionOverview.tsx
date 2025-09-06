@@ -160,7 +160,6 @@ const SubmissionOverview: React.FC<SubmissionOverviewProps> = ({
   const [invalidAccessCodeModal, setInvalidAccessCodeModal] = useState(false);
   
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
-  const ACCESS_CODE = import.meta.env.VITE_ACCESS_CODE;
 
   // Pagination states for rooms
   const [roomPage, setRoomPage] = useState(1);
@@ -218,20 +217,16 @@ const SubmissionOverview: React.FC<SubmissionOverviewProps> = ({
   };
 
   const confirmPenaltyPayment = async (accessCode: string, receiptNumber: string) => {
-    if (accessCode !== ACCESS_CODE) {
-      setInvalidAccessCodeModal(true);
-      return;
-    }
     if (!currentSubmissionId) return;
-    
+
     setShowAccessCodePrompt(false);
     setLoadingPenalty(p => ({ ...p, [currentSubmissionId]: true }));
-    
+
     try {
       const token = sessionStorage.getItem("token");
       await axios.put(
         `${API_BASE_URL}/api/submissions/penalty/${currentSubmissionId}`,
-        { penalty: true, receipt_number: receiptNumber },
+        { penalty: true, receipt_number: receiptNumber, access_code: accessCode },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setSubmissions(submissions.map(s =>
@@ -243,8 +238,12 @@ const SubmissionOverview: React.FC<SubmissionOverviewProps> = ({
         ...rn,
         [currentSubmissionId]: receiptNumber
       }));
-    } catch (err) {
-      console.error("Error updating penalty status:", err);
+    } catch (err: any) {
+      if (err.response && err.response.status === 401) {
+        setInvalidAccessCodeModal(true);
+      } else {
+        console.error("Error updating penalty status:", err);
+      }
     } finally {
       setLoadingPenalty(p => ({ ...p, [currentSubmissionId]: false }));
     }

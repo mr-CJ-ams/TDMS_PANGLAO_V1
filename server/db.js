@@ -51,7 +51,7 @@
  * Date: [2025-08-21]
  */
 const { Pool } = require("pg");
-require("dotenv").config();
+require("dotenv").config({ path: require('path').resolve(__dirname, "../.env") });
 
 const isProduction = process.env.NODE_ENV === "production";
 

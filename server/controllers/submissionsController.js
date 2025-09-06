@@ -54,7 +54,7 @@
  * Date: [2025-08-19]
  */
 
-
+require("dotenv").config({ path: require('path').resolve(__dirname, "../../.env") });
 
 const { SubmissionModel, pool } = require("../models/submissionModel");
 exports.submit = async (req, res) => {
@@ -183,17 +183,21 @@ exports.details = async (req, res) => {
   }
 };
 
-exports.updatePenalty = async (req, res) => {
+exports.updatePenaltyStatus = async (req, res) => {
+  const { submissionId } = req.params;
+  const { penalty, receipt_number, access_code } = req.body;
+
+  // Validate access code
+  if (!access_code || access_code !== process.env.ACCESS_CODE) {
+    return res.status(401).json({ message: "Invalid access code" });
+  }
+
   try {
-    const { submissionId } = req.params;
-    const { penalty, receipt_number } = req.body;
-    if (typeof penalty !== "boolean") {
-      return res.status(400).json({ error: "Invalid penalty status" });
-    }
+    // Update penalty and receipt_number in the database
     await SubmissionModel.updatePenaltyStatus(submissionId, penalty, receipt_number);
     res.json({ message: "Penalty status updated successfully" });
   } catch (err) {
-    console.error("Penalty error:", err);
+    console.error("Error updating penalty status:", err);
     res.status(500).json({ error: "Failed to update penalty status" });
   }
 };

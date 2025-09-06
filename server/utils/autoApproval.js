@@ -48,6 +48,7 @@
  * Date: [2025-08-21]
  */ 
 
+require("dotenv").config({ path: require('path').resolve(__dirname, "../../.env") });
 let autoApprovalEnabled = process.env.AUTO_APPROVAL_ENABLED === 'true';
 
 function getAutoApproval() {

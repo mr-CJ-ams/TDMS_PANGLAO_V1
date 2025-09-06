@@ -53,6 +53,7 @@
  */
 
 const jwt = require("jsonwebtoken");
+require("dotenv").config({ path: require('path').resolve(__dirname, "../../.env") });
 
 // Authentication: verifies JWT and attaches user to req
 function authenticateToken(req, res, next) {

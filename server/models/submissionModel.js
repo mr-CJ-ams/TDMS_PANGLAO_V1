@@ -211,7 +211,7 @@ class SubmissionModel {
 
   static async updatePenaltyStatus(submissionId, penalty, receipt_number) {
     await pool.query(
-      `UPDATE submissions SET penalty = $1, receipt_number = $2 WHERE submission_id = $3`,
+      "UPDATE submissions SET penalty = $1, receipt_number = $2 WHERE submission_id = $3",
       [penalty, receipt_number, submissionId]
     );
   }

@@ -50,6 +50,7 @@
  * Date: [2025-08-21] 
  */
 
+require("dotenv").config({ path: require('path').resolve(__dirname, "../../.env") });
 const nodemailer = require("nodemailer");
 
 // Email configuration

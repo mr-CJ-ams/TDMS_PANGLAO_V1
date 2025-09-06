@@ -72,7 +72,7 @@ router.get("/metrics/:userId", authenticateToken, submissionsController.getUserM
 router.get("/details/:submissionId", authenticateToken, submissionsController.details);
 
 // Update penalty status for a submission
-router.put("/penalty/:submissionId", authenticateToken, requireAdmin, submissionsController.updatePenalty);
+router.put("/penalty/:submissionId", authenticateToken, requireAdmin, submissionsController.updatePenaltyStatus);
 
 // Delete a submission
 router.delete("/:submissionId", authenticateToken, submissionsController.deleteSubmission);

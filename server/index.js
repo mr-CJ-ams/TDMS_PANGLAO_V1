@@ -61,6 +61,7 @@ const path = require("path");
 const pool = require("./db");
 const cron = require("node-cron");
 const { sendEmailNotification } = require("./utils/email");
+require("dotenv").config({ path: require('path').resolve(__dirname, "../.env") });
 
 const app = express();
 

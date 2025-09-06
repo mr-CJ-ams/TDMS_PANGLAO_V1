@@ -70,7 +70,7 @@
 
 const fs = require("fs");
 const path = require("path");
-require("dotenv").config({ path: path.join(__dirname, "../.env") }); // <-- Move here
+require("dotenv").config({ path: path.join(__dirname, "../../.env") }); // <-- Move here
 const { google } = require("googleapis");
 const cron = require("node-cron"); // For scheduling backup uploads
 
