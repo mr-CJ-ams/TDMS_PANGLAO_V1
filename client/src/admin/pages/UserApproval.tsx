@@ -80,9 +80,13 @@ const UserApproval = ({
   const deactivateUser = async (userId: string | null) => {
     if (!userId) return;
     try {
+      const token = sessionStorage.getItem("token");
       const res = await fetch(`${API_BASE_URL}/admin/deactivate/${userId}`, { 
         method: "PUT", 
-        headers: { "Content-Type": "application/json" } 
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}` // <-- Add this line
+        } 
       });
       const data = await res.json();
       if (res.ok) {
