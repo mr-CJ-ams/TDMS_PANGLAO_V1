@@ -118,8 +118,6 @@ CREATE TABLE draft_submissions (
     CONSTRAINT draft_submissions_user_id_month_year_key UNIQUE (user_id, month, year)
 );
 
--- CREATE INDEX idx_draft_submissions_month_year ON draft_submissions(month, year);
--- CREATE INDEX idx_draft_submissions_stayid ON draft_submissions(("data" ->> 'stayId'));
--- CREATE INDEX idx_draft_submissions_user ON draft_submissions(user_id);
-
-
+CREATE INDEX idx_draft_submissions_month_year ON draft_submissions(month, year);
+CREATE INDEX idx_draft_submissions_stayid ON draft_submissions(("data" ->> 'stayId'));
+CREATE INDEX idx_draft_submissions_user ON draft_submissions(user_id);

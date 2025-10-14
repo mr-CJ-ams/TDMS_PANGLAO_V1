@@ -56,12 +56,8 @@ require("dotenv").config({ path: require('path').resolve(__dirname, "../.env") }
 const isProduction = process.env.NODE_ENV === "production";
 
 const pool = new Pool({
-  user: process.env.POSTGRES_USER,
-  host: process.env.POSTGRES_HOST || 'localhost',
-  database: process.env.POSTGRES_DB,
-  password: process.env.POSTGRES_PASSWORD,
-  port: 5432,
-  ssl: isProduction ? { rejectUnauthorized: false } : false, // Enable SSL only in production
+  connectionString: process.env.DATABASE_URL,
+  ssl: isProduction ? { rejectUnauthorized: false } : false,
 });
 
 module.exports = pool;
