@@ -51,13 +51,11 @@
  * Date: [2025-08-21]
  */
 const { Pool } = require("pg");
-require("dotenv").config({ path: require('path').resolve(__dirname, "../.env") });
-
-const isProduction = process.env.NODE_ENV === "production";
+require("dotenv").config();
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: isProduction ? { rejectUnauthorized: false } : false,
+  ssl: { rejectUnauthorized: false }
 });
 
 module.exports = pool;
