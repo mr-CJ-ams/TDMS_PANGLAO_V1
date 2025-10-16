@@ -58,8 +58,8 @@
  * Date: [2025-08-21]
  */
 
-import { useState, useEffect } from "react";
-import axios from "axios";
+import { useState, useEffect, useMemo } from "react";
+import api from "../../services/api"; // use shared axios instance
 import Filters from "../components/Filters";
 import MonthlyMetrics from "../components/MonthlyMetrics";
 import LineChartComponent from "../components/LineChart";
@@ -104,21 +104,6 @@ interface DemographicData {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
-const predictedData2025: CheckInData[] = [
-  { month: 1, total_check_ins: 72807, isPredicted: true },
-  { month: 2, total_check_ins: 71334, isPredicted: true },
-  { month: 3, total_check_ins: 69434, isPredicted: true },
-  { month: 4, total_check_ins: 72970, isPredicted: true },
-  { month: 5, total_check_ins: 73620, isPredicted: true },
-  { month: 6, total_check_ins: 70163, isPredicted: true },
-  { month: 7, total_check_ins: 0, isPredicted: true },
-  { month: 8, total_check_ins: 0, isPredicted: true },
-  { month: 9, total_check_ins: 0, isPredicted: true },
-  { month: 10, total_check_ins: 0, isPredicted: true },
-  { month: 11, total_check_ins: 0, isPredicted: true },
-  { month: 12, total_check_ins: 0, isPredicted: true },
-];
-
 interface MainDashboardProps {
   user?: {
     role: string;
@@ -140,19 +125,19 @@ const MainDashboard = ({ user }: MainDashboardProps) => {
       try {
         const token = sessionStorage.getItem("token");
         const [checkInsRes, metricsRes, nationalityRes, demographicsRes] = await Promise.all([
-          axios.get<CheckInData[]>(`${API_BASE_URL}/admin/monthly-checkins`, { 
+          api.get<CheckInData[]>("/admin/monthly-checkins", { 
             headers: { Authorization: `Bearer ${token}` }, 
             params: { year: selectedYear } 
           }),
-          axios.get<MonthlyMetric[]>(`${API_BASE_URL}/admin/monthly-metrics`, { 
+          api.get<MonthlyMetric[]>("/admin/monthly-metrics", { 
             headers: { Authorization: `Bearer ${token}` }, 
             params: { year: selectedYear } 
           }),
-          axios.get<NationalityCount[]>(`${API_BASE_URL}/admin/nationality-counts`, { 
+          api.get<NationalityCount[]>("/admin/nationality-counts", { 
             headers: { Authorization: `Bearer ${token}` }, 
             params: { year: selectedYear, month: selectedMonth } 
           }),
-          axios.get<DemographicData[]>(`${API_BASE_URL}/admin/guest-demographics`, { 
+          api.get<DemographicData[]>("/admin/guest-demographics", { 
             headers: { Authorization: `Bearer ${token}` }, 
             params: { year: selectedYear, month: selectedMonth } 
           }),
@@ -182,9 +167,17 @@ const MainDashboard = ({ user }: MainDashboardProps) => {
         };
 
         const checkInsData = fillMonths<CheckInData>(checkInsRes.data);
-        setMonthlyCheckIns(
-          selectedYear === 2025 ? [...checkInsData, ...predictedData2025] : checkInsData
-        );
+
+        // Ensure total_check_ins is a number and normalize months
+        const normalizedCheckIns = checkInsData
+          .map(m => ({
+            ...m,
+            total_check_ins: Number((m as any).total_check_ins) || 0,
+            isPredicted: false
+          }))
+          .sort((a, b) => a.month - b.month);
+        normalizedCheckIns.sort((a, b) => a.month - b.month);
+        setMonthlyCheckIns(normalizedCheckIns);
         
         setMonthlyMetrics(
           fillMonths<MonthlyMetric>(metricsRes.data, [
@@ -211,6 +204,11 @@ const MainDashboard = ({ user }: MainDashboardProps) => {
 
   const toNumber = (v: string | number, d: number = 0): number => 
     isNaN(parseFloat(v as string)) ? d : parseFloat(v as string);
+
+  // If you compute derived values for charts do that with useMemo:
+  const chartData = useMemo(() => {
+    return monthlyCheckIns.slice().sort((a, b) => a.month - b.month);
+  }, [monthlyCheckIns]);
 
   return (
     <div>

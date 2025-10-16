@@ -57,7 +57,7 @@
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import processNationalityCounts from "../utils/processNationalityCounts";
-import axios from "axios";
+import apiClient from "../../services/api"; // FIX: Import the configured apiClient
 import React from "react";
 import regions from "../utils/regions";
 import { Download } from "lucide-react";
@@ -66,22 +66,51 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000
 
 const RegionalDistribution = ({ nationalityCounts, selectedYear, selectedMonth, formatMonth, user }) => {
   const [establishmentData, setEstablishmentData] = React.useState([]);
+  const [error, setError] = React.useState(null);
 
   React.useEffect(() => {
+    const token = sessionStorage.getItem("token");
+    // require both token and admin role
+    if (!token || !(user && user.role === "admin")) {
+      setEstablishmentData([]);
+      setError("Not authenticated or not authorized (admin only).");
+      return;
+    }
+
+    const controller = new AbortController();
+    let mounted = true;
+
     async function fetchEstablishmentData() {
+      setError(null);
       try {
-        const token = sessionStorage.getItem("token");
-        const res = await axios.get(`${API_BASE_URL}/admin/nationality-counts-by-establishment`, {
+        // FIX: Use apiClient instead of axios directly
+        const res = await apiClient.get("/admin/nationality-counts-by-establishment", {
           params: { year: selectedYear, month: selectedMonth },
-          headers: { Authorization: `Bearer ${token}` },
+          signal: controller.signal,
         });
-        setEstablishmentData(res.data);
+        if (mounted) setEstablishmentData(res.data || []);
       } catch (err) {
-        setEstablishmentData([]);
+        if (!mounted) return;
+        if (err?.response?.status === 403) {
+          setError("You don't have permission to view establishment-level data.");
+          setEstablishmentData([]);
+        } else if (err?.name === "CanceledError" || err?.message === "canceled") {
+          // request cancelled
+        } else {
+          console.error("fetchEstablishmentData error:", err);
+          setError("Failed to load establishment data.");
+          setEstablishmentData([]);
+        }
       }
     }
+
     fetchEstablishmentData();
-  }, [selectedYear, selectedMonth]);
+
+    return () => {
+      mounted = false;
+      controller.abort();
+    };
+  }, [selectedYear, selectedMonth, user]);
 
   const processedData = processNationalityCounts(nationalityCounts);
 
@@ -299,9 +328,12 @@ const RegionalDistribution = ({ nationalityCounts, selectedYear, selectedMonth, 
           <Download size={16} />
           DAE-form 2
         </button>
-
       )}
-      {/* <pre>{JSON.stringify(processedData, null, 2)}</pre> For debugging */}
+      {error && (
+        <div style={{ color: "red", marginBottom: "10px" }}>
+          {error}
+        </div>
+      )}
     </div>
   );
 };
