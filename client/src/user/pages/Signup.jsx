@@ -61,7 +61,6 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Eye, EyeOff, Check, X, Mail } from "lucide-react";
-import TourismLogo from "../components/img/Tourism_logo.png";
 import places from "../../components/places.json";
 import DolphinSpinner from "../components/DolphinSpinner";
 
@@ -232,7 +231,7 @@ const Signup = () => {
       <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-2xl max-h-screen overflow-y-auto">
         <div className="flex flex-col items-center mb-8">
           <div className="flex items-center gap-4 mb-4">
-            <img src={TourismLogo} alt="Panglao Logo" className="w-20 h-20 object-contain" />
+            <img src="/img/Tourism_logo.png" alt="Panglao Logo" className="w-20 h-20 object-contain" />
           </div>
           <h1 className="text-xl font-semibold text-center text-gray-800">Panglao Tourist Data Management System</h1>
         </div>

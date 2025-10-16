@@ -26,7 +26,7 @@ const Homepage = () => {
 
   const handleDownload = () => {
     const link = document.createElement('a');
-    link.href = '/src/user/components/files/Panglao-Municipal-Ordinance-No_04.pdf';
+    link.href = '/img/Panglao-Municipal-Ordinance-No_04.pdf';
     link.download = 'Panglao-Municipal-Ordinance-No_04.pdf';
     document.body.appendChild(link);
     link.click();
@@ -508,25 +508,25 @@ const Homepage = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 mb-8">
               <div className="text-center group">
                 <div className="w-16 h-16 mx-auto mb-3 bg-white rounded-full p-2 transform group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <img src="/src/user/components/img/Tourism_logo_1.png" alt="Tourism Logo" className="w-full h-full object-contain" />
+                  <img src="/img/Tourism_logo_1.png" alt="Tourism Logo" className="w-full h-full object-contain" />
                 </div>
                 <p className="text-xs md:text-sm leading-tight">Panglao Municipal Tourism Office</p>
               </div>
               <div className="text-center group">
                 <div className="w-16 h-16 mx-auto mb-3 bg-white rounded-full p-2 transform group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <img src="/src/user/components/img/panglao-logo.png" alt="Panglao Logo" className="w-full h-full object-contain" />
+                  <img src="/img/panglao-logo.png" alt="Panglao Logo" className="w-full h-full object-contain" />
                 </div>
                 <p className="text-xs md:text-sm leading-tight">Municipality of Panglao</p>
               </div>
               <div className="text-center group">
                 <div className="w-16 h-16 mx-auto mb-3 bg-white rounded-full p-2 transform group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <img src="/src/user/components/img/BISU_Logo.png" alt="BISU Logo" className="w-full h-full object-contain" />
+                  <img src="/img/BISU_Logo.png" alt="BISU Logo" className="w-full h-full object-contain" />
                 </div>
                 <p className="text-xs md:text-sm leading-tight">Bohol Island State University-Main Campus</p>
               </div>
               <div className="text-center group">
                 <div className="w-16 h-16 mx-auto mb-3 bg-white rounded-full p-2 transform group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <img src="/src/user/components/img/CEAID_logo.png" alt="CEAID Logo" className="w-full h-full object-contain" />
+                  <img src="/img/CEAID_logo.png" alt="CEAID Logo" className="w-full h-full object-contain" />
                 </div>
                 <p className="text-xs md:text-sm leading-tight">CEAID Extension and Training - BISU MC</p>
               </div>
@@ -581,7 +581,7 @@ const Homepage = () => {
               {/* Republic of the Philippines */}
               <div className="text-center md:text-left">
                 <div className="flex items-center justify-center md:justify-start mb-4">
-                  <img src="/src/user/components/img/Coat_of_arms_of_the_Philippines.png" alt="Philippine Tourism" className="w-12 h-12 mr-3" />
+                  <img src="/img/Coat_of_arms_of_the_Philippines.png" alt="Philippine Tourism" className="w-12 h-12 mr-3" />
                   <div>
                     <h5 className="font-semibold text-cyan-400">Republic of the Philippines</h5>
                     

@@ -53,7 +53,6 @@ import React, { useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import TourismLogo from "../components/img/Tourism_logo.png";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
@@ -80,7 +79,7 @@ const ForgotPassword = () => {
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-cyan-400 to-teal-500 p-4">
       <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
-          <img src={TourismLogo} alt="Panglao Logo 2" className="w-20 h-20 object-contain mb-4" />
+          <img src="/img/Tourism_logo.png" alt="Panglao Logo 2" className="w-20 h-20 object-contain mb-4" />
           <h1 className="text-xl font-semibold text-center text-gray-800">Panglao Tourist Data Management System</h1>
         </div>
         <div className="text-center mb-6">

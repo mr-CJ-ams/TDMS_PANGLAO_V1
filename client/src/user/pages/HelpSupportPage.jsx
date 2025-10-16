@@ -1,10 +1,6 @@
 import React from "react";
 import { Phone, Mail, MapPin, Clock, ArrowLeft } from "lucide-react"; // Icons for contact details
 import { useNavigate } from "react-router-dom";
-import Panglao_lgu_logo from "../components/img/panglao-logo.png"
-import Panglao_tourism_logo from "../components/img/Tourism_logo.png"
-import BISU_logo from "../components/img/BISU_Logo.png"
-import ICpEP_Logo from "../components/img/CpE_Logo.png"
 
 const HelpSupportPage = () => {
   const navigate = useNavigate();
@@ -25,7 +21,7 @@ const HelpSupportPage = () => {
               Back to Login
             </button>
             <div className="flex items-center gap-2">
-              <img src={Panglao_tourism_logo} alt="Tourism Logo" className="w-8 h-8" />
+              <img src="/img/Tourism_logo.png" alt="Tourism Logo" className="w-8 h-8" />
               <span className="text-white font-semibold">TDMS</span>
             </div>
           </div>

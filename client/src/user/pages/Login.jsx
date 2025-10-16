@@ -60,7 +60,6 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff, HelpCircle } from "lucide-react";
-import TourismLogo from "../components/img/Tourism_logo.png";
 import DolphinSpinner from "../components/DolphinSpinner";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
@@ -108,7 +107,7 @@ const Login = () => {
       <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
           <div className="flex items-center gap-4 mb-4">
-            <img src={TourismLogo} alt="Panglao Logo 2" className="w-20 h-20 object-contain" />
+            <img src="/img/Tourism_logo.png" alt="Panglao Logo 2" className="w-20 h-20 object-contain" />
           </div>
           <h1 className="text-xl font-semibold text-center text-gray-800">Panglao Tourist Data Management System</h1>
         </div>

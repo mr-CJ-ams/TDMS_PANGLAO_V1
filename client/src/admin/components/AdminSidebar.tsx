@@ -1,7 +1,6 @@
 import React from "react";
-import 'bootstrap-icons/font/bootstrap-icons.css';
+import "bootstrap-icons/font/bootstrap-icons.css";
 import { Link } from "react-router-dom";
-import TourismLogo from "./img/Tourism_logo_1.png";
 
 interface AdminSidebarProps {
   open: boolean;
@@ -99,12 +98,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       >
         {/* Logo and heading (smaller on mobile) */}
         
-        <div className="text-center mb-4" style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-          <img 
-            src={TourismLogo} 
-            alt="Tourism Logo" 
-            style={{ width: "100px", height: "auto", padding: "5px" }} 
-          />
+        <div className="text-center mb-4">
+          <img src="/img/Tourism_logo_1.png" alt="Tourism Logo" className="w-16 h-16 object-contain" />
         </div>
         <h4 className="sidebar-heading mb-4" style={{ 
           color: "#37474F", 
@@ -151,12 +146,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
         }}
       >
         <div className="sidebar-sticky">
-        <div className="text-center mb-4" style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-          <img 
-            src={TourismLogo} 
-            alt="Tourism Logo" 
-            style={{ width: "100px", height: "auto", padding: "5px" }} 
-          />
+        <div className="text-center mb-4">
+          <img src="/img/Tourism_logo_1.png" alt="Tourism Logo" className="w-16 h-16 object-contain" />
         </div>
           <h4 className="sidebar-heading mb-4" style={{ 
             color: "#37474F", 
