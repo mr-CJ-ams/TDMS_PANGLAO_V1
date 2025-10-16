@@ -57,7 +57,7 @@
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import processNationalityCounts from "../utils/processNationalityCounts";
-import apiClient from "../../services/api"; // FIX: Import the configured apiClient
+import apiClient from "../../services/api";
 import React from "react";
 import regions from "../utils/regions";
 import { Download } from "lucide-react";
@@ -69,21 +69,19 @@ const RegionalDistribution = ({ nationalityCounts, selectedYear, selectedMonth, 
   const [error, setError] = React.useState(null);
 
   React.useEffect(() => {
-    const token = sessionStorage.getItem("token");
-    // require both token and admin role
-    if (!token || !(user && user.role === "admin")) {
-      setEstablishmentData([]);
-      setError("Not authenticated or not authorized (admin only).");
-      return;
-    }
-
     const controller = new AbortController();
     let mounted = true;
 
     async function fetchEstablishmentData() {
       setError(null);
+      // Only admins should fetch per-establishment detailed data
+      if (!user || user.role !== "admin") {
+        // Clear any previous admin-only data and do not call admin endpoint
+        if (mounted) setEstablishmentData([]);
+        return;
+      }
+
       try {
-        // FIX: Use apiClient instead of axios directly
         const res = await apiClient.get("/admin/nationality-counts-by-establishment", {
           params: { year: selectedYear, month: selectedMonth },
           signal: controller.signal,
@@ -185,8 +183,8 @@ const RegionalDistribution = ({ nationalityCounts, selectedYear, selectedMonth, 
     const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
     XLSX.utils.book_append_sheet(workbook, worksheet, "Regional Distribution");
 
-    // --- Per-Establishment Nationality Counts Sheets ---
-    if (establishmentData.length > 0) {
+    // If user is admin and establishmentData exists, include per-establishment sheets
+    if (user && user.role === "admin" && establishmentData && establishmentData.length > 0) {
       const allEstablishments = Array.from(new Set(establishmentData.map(e => e.establishment))).sort((a, b) => a.localeCompare(b));
       const lookup = {};
       establishmentData.forEach(({ establishment, nationality, count }) => {
@@ -308,7 +306,10 @@ const RegionalDistribution = ({ nationalityCounts, selectedYear, selectedMonth, 
   return (
     <div style={{ padding: "20px", backgroundColor: "#E0F7FA" }}>
       <h3 style={{ color: "#37474F", marginBottom: "20px" }}> Top Markets Ranking </h3>
-      {user?.role === "admin" && (
+
+      {/* Export button: available to authenticated users.
+          Admins receive per-establishment sheets; regular users get only aggregated regional data. */}
+      {user ? (
         <button
           style={{
             backgroundColor: "#00BCD4",
@@ -321,14 +322,19 @@ const RegionalDistribution = ({ nationalityCounts, selectedYear, selectedMonth, 
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            gap: "8px", // space between icon and text
+            gap: "8px",
           }}
           onClick={exportToExcel}
         >
           <Download size={16} />
           DAE-form 2
         </button>
+      ) : (
+        <div style={{ color: "#37474F", marginBottom: "12px" }}>
+          Please login to export the regional distribution report.
+        </div>
       )}
+
       {error && (
         <div style={{ color: "red", marginBottom: "10px" }}>
           {error}
