@@ -81,49 +81,112 @@ const execPromise = util.promisify(exec);
 // Google Drive API scope for file access
 const SCOPES = ["https://www.googleapis.com/auth/drive.file"];
 
-// Paths for OAuth2 token and credentials
-const TOKEN_PATH = path.join(__dirname, "token.json");
-const CREDENTIALS_PATH = path.resolve(__dirname, "../", process.env.GOOGLE_OAUTH_CREDENTIALS_PATH);
-
 /**
- * Loads OAuth2 credentials from the credentials JSON file.
+ * Loads OAuth2 credentials from environment variable or file
  */
 function loadCredentials() {
+  // Try to get credentials from environment variable first (for Render.com)
+  if (process.env.GOOGLE_OAUTH_CREDENTIALS_JSON) {
+    console.log("📁 Loading credentials from environment variable...");
+    return JSON.parse(process.env.GOOGLE_OAUTH_CREDENTIALS_JSON);
+  }
+  
+  // Fallback to file system (for local development)
+  const CREDENTIALS_PATH = path.resolve(__dirname, "../", process.env.GOOGLE_OAUTH_CREDENTIALS_PATH || "./config/client_secret.json");
+  console.log("📁 Loading credentials from file:", CREDENTIALS_PATH);
   return JSON.parse(fs.readFileSync(CREDENTIALS_PATH, "utf8"));
+}
+
+/**
+ * Loads token from environment variable or file
+ */
+function loadToken() {
+  // Try to get token from environment variable first (for Render.com)
+  if (process.env.GOOGLE_OAUTH_TOKEN_JSON) {
+    console.log("🔑 Loading token from environment variable...");
+    return JSON.parse(process.env.GOOGLE_OAUTH_TOKEN_JSON);
+  }
+  
+  // Fallback to file system (for local development)
+  const TOKEN_PATH = path.join(__dirname, "token.json");
+  console.log("🔑 Loading token from file:", TOKEN_PATH);
+  
+  if (fs.existsSync(TOKEN_PATH)) {
+    return JSON.parse(fs.readFileSync(TOKEN_PATH, "utf8"));
+  }
+  
+  throw new Error("No OAuth token found. Please set GOOGLE_OAUTH_TOKEN_JSON environment variable.");
+}
+
+/**
+ * Saves token to file (for local development only)
+ */
+function saveToken(token) {
+  // Only save to file if we're not using environment variables
+  if (!process.env.GOOGLE_OAUTH_TOKEN_JSON) {
+    const TOKEN_PATH = path.join(__dirname, "token.json");
+    fs.writeFileSync(TOKEN_PATH, JSON.stringify(token, null, 2));
+    console.log("💾 Token saved to file:", TOKEN_PATH);
+  }
 }
 
 /**
  * Handles OAuth2 authentication.
  */
 function authorize(credentials, callback) {
-  const { client_secret, client_id, redirect_uris } = credentials.installed;
-  const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
+  const { client_secret, client_id, redirect_uris } = credentials.installed || credentials.web;
+  const oAuth2Client = new google.auth.OAuth2(
+    client_id, 
+    client_secret, 
+    redirect_uris ? redirect_uris[0] : 'http://localhost'
+  );
 
-  if (fs.existsSync(TOKEN_PATH)) {
-    oAuth2Client.setCredentials(JSON.parse(fs.readFileSync(TOKEN_PATH, "utf8")));
+  try {
+    const token = loadToken();
+    oAuth2Client.setCredentials(token);
+    console.log("✅ OAuth token loaded successfully");
     callback(oAuth2Client);
-  } else {
-    getAccessToken(oAuth2Client, callback);
+  } catch (error) {
+    console.log("❌ No valid token found:", error.message);
+    if (process.env.NODE_ENV === 'production') {
+      console.error("Cannot use interactive auth in production. Please provide a valid token via GOOGLE_OAUTH_TOKEN_JSON environment variable.");
+      process.exit(1);
+    } else {
+      getAccessToken(oAuth2Client, callback);
+    }
   }
 }
 
 /**
  * Prompts the user to authenticate via browser and saves the access token.
+ * Only works in local development.
  */
 function getAccessToken(oAuth2Client, callback) {
+  if (process.env.NODE_ENV === 'production') {
+    console.error("Interactive authentication not available in production.");
+    console.error("Please provide a valid OAuth token via GOOGLE_OAUTH_TOKEN_JSON environment variable.");
+    process.exit(1);
+    return;
+  }
+
   const authUrl = oAuth2Client.generateAuthUrl({
     access_type: "offline",
     scope: SCOPES,
   });
-  console.log("Authorize this app by visiting this url:\n", authUrl);
+  console.log("🌐 Authorize this app by visiting this URL:\n", authUrl);
   process.stdout.write("Enter the code from that page here: ");
+  
   process.stdin.once("data", (data) => {
     const code = data.toString().trim();
     oAuth2Client.getToken(code, (err, token) => {
-      if (err) return console.error("Error retrieving access token", err);
+      if (err) {
+        console.error("❌ Error retrieving access token:", err);
+        process.exit(1);
+        return;
+      }
       oAuth2Client.setCredentials(token);
-      fs.writeFileSync(TOKEN_PATH, JSON.stringify(token));
-      console.log("Token stored to", TOKEN_PATH);
+      saveToken(token);
+      console.log("✅ Token stored successfully");
       callback(oAuth2Client);
     });
   });
@@ -138,6 +201,11 @@ async function createDatabaseDump() {
   const dumpFilePath = path.join(__dirname, dumpFileName);
   
   const connectionString = process.env.DATABASE_URL;
+  
+  if (!connectionString) {
+    console.error("❌ DATABASE_URL environment variable is not set");
+    return null;
+  }
   
   try {
     console.log(`🔄 Creating database dump: ${dumpFileName}`);
@@ -306,55 +374,76 @@ async function performScheduledBackup(auth, folderId, maxBackups, backupType) {
   }
 }
 
-// Load credentials and configuration
-const credentials = loadCredentials();
-const GDRIVE_DAILY_FOLDER_ID = process.env.GDRIVE_DAILY_FOLDER_ID;
-const GDRIVE_MONTHLY_FOLDER_ID = process.env.GDRIVE_MONTHLY_FOLDER_ID;
-const MAX_DAILY_BACKUPS = parseInt(process.env.MAX_DAILY_BACKUPS, 10) || 31;
-const MAX_MONTHLY_BACKUPS = parseInt(process.env.MAX_MONTHLY_BACKUPS, 10) || 12;
+// Main execution
+try {
+  console.log("🚀 Initializing Automated Backup System...");
+  console.log("📍 Environment:", process.env.NODE_ENV || 'development');
+  
+  // Load credentials and configuration
+  const credentials = loadCredentials();
+  const GDRIVE_DAILY_FOLDER_ID = process.env.GDRIVE_DAILY_FOLDER_ID;
+  const GDRIVE_MONTHLY_FOLDER_ID = process.env.GDRIVE_MONTHLY_FOLDER_ID;
+  const MAX_DAILY_BACKUPS = parseInt(process.env.MAX_DAILY_BACKUPS, 10) || 31;
+  const MAX_MONTHLY_BACKUPS = parseInt(process.env.MAX_MONTHLY_BACKUPS, 10) || 12;
 
-// Main authorization and scheduling logic
-authorize(credentials, (auth) => {
-  console.log("✅ Google Drive authentication successful!");
-  console.log("🚀 Starting automated backup system...");
-  console.log(`📁 Daily backups folder: ${GDRIVE_DAILY_FOLDER_ID}`);
-  console.log(`📁 Monthly backups folder: ${GDRIVE_MONTHLY_FOLDER_ID}`);
-  console.log(`📊 Daily retention: ${MAX_DAILY_BACKUPS} files`);
-  console.log(`📊 Monthly retention: ${MAX_MONTHLY_BACKUPS} files`);
-  
-  /**
-   * DAILY BACKUP CRON JOB
-   * Runs every day at 2:00 AM
-   * - Creates database dump and uploads to daily folder
-   * - Maintains FIFO retention (deletes oldest when limit reached)
-   */
-  cron.schedule("0 2 * * *", async () => {
-    await performScheduledBackup(auth, GDRIVE_DAILY_FOLDER_ID, MAX_DAILY_BACKUPS, "DAILY");
+  // Validate required environment variables
+  if (!GDRIVE_DAILY_FOLDER_ID || !GDRIVE_MONTHLY_FOLDER_ID) {
+    throw new Error("Missing required environment variables: GDRIVE_DAILY_FOLDER_ID and GDRIVE_MONTHLY_FOLDER_ID");
+  }
+
+  // Main authorization and scheduling logic
+  authorize(credentials, (auth) => {
+    console.log("✅ Google Drive authentication successful!");
+    console.log("🚀 Starting automated backup system...");
+    console.log(`📁 Daily backups folder: ${GDRIVE_DAILY_FOLDER_ID}`);
+    console.log(`📁 Monthly backups folder: ${GDRIVE_MONTHLY_FOLDER_ID}`);
+    console.log(`📊 Daily retention: ${MAX_DAILY_BACKUPS} files`);
+    console.log(`📊 Monthly retention: ${MAX_MONTHLY_BACKUPS} files`);
+    
+    /**
+     * DAILY BACKUP CRON JOB
+     * Runs every day at 2:00 AM
+     */
+    cron.schedule("0 2 * * *", async () => {
+      await performScheduledBackup(auth, GDRIVE_DAILY_FOLDER_ID, MAX_DAILY_BACKUPS, "DAILY");
+    });
+    console.log("✅ Daily backup scheduler enabled (runs at 2:00 AM daily)");
+    
+    /**
+     * MONTHLY BACKUP CRON JOB
+     * Runs on 1st day of month at 2:00 AM
+     */
+    cron.schedule("0 2 1 * *", async () => {
+      await performScheduledBackup(auth, GDRIVE_MONTHLY_FOLDER_ID, MAX_MONTHLY_BACKUPS, "MONTHLY");
+    });
+    console.log("✅ Monthly backup scheduler enabled (runs at 2:00 AM on 1st day of month)");
+    
+    console.log("\n📋 Backup Schedule Summary:");
+    console.log("   ┌─────────────────┬──────────────────┬─────────────┐");
+    console.log("   │     Type        │     Schedule     │   Retention │");
+    console.log("   ├─────────────────┼──────────────────┼─────────────┤");
+    console.log("   │ Daily Backups   │ Every day 2:00 AM│ 31 files    │");
+    console.log("   │ Monthly Backups │ 1st day 2:00 AM  │ 12 files    │");
+    console.log("   └─────────────────┴──────────────────┴─────────────┘");
+    
+    // Handle graceful shutdown
+    process.on('SIGINT', () => {
+      console.log('\n🛑 Shutting down backup system...');
+      process.exit(0);
+    });
+
+    process.on('SIGTERM', () => {
+      console.log('\n🛑 Received SIGTERM, shutting down backup system...');
+      process.exit(0);
+    });
   });
-  console.log("✅ Daily backup scheduler enabled (runs at 2:00 AM daily)");
-  
-  /**
-   * MONTHLY BACKUP CRON JOB
-   * Runs on 1st day of month at 2:00 AM
-   * - Creates database dump and uploads to monthly folder
-   * - Maintains FIFO retention (deletes oldest when limit reached)
-   */
-  cron.schedule("0 2 1 * *", async () => {
-    await performScheduledBackup(auth, GDRIVE_MONTHLY_FOLDER_ID, MAX_MONTHLY_BACKUPS, "MONTHLY");
-  });
-  console.log("✅ Monthly backup scheduler enabled (runs at 2:00 AM on 1st day of month)");
-  
-  console.log("\n📋 Backup Schedule Summary:");
-  console.log("   ┌─────────────────┬──────────────────┬─────────────┐");
-  console.log("   │     Type        │     Schedule     │   Retention │");
-  console.log("   ├─────────────────┼──────────────────┼─────────────┤");
-  console.log("   │ Daily Backups   │ Every day 2:00 AM│ 31 files    │");
-  console.log("   │ Monthly Backups │ 1st day 2:00 AM  │ 12 files    │");
-  console.log("   └─────────────────┴──────────────────┴─────────────┘");
-  
-  // Handle graceful shutdown
-  process.on('SIGINT', () => {
-    console.log('\n🛑 Shutting down backup system...');
-    process.exit(0);
-  });
-});
+
+} catch (error) {
+  console.error("❌ Failed to initialize backup system:", error.message);
+  console.log("\n🔧 Setup Instructions for Render.com:");
+  console.log("1. Set GOOGLE_OAUTH_CREDENTIALS_JSON environment variable with your credentials JSON");
+  console.log("2. Set GOOGLE_OAUTH_TOKEN_JSON environment variable with your token JSON");
+  console.log("3. Ensure DATABASE_URL is set to your PostgreSQL connection string");
+  console.log("4. Set GDRIVE_DAILY_FOLDER_ID and GDRIVE_MONTHLY_FOLDER_ID");
+  process.exit(1);
+}
