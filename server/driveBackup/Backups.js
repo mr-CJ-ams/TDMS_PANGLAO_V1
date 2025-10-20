@@ -1,5 +1,5 @@
 /**
- * oauthDriveUpload.js
+ * Backups.js
  * 
  * Automated Google Drive Backup Uploader for Panglao TDMS
  * 
@@ -70,9 +70,13 @@
 
 const fs = require("fs");
 const path = require("path");
-require("dotenv").config({ path: path.join(__dirname, "../../.env") }); // <-- Move here
+require("dotenv").config({ path: path.join(__dirname, "../../.env") });
 const { google } = require("googleapis");
-const cron = require("node-cron"); // For scheduling backup uploads
+const cron = require("node-cron");
+const { exec } = require("child_process");
+const util = require("util");
+
+const execPromise = util.promisify(exec);
 
 // Google Drive API scope for file access
 const SCOPES = ["https://www.googleapis.com/auth/drive.file"];
@@ -83,7 +87,6 @@ const CREDENTIALS_PATH = path.resolve(__dirname, "../", process.env.GOOGLE_OAUTH
 
 /**
  * Loads OAuth2 credentials from the credentials JSON file.
- * @returns {Object} Parsed credentials object.
  */
 function loadCredentials() {
   return JSON.parse(fs.readFileSync(CREDENTIALS_PATH, "utf8"));
@@ -91,10 +94,6 @@ function loadCredentials() {
 
 /**
  * Handles OAuth2 authentication.
- * If token.json exists, uses the saved token.
- * Otherwise, prompts the user to authenticate and saves the token.
- * @param {Object} credentials - OAuth2 credentials.
- * @param {Function} callback - Function to call with authenticated client.
  */
 function authorize(credentials, callback) {
   const { client_secret, client_id, redirect_uris } = credentials.installed;
@@ -110,8 +109,6 @@ function authorize(credentials, callback) {
 
 /**
  * Prompts the user to authenticate via browser and saves the access token.
- * @param {OAuth2Client} oAuth2Client - OAuth2 client.
- * @param {Function} callback - Function to call with authenticated client.
  */
 function getAccessToken(oAuth2Client, callback) {
   const authUrl = oAuth2Client.generateAuthUrl({
@@ -133,12 +130,38 @@ function getAccessToken(oAuth2Client, callback) {
 }
 
 /**
+ * Creates a PostgreSQL database dump using pg_dump
+ */
+async function createDatabaseDump() {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const dumpFileName = `panglao_tdms_backup_${timestamp}.dump`;
+  const dumpFilePath = path.join(__dirname, dumpFileName);
+  
+  const connectionString = process.env.DATABASE_URL;
+  
+  try {
+    console.log(`🔄 Creating database dump: ${dumpFileName}`);
+    
+    // Use pg_dump to create backup
+    const { stdout, stderr } = await execPromise(
+      `pg_dump "${connectionString}" --format=custom --file="${dumpFilePath}"`
+    );
+    
+    if (stderr) {
+      console.warn("pg_dump warnings:", stderr);
+    }
+    
+    console.log(`✅ Database dump created: ${dumpFileName}`);
+    return dumpFilePath;
+    
+  } catch (error) {
+    console.error("❌ Failed to create database dump:", error.message);
+    return null;
+  }
+}
+
+/**
  * Uploads a file to Google Drive in the specified folder.
- * @param {OAuth2Client} auth - Authenticated OAuth2 client.
- * @param {string} filePath - Local path to the file.
- * @param {string} fileName - Name to use in Google Drive.
- * @param {string} folderId - Google Drive folder ID.
- * @returns {Object|null} Uploaded file metadata or null on error.
  */
 async function uploadFile(auth, filePath, fileName, folderId) {
   const drive = google.drive({ version: "v3", auth });
@@ -152,29 +175,25 @@ async function uploadFile(auth, filePath, fileName, folderId) {
         mimeType: "application/octet-stream",
         body: fs.createReadStream(filePath),
       },
-      fields: "id, name, webViewLink, createdTime",
+      fields: "id, name, webViewLink, createdTime, size",
     });
-    console.log("File uploaded:", res.data);
+    console.log("✅ File uploaded to Google Drive:", res.data.name);
     return res.data;
   } catch (err) {
-    console.error("Error uploading file:", err);
+    console.error("❌ Error uploading file:", err);
     return null;
   }
 }
 
 /**
  * Lists backup files in a specific Google Drive folder.
- * Filters by file name and sorts by creation time.
- * @param {OAuth2Client} auth - Authenticated OAuth2 client.
- * @param {string} folderId - Google Drive folder ID.
- * @returns {Array} List of file metadata objects.
  */
 async function listBackupFiles(auth, folderId) {
   const drive = google.drive({ version: "v3", auth });
   try {
     const res = await drive.files.list({
       q: `'${folderId}' in parents and name contains 'panglao_tdms_backup_' and trashed = false`,
-      fields: "files(id, name, createdTime)",
+      fields: "files(id, name, createdTime, size)",
       orderBy: "createdTime",
     });
     return res.data.files || [];
@@ -186,88 +205,156 @@ async function listBackupFiles(auth, folderId) {
 
 /**
  * Deletes a file from Google Drive by file ID.
- * @param {OAuth2Client} auth - Authenticated OAuth2 client.
- * @param {string} fileId - Google Drive file ID.
  */
 async function deleteFile(auth, fileId) {
   const drive = google.drive({ version: "v3", auth });
   try {
     await drive.files.delete({ fileId });
-    console.log("Deleted old backup file:", fileId);
+    console.log("🗑️ Deleted old backup file from Google Drive");
   } catch (err) {
     console.error("Error deleting file:", err);
   }
 }
 
-// Load credentials and set up backup directory and configuration from environment variables
+/**
+ * Cleans up local dump file after upload
+ */
+function cleanupLocalFile(filePath) {
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log(`🧹 Cleaned up local file: ${path.basename(filePath)}`);
+    }
+  } catch (error) {
+    console.error("Error cleaning up local file:", error.message);
+  }
+}
+
+/**
+ * Manages backup retention - deletes oldest files when limit is reached
+ */
+async function manageRetention(auth, folderId, maxBackups, backupType) {
+  try {
+    const backupFiles = await listBackupFiles(auth, folderId);
+    
+    if (backupFiles.length >= maxBackups) {
+      console.log(`📊 ${backupType} folder has ${backupFiles.length} files (max: ${maxBackups})`);
+      
+      // Sort by creation time (oldest first)
+      backupFiles.sort((a, b) => new Date(a.createdTime) - new Date(b.createdTime));
+      
+      // Calculate how many files to delete
+      const filesToDeleteCount = backupFiles.length - maxBackups + 1; // +1 because we're about to add a new file
+      const filesToDelete = backupFiles.slice(0, filesToDeleteCount);
+      
+      console.log(`🧹 Need to delete ${filesToDeleteCount} old ${backupType.toLowerCase()} backup(s)`);
+      
+      // Delete the oldest files
+      for (const file of filesToDelete) {
+        console.log(`🗑️ Deleting: ${file.name} (${new Date(file.createdTime).toLocaleDateString()})`);
+        await deleteFile(auth, file.id);
+      }
+      
+      return filesToDeleteCount;
+    }
+    
+    return 0;
+  } catch (error) {
+    console.error(`Error managing ${backupType.toLowerCase()} retention:`, error.message);
+    return 0;
+  }
+}
+
+/**
+ * Performs backup and uploads to specified folder with retention management
+ */
+async function performScheduledBackup(auth, folderId, maxBackups, backupType) {
+  console.log(`\n⏰ [${new Date().toISOString()}] Starting ${backupType.toLowerCase()} backup...`);
+  
+  try {
+    // 1. Manage retention first (delete old files if needed)
+    const deletedCount = await manageRetention(auth, folderId, maxBackups, backupType);
+    
+    // 2. Create database dump
+    const dumpFilePath = await createDatabaseDump();
+    if (!dumpFilePath) {
+      console.log("❌ Backup aborted: Could not create database dump");
+      return;
+    }
+    
+    const fileName = path.basename(dumpFilePath);
+    
+    // 3. Upload to Google Drive
+    const uploadResult = await uploadFile(auth, dumpFilePath, fileName, folderId);
+    
+    if (uploadResult) {
+      console.log(`✅ ${backupType} backup completed successfully!`);
+      console.log(`📁 File: ${uploadResult.name}`);
+      console.log(`🔗 View: ${uploadResult.webViewLink}`);
+      console.log(`💾 Size: ${Math.round(uploadResult.size / 1024 / 1024)}MB`);
+      
+      if (deletedCount > 0) {
+        console.log(`🗑️ Cleaned up ${deletedCount} old backup(s) to maintain limit of ${maxBackups}`);
+      }
+    }
+    
+    // 4. Clean up local dump file
+    cleanupLocalFile(dumpFilePath);
+    
+  } catch (error) {
+    console.error(`❌ ${backupType} backup failed:`, error.message);
+  }
+}
+
+// Load credentials and configuration
 const credentials = loadCredentials();
-const BACKUP_DIR = path.join(__dirname, "../backups");
 const GDRIVE_DAILY_FOLDER_ID = process.env.GDRIVE_DAILY_FOLDER_ID;
+const GDRIVE_MONTHLY_FOLDER_ID = process.env.GDRIVE_MONTHLY_FOLDER_ID;
 const MAX_DAILY_BACKUPS = parseInt(process.env.MAX_DAILY_BACKUPS, 10) || 31;
+const MAX_MONTHLY_BACKUPS = parseInt(process.env.MAX_MONTHLY_BACKUPS, 10) || 12;
 
 // Main authorization and scheduling logic
 authorize(credentials, (auth) => {
+  console.log("✅ Google Drive authentication successful!");
+  console.log("🚀 Starting automated backup system...");
+  console.log(`📁 Daily backups folder: ${GDRIVE_DAILY_FOLDER_ID}`);
+  console.log(`📁 Monthly backups folder: ${GDRIVE_MONTHLY_FOLDER_ID}`);
+  console.log(`📊 Daily retention: ${MAX_DAILY_BACKUPS} files`);
+  console.log(`📊 Monthly retention: ${MAX_MONTHLY_BACKUPS} files`);
+  
   /**
-   * Daily Backup Cron Job
-   * Runs every day at 2:00 am.
-   * - Uploads the latest backup file to the daily Google Drive folder.
-   * - Maintains a maximum number of daily backups (FIFO: deletes oldest if limit reached).
+   * DAILY BACKUP CRON JOB
+   * Runs every day at 2:00 AM
+   * - Creates database dump and uploads to daily folder
+   * - Maintains FIFO retention (deletes oldest when limit reached)
    */
   cron.schedule("0 2 * * *", async () => {
-    const files = fs.readdirSync(BACKUP_DIR).filter(f => f.endsWith(".dump"));
-    if (files.length === 0) {
-      console.log("No backup file found in", BACKUP_DIR);
-      return;
-    }
-    // Get the latest backup file (by name, assuming naming is chronological)
-    const latestFile = files.sort().reverse()[0];
-    const filePath = path.join(BACKUP_DIR, latestFile);
-
-    // List current backup files in the daily folder
-    const backupFiles = await listBackupFiles(auth, GDRIVE_DAILY_FOLDER_ID);
-
-    // If at max retention, delete the oldest file (FIFO)
-    if (backupFiles.length >= MAX_DAILY_BACKUPS) {
-      backupFiles.sort((a, b) => new Date(a.createdTime) - new Date(b.createdTime));
-      const oldest = backupFiles[0];
-      await deleteFile(auth, oldest.id);
-    }
-
-    // Upload the latest backup file
-    await uploadFile(auth, filePath, latestFile, GDRIVE_DAILY_FOLDER_ID);
+    await performScheduledBackup(auth, GDRIVE_DAILY_FOLDER_ID, MAX_DAILY_BACKUPS, "DAILY");
   });
-
+  console.log("✅ Daily backup scheduler enabled (runs at 2:00 AM daily)");
+  
   /**
-   * Monthly Backup Cron Job
-   * Runs every 1st day of the month at 2:00 am.
-   * - Uploads the latest backup file to the monthly Google Drive folder.
-   * - Maintains a maximum number of monthly backups (FIFO: deletes oldest if limit reached).
+   * MONTHLY BACKUP CRON JOB
+   * Runs on 1st day of month at 2:00 AM
+   * - Creates database dump and uploads to monthly folder
+   * - Maintains FIFO retention (deletes oldest when limit reached)
    */
-  const GDRIVE_MONTHLY_FOLDER_ID = process.env.GDRIVE_MONTHLY_FOLDER_ID;
-  const MAX_MONTHLY_BACKUPS = parseInt(process.env.MAX_MONTHLY_BACKUPS, 10) || 12;
-
   cron.schedule("0 2 1 * *", async () => {
-    const files = fs.readdirSync(BACKUP_DIR).filter(f => f.endsWith(".dump"));
-    if (files.length === 0) {
-      console.log("No backup file found in", BACKUP_DIR);
-      return;
-    }
-    // Get the latest backup file (by name, assuming naming is chronological)
-    const latestFile = files.sort().reverse()[0];
-    const filePath = path.join(BACKUP_DIR, latestFile);
-
-    // List current backup files in the monthly folder
-    const backupFiles = await listBackupFiles(auth, GDRIVE_MONTHLY_FOLDER_ID);
-
-    // If at max retention, delete the oldest file (FIFO)
-    if (backupFiles.length >= MAX_MONTHLY_BACKUPS) {
-      backupFiles.sort((a, b) => new Date(a.createdTime) - new Date(b.createdTime));
-      const oldest = backupFiles[0];
-      await deleteFile(auth, oldest.id);
-    }
-
-    // Upload the latest backup file
-    await uploadFile(auth, filePath, latestFile, GDRIVE_MONTHLY_FOLDER_ID);
-    console.log("Monthly backup uploaded to GDrive.");
+    await performScheduledBackup(auth, GDRIVE_MONTHLY_FOLDER_ID, MAX_MONTHLY_BACKUPS, "MONTHLY");
+  });
+  console.log("✅ Monthly backup scheduler enabled (runs at 2:00 AM on 1st day of month)");
+  
+  console.log("\n📋 Backup Schedule Summary:");
+  console.log("   ┌─────────────────┬──────────────────┬─────────────┐");
+  console.log("   │     Type        │     Schedule     │   Retention │");
+  console.log("   ├─────────────────┼──────────────────┼─────────────┤");
+  console.log("   │ Daily Backups   │ Every day 2:00 AM│ 31 files    │");
+  console.log("   │ Monthly Backups │ 1st day 2:00 AM  │ 12 files    │");
+  console.log("   └─────────────────┴──────────────────┴─────────────┘");
+  
+  // Handle graceful shutdown
+  process.on('SIGINT', () => {
+    console.log('\n🛑 Shutting down backup system...');
+    process.exit(0);
   });
 });
