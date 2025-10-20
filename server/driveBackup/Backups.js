@@ -493,7 +493,7 @@ const server = http.createServer((req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.BACKUP_PORT || 3000;
 server.listen(PORT, () => {
   console.log(`\n🌐 HTTP Server started on port ${PORT}`);
   console.log(`🔍 Health check available at: http://localhost:${PORT}`);
