@@ -447,3 +447,60 @@ try {
   console.log("4. Set GDRIVE_DAILY_FOLDER_ID and GDRIVE_MONTHLY_FOLDER_ID");
   process.exit(1);
 }
+
+// =============================================================================
+// HTTP Server for Render.com Port Binding
+// =============================================================================
+const http = require('http');
+
+const server = http.createServer((req, res) => {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.writeHead(200);
+    res.end();
+    return;
+  }
+  
+  // Only respond to GET requests
+  if (req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    
+    const healthResponse = {
+      status: 'Backup system is running',
+      service: 'Automated Google Drive Backup',
+      environment: process.env.NODE_ENV || 'development',
+      schedules: {
+        daily: 'Every day at 2:00 AM',
+        monthly: '1st day of month at 2:00 AM'
+      },
+      retention: {
+        daily: process.env.MAX_DAILY_BACKUPS || 31,
+        monthly: process.env.MAX_MONTHLY_BACKUPS || 12
+      },
+      timestamp: new Date().toISOString(),
+      uptime: `${Math.floor(process.uptime())} seconds`
+    };
+    
+    res.end(JSON.stringify(healthResponse, null, 2));
+  } else {
+    res.writeHead(405, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Method not allowed' }));
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`\n🌐 HTTP Server started on port ${PORT}`);
+  console.log(`🔍 Health check available at: http://localhost:${PORT}`);
+  console.log(`✅ Backup system is now fully operational!`);
+});
+
+// Handle server errors
+server.on('error', (error) => {
+  console.error('❌ HTTP Server error:', error.message);
+});
