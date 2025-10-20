@@ -50,12 +50,39 @@
  * Author: Carlojead Amaquin
  * Date: [2025-08-21]
  */
+const path = require("path");
 const { Pool } = require("pg");
-require("dotenv").config();
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-});
+// ensure .env from project root is loaded when this module is required
+require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
+
+// treat SSL as required only in production or when explicitly requested
+const isProduction =
+  process.env.NODE_ENV === "production" ||
+  process.env.PGSSLMODE === "require" ||
+  (process.env.DATABASE_URL && process.env.DATABASE_URL.includes("sslmode=require"));
+
+const poolConfig = {
+  connectionString: process.env.DATABASE_URL
+};
+
+if (isProduction) {
+  poolConfig.ssl = { rejectUnauthorized: false };
+}
+
+const pool = new Pool(poolConfig);
+
+// quick startup test/log so errors are visible immediately
+(async () => {
+  try {
+    const client = await pool.connect();
+    client.release();
+    console.log("✅ Database connected");
+  } catch (err) {
+    console.error("❌ Database connection error:", err.message || err);
+  }
+})();
+
+pool.on("error", (err) => console.error("Unexpected idle client error:", err));
 
 module.exports = pool;
