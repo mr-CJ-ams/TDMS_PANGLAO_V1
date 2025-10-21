@@ -1,0 +1,11 @@
+[build]
+builder = "nixpacks"
+buildCommand = "npm run install-all && npm run build"
+
+[deploy]
+startCommand = "npm start"
+
+[[services]]
+name = "web"
+[[services.ports]]
+port = 5000
