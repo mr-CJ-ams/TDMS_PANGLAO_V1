@@ -84,6 +84,60 @@ app.use("/auth", authRoutes);
 app.use("/admin", adminRoutes);
 app.use("/api/submissions", submissionsRoutes);
 
+// ADD THIS ROUTE - IP Detection for Render
+app.get('/api/server-info', async (req, res) => {
+  try {
+    const publicIP = await getPublicIP();
+    
+    const serverInfo = {
+      timestamp: new Date().toISOString(),
+      publicIP: publicIP,
+      renderInstance: process.env.RENDER ? 'Yes' : 'No',
+      host: req.headers.host,
+      // These headers help identify the actual client IP behind Render's proxy
+      clientIP: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+      realIP: req.ip,
+      // Render-specific headers
+      renderHeaders: {
+        xForwardedFor: req.headers['x-forwarded-for'],
+        xRealIP: req.headers['x-real-ip'],
+        xForwardedHost: req.headers['x-forwarded-host'],
+        xForwardedProto: req.headers['x-forwarded-proto']
+      }
+    };
+
+    console.log('Server Info Requested:', serverInfo);
+    
+    res.json({
+      success: true,
+      message: 'Use the publicIP value for your SPF record update',
+      data: serverInfo,
+      spfInstructions: `Give this IP to IT for SPF update: ip4:${publicIP}`
+    });
+  } catch (error) {
+    console.error('Error getting server info:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Helper function to get public IP
+async function getPublicIP() {
+  return new Promise((resolve, reject) => {
+    const https = require('https');
+    https.get('https://api.ipify.org', (res) => {
+      let data = '';
+      res.on('data', (chunk) => data += chunk);
+      res.on('end', () => resolve(data));
+    }).on('error', (err) => {
+      reject(err);
+    });
+  });
+}
+
+
 // Handle React routing, return all requests to React app
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../client/build", "index.html"));
