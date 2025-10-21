@@ -49,27 +49,40 @@
  * Author: Carlojead Amaquin
  * Date: [2025-08-21] 
  */
-
 require("dotenv").config({ path: require('path').resolve(__dirname, "../../.env") });
 const nodemailer = require("nodemailer");
 
 // Email configuration
 const transporter = nodemailer.createTransport({
-  service: "gmail", // Use your email service
-  auth: {
-    user: process.env.EMAIL_USER, // Your email
-    pass: process.env.EMAIL_PASSWORD, // Your email password or app-specific password
+  host: process.env.SMTP_HOST,
+  secure: process.env.SMTP_SECURE !== "false",
+  secureConnection: process.env.SMTP_SECURE_CONNECTION === "true",
+  tls: {
+    rejectUnauthorized: process.env.SMTP_TLS_REJECT_UNAUTHORIZED === "true"
   },
+  port: process.env.SMTP_PORT,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASSWORD
+  }
 });
 
-// Function to send email notification (Promise-based)
+// Verify transporter on startup
+transporter.verify(function (error, success) {
+  if (error) {
+    console.error('❌ SMTP connection error:', error.message);
+  } else {
+    console.log('✅ SMTP server is ready to send emails');
+  }
+});
+
 const sendEmailNotification = (email, subject, message) => {
   const mailOptions = {
-    from: process.env.EMAIL_USER, // Use environment variable with fallback
+    from: process.env.EMAIL_FROM,
     to: email,
     subject: subject,
     text: message,
-    html: `<p>${message}</p>`, // Optional: Add HTML content for better formatting
+    html: `<p>${message}</p>`,
   };
 
   return new Promise((resolve, reject) => {
