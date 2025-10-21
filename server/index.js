@@ -58,6 +58,7 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const fs = require("fs");
 const pool = require("./db");
 const cron = require("node-cron");
 const { sendEmailNotification } = require("./utils/email");
@@ -73,7 +74,14 @@ app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Serve static files from the React app - WORKS FOR BOTH LOCAL & PRODUCTION
-const reactBuildPath = path.join(__dirname, process.env.NODE_ENV === 'production' ? "../../client/dist" : "../client/build");
+// Resolve a build folder robustly (dist vs build) so deployment platforms don't break
+const possibleClientPaths = [
+  path.join(__dirname, "..", "client", "build"),   // common create-react-app output
+  path.join(__dirname, "..", "client", "dist"),    // common Vite output
+  path.join(__dirname, "..", "..", "client", "build"),
+  path.join(__dirname, "..", "..", "client", "dist")
+];
+const reactBuildPath = possibleClientPaths.find(p => fs.existsSync(p)) || path.join(__dirname, "..", "client", "build");
 app.use(express.static(reactBuildPath));
 
 // Routes
@@ -131,8 +139,12 @@ async function getPublicIP() {
 
 // Handle React routing - WORKS FOR BOTH LOCAL & PRODUCTION
 app.get("*", (req, res) => {
-  const reactIndexPath = path.join(__dirname, process.env.NODE_ENV === 'production' ? "../../client/dist" : "../client/build", "index.html");
-  res.sendFile(reactIndexPath);
+  const reactIndexPath = path.join(reactBuildPath, "index.html");
+  if (fs.existsSync(reactIndexPath)) {
+    res.sendFile(reactIndexPath);
+  } else {
+    res.status(404).send("Frontend build not found. Run client build and redeploy.");
+  }
 });
 
 app.get('/api/test-error', (req, res, next) => {
