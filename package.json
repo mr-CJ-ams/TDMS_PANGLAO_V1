@@ -12,5 +12,19 @@
   },
   "devDependencies": {
     "concurrently": "^7.6.0"
-  }
+  },
+  "description": "[![System Tutorial Video](https://img.youtube.com/vi/tESZX530Av4/0.jpg)](https://youtu.be/tESZX530Av4)  \r https://youtu.be/tESZX530Av4?si=NS_2cmn0w3i9ei4P\r *Click the thumbnail above to watch the system tutorial on YouTube.*",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mr-CJ-ams/TDMS_PANGLAO_V1.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/mr-CJ-ams/TDMS_PANGLAO_V1/issues"
+  },
+  "homepage": "https://github.com/mr-CJ-ams/TDMS_PANGLAO_V1#readme"
 }
