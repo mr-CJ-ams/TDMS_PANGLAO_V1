@@ -58,7 +58,6 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
-const fs = require("fs");
 const pool = require("./db");
 const cron = require("node-cron");
 const { sendEmailNotification } = require("./utils/email");
@@ -73,16 +72,8 @@ app.use(express.json());
 // Serve static files from the "uploads" folder
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Serve static files from the React app - WORKS FOR BOTH LOCAL & PRODUCTION
-// Resolve a build folder robustly (dist vs build) so deployment platforms don't break
-const possibleClientPaths = [
-  path.join(__dirname, "..", "client", "build"),   // common create-react-app output
-  path.join(__dirname, "..", "client", "dist"),    // common Vite output
-  path.join(__dirname, "..", "..", "client", "build"),
-  path.join(__dirname, "..", "..", "client", "dist")
-];
-const reactBuildPath = possibleClientPaths.find(p => fs.existsSync(p)) || path.join(__dirname, "..", "client", "build");
-app.use(express.static(reactBuildPath));
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, "../client/build")));
 
 // Routes
 const authRoutes = require("./routes/auth");
@@ -93,7 +84,7 @@ app.use("/auth", authRoutes);
 app.use("/admin", adminRoutes);
 app.use("/api/submissions", submissionsRoutes);
 
-// IP Detection route
+// ADD THIS ROUTE - IP Detection for Render
 app.get('/api/server-info', async (req, res) => {
   try {
     const publicIP = await getPublicIP();
@@ -101,9 +92,18 @@ app.get('/api/server-info', async (req, res) => {
     const serverInfo = {
       timestamp: new Date().toISOString(),
       publicIP: publicIP,
+      renderInstance: process.env.RENDER ? 'Yes' : 'No',
       host: req.headers.host,
+      // These headers help identify the actual client IP behind Render's proxy
       clientIP: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
       realIP: req.ip,
+      // Render-specific headers
+      renderHeaders: {
+        xForwardedFor: req.headers['x-forwarded-for'],
+        xRealIP: req.headers['x-real-ip'],
+        xForwardedHost: req.headers['x-forwarded-host'],
+        xForwardedProto: req.headers['x-forwarded-proto']
+      }
     };
 
     console.log('Server Info Requested:', serverInfo);
@@ -137,31 +137,28 @@ async function getPublicIP() {
   });
 }
 
-// Handle React routing - WORKS FOR BOTH LOCAL & PRODUCTION
+
+// Handle React routing, return all requests to React app
 app.get("*", (req, res) => {
-  const reactIndexPath = path.join(reactBuildPath, "index.html");
-  if (fs.existsSync(reactIndexPath)) {
-    res.sendFile(reactIndexPath);
-  } else {
-    res.status(404).send("Frontend build not found. Run client build and redeploy.");
-  }
+  res.sendFile(path.join(__dirname, "../client/build", "index.html"));
 });
 
 app.get('/api/test-error', (req, res, next) => {
+  // This will trigger the error handler
   next(new Error('This is a test error!'));
 });
 
-// Error handler
+// Add this at the very end, after all routes and other middleware
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(err.status || 500).json({
     success: false,
     message: err.message || 'Internal Server Error',
+    // Optionally, include stack trace in development only
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   });
 });
 
-// Your existing cron jobs (keep them exactly as they are)
 // 1st day of the month: Reminder to start submitting
 cron.schedule("0 8 1 * *", async () => {
   try {
@@ -225,6 +222,4 @@ cron.schedule("0 8 9 * *", async () => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
-  console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
-  console.log(`Serving React from: ${reactBuildPath}`);
 });
