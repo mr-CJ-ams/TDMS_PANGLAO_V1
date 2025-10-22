@@ -73,7 +73,7 @@ app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Serve static files from the React app
-app.use(express.static(path.join(__dirname, "../client/build")));
+app.use(express.static(path.join(__dirname, "..", "client", "build")));
 
 // Routes
 const authRoutes = require("./routes/auth");
@@ -140,7 +140,12 @@ async function getPublicIP() {
 
 // Handle React routing, return all requests to React app
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../client/build", "index.html"));
+  // only handle browser GET requests that accept HTML
+  if (req.method !== 'GET') return res.status(404).end();
+  const accept = req.headers.accept || '';
+  if (!accept.includes('text/html')) return res.status(404).end();
+
+  res.sendFile(path.join(__dirname, '..', 'client', 'build', 'index.html'));
 });
 
 app.get('/api/test-error', (req, res, next) => {
