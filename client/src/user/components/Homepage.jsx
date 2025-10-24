@@ -369,12 +369,12 @@ const Homepage = () => {
                 <h3 className="text-2xl font-bold text-teal-700 mb-8 text-center">Accommodation Metrics</h3>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {[
-                    { title: "Guest Arrivals", desc: "Total number of tourists by nationality", color: "amber" },
-                    { title: "Check-ins", desc: "Total number of guest check-ins", color: "cyan" },
+                    { title: "Guest Arrivals", desc: "Total number of tourists by nationality", color: "teal" },
+                    { title: "Check-ins", desc: "Total number of guest check-ins", color: "amber" },
                     { title: "Guest Nights", desc: "Total number of nights stayed", color: "blue" },
-                    { title: "Average Guest Nights", desc: "Average length of stay per guest", color: "teal" },
-                    { title: "Room Occupancy Rate", desc: "Percentage of rooms occupied", color: "orange" },
-                    { title: "Average Guests per Room", desc: "Guest density per occupied room", color: "indigo" }
+                    { title: "Average Guest Nights", desc: "Average length of stay per guest", color: "amber" },
+                    { title: "Room Occupancy Rate", desc: "Percentage of rooms occupied", color: "cyan" },
+                    { title: "Average Guests per Room", desc: "Guest density per occupied room", color: "amber" }
                   ].map((metric, index) => (
                     <div key={index} className="bg-white/60 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 transform hover:scale-105 relative overflow-hidden">
                       {/* Seashell Icon */}
@@ -552,23 +552,71 @@ const Homepage = () => {
                 <div>
                   <h5 className="font-medium mb-2 text-white">Panglao LGU Services</h5>
                   <ul className="text-gray-300 space-y-1 text-sm">
-                    <li><a href="#" className="hover:text-cyan-400 transition-colors">Municipality of Panglao</a></li>
-                    <li><a href="#" className="hover:text-cyan-400 transition-colors">Panglao Online Business Permit</a></li>
-                    <li><a href="#" className="hover:text-cyan-400 transition-colors">Applicant Registration</a></li>
-                    <li><a href="#" className="hover:text-cyan-400 transition-colors">Establishment Registration</a></li>
-                    <li><a href="#" className="hover:text-cyan-400 transition-colors">Registration</a></li>
+                    <li>
+                      <a href="https://panglaolgu.gov.ph/" target="_blank" rel="noopener noreferrer" className="hover:text-cyan-400 transition-colors">
+                        Municipality of Panglao
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://www.panglaolgu.com/" target="_blank" rel="noopener noreferrer" className="hover:text-cyan-400 transition-colors">
+                        Panglao Online Business Permit
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://www.panglaolgu.com/registration/applicant" target="_blank" rel="noopener noreferrer" className="hover:text-cyan-400 transition-colors">
+                        Applicant Registration
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://www.panglaolgu.com/registration/establishment" target="_blank" rel="noopener noreferrer" className="hover:text-cyan-400 transition-colors">
+                        Establishment Registration
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://www.panglaolgu.com/registration" target="_blank" rel="noopener noreferrer" className="hover:text-cyan-400 transition-colors">
+                        Registration
+                      </a>
+                    </li>
                   </ul>
                 </div>
                 <div>
                   <h5 className="font-medium mb-2 text-white">Government Links</h5>
                   <ul className="text-gray-300 space-y-1 text-sm">
-                    <li><a href="#" className="hover:text-cyan-400 transition-colors">Office of the President</a></li>
-                    <li><a href="#" className="hover:text-cyan-400 transition-colors">Office of the Vice President</a></li>
-                    <li><a href="#" className="hover:text-cyan-400 transition-colors">Senate of the Philippines</a></li>
-                    <li><a href="#" className="hover:text-cyan-400 transition-colors">House of Representatives</a></li>
-                    <li><a href="#" className="hover:text-cyan-400 transition-colors">Supreme Court</a></li>
-                    <li><a href="#" className="hover:text-cyan-400 transition-colors">Court of Appeals</a></li>
-                    <li><a href="#" className="hover:text-cyan-400 transition-colors">Sandiganbayan</a></li>
+                    <li>
+                      <a href="https://op-proper.gov.ph/" target="_blank" rel="noopener noreferrer" className="hover:text-cyan-400 transition-colors">
+                        Office of the President
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://www.ovp.gov.ph/" target="_blank" rel="noopener noreferrer" className="hover:text-cyan-400 transition-colors">
+                        Office of the Vice President
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://web.senate.gov.ph/" target="_blank" rel="noopener noreferrer" className="hover:text-cyan-400 transition-colors">
+                        Senate of the Philippines
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://www.congress.gov.ph/" target="_blank" rel="noopener noreferrer" className="hover:text-cyan-400 transition-colors">
+                        House of Representatives
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://sc.judiciary.gov.ph/" target="_blank" rel="noopener noreferrer" className="hover:text-cyan-400 transition-colors">
+                        Supreme Court
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://ca.judiciary.gov.ph/" target="_blank" rel="noopener noreferrer" className="hover:text-cyan-400 transition-colors">
+                        Court of Appeals
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://sb.judiciary.gov.ph/" target="_blank" rel="noopener noreferrer" className="hover:text-cyan-400 transition-colors">
+                        Sandiganbayan
+                      </a>
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -599,9 +647,21 @@ const Homepage = () => {
                   Learn more about the Philippine government and its structure.
                 </p>
                 <div className="space-y-1 text-sm">
-                  <div><a href="#" className="text-cyan-400 hover:text-cyan-300 transition-colors">GOV.PH</a></div>
-                  <div><a href="#" className="text-cyan-400 hover:text-cyan-300 transition-colors">Open Data Portal</a></div>
-                  <div><a href="#" className="text-cyan-400 hover:text-cyan-300 transition-colors">Official Gazette</a></div>
+                  <div>
+                    <a href="https://www.gov.ph/" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 transition-colors">
+                      GOV.PH
+                    </a>
+                  </div>
+                  <div>
+                    <a href="https://www.gov.ph/data" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 transition-colors">
+                      Open Data Portal
+                    </a>
+                  </div>
+                  <div>
+                    <a href="https://www.officialgazette.gov.ph/" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 transition-colors">
+                      Official Gazette
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
@@ -612,10 +672,10 @@ const Homepage = () => {
         <div className="bg-black/50 py-4 relative z-10">
           <div className="container mx-auto px-8 text-center">
             <p className="text-sm text-gray-400">
-              Copyright © 2025 Tourism Data Management System (TDMS) - Municipality of Panglao, Bohol. All Rights Reserved.
+              Copyright © 2025 Tourist Data Management System (TDMS) - Municipality of Panglao, Bohol. All Rights Reserved.
             </p>
             <p className="text-xs text-gray-500 mt-1">
-              Developed in partnership with Bohol Island State University (BISU) | <span className="text-cyan-400">Beach Paradise</span>
+              Developed in partnership with Bohol Island State University (BISU) 
             </p>
           </div>
         </div>

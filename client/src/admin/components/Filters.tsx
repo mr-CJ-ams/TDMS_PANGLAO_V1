@@ -16,7 +16,7 @@ const Filters: React.FC<FiltersProps> = ({
   formatMonth
 }) => {
   const currentYear = new Date().getFullYear();
-  const yearOptions = Array.from({ length: 10 }, (_, i) => currentYear + i);
+  const yearOptions = Array.from({ length: 10 }, (_, i) => (currentYear-2) + i);
 
   const selectStyle: React.CSSProperties = {
     width: "100%",
