@@ -84,6 +84,8 @@ const GuestModal = ({
   selectedYear,
   selectedMonth
 }: GuestModalProps) => {
+  const MAX_LENGTH_OF_STAY = 183;
+  
   const [lengthOfStay, setLengthOfStay] = useState(initialData?.lengthOfStay?.toString() || "");
   const [guests, setGuests] = useState(initialData?.guests || []);
   const [isCheckIn, setIsCheckIn] = useState(initialData?.isCheckIn !== false); // Default to true, but can be false
@@ -100,6 +102,8 @@ const GuestModal = ({
       return setError("Please enter a valid age for all guests.");
     if (!lengthOfStay || isNaN(lengthOfStay) || parseInt(lengthOfStay) <= 0)
       return setError("Please enter a valid length of stay.");
+    if (parseInt(lengthOfStay) > MAX_LENGTH_OF_STAY)
+      return setError(`Maximum allowed length of stay is ${MAX_LENGTH_OF_STAY} days.`);
 
     const startDate = new Date(selectedYear, selectedMonth - 1, day);
     const endDate = new Date(startDate);
@@ -147,7 +151,15 @@ const GuestModal = ({
   const handleUpdateGuest = (idx, field, value) => {
     setGuests(guests.map((g, i) => i === idx ? { ...g, [field]: field === "age" && !/^\d*$/.test(value) ? g.age : value } : g));
   };
-  const handleLengthOfStayChange = e => /^\d*$/.test(e.target.value) && setLengthOfStay(e.target.value);
+  const handleLengthOfStayChange = e => {
+    const value = e.target.value;
+    // Only allow numbers and max 183
+    if (/^\d*$/.test(value)) {
+      if (value === "" || parseInt(value) <= MAX_LENGTH_OF_STAY) {
+        setLengthOfStay(value);
+      }
+    }
+  };
   const handleRemoveAll = () => { onRemoveAllGuests(day, room); onClose(); };
 
   const isEditingExisting = initialData && initialData.day === day && initialData.room === room;
@@ -204,8 +216,12 @@ const GuestModal = ({
                 value={lengthOfStay}
                 onChange={handleLengthOfStayChange}
                 min="1"
+                max={MAX_LENGTH_OF_STAY}
                 disabled={disabled}
               />
+              <small className="form-text text-muted">
+                Maximum allowed length of stay is {MAX_LENGTH_OF_STAY} days(6 months).
+              </small>
             </div>
             {lengthOfStay && hasRoomConflict && showConflict ? (
               <div className="alert alert-warning mt-2">

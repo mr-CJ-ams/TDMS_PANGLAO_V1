@@ -245,12 +245,13 @@ const Signup = () => {
                 type="email"
                 name="email"
                 value={formData.email}
-                onChange={handleChange}
+                onChange={e => {
+                  handleChange(e);
+                  setEmailVerified(false);
+                  setEmailVerificationStatus("unverified");
+                }}
                 required
-                disabled={emailVerified}
-                className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all ${
-                  emailVerified ? "bg-gray-100" : ""
-                }`}
+                className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all`}
                 placeholder="Enter your email address"
               />
               {emailVerified && (
