@@ -41,7 +41,7 @@ const SubmissionForm = () => {
     (async () => {
       try {
         const token = sessionStorage.getItem("token");
-        const { data } = await axios.get(`${API_BASE_URL}/auth/user`, { headers: { Authorization: `Bearer ${token}` } });
+        const { data } = await axios.get(`${API_BASE_URL}/api/auth/user`, { headers: { Authorization: `Bearer ${token}` } });
         setUser(data);
         setNumberOfRooms(data.number_of_rooms);
       } catch (err) { console.error("Error fetching user profile:", err); }

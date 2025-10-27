@@ -88,7 +88,7 @@ const ResetPassword = () => {
     if (!isPasswordValid) return setMessage({ type: "error", text: "Password does not meet all requirements" });
     setIsLoading(true); setMessage(null);
     try {
-      const res = await axios.post(`${API_BASE_URL}/auth/reset-password`, { token, password });
+      const res = await axios.post(`${API_BASE_URL}/api/auth/reset-password`, { token, password });
       setMessage({ type: "success", text: res.data.message });
       setTimeout(() => navigate("/login"), 3000);
     } catch (err) {

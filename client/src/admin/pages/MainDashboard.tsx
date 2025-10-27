@@ -125,19 +125,19 @@ const MainDashboard = ({ user }: MainDashboardProps) => {
       try {
         const token = sessionStorage.getItem("token");
         const [checkInsRes, metricsRes, nationalityRes, demographicsRes] = await Promise.all([
-          api.get<CheckInData[]>("/admin/monthly-checkins", { 
+          api.get<CheckInData[]>("/api/admin/monthly-checkins", { 
             headers: { Authorization: `Bearer ${token}` }, 
             params: { year: selectedYear } 
           }),
-          api.get<MonthlyMetric[]>("/admin/monthly-metrics", { 
+          api.get<MonthlyMetric[]>("/api/admin/monthly-metrics", { 
             headers: { Authorization: `Bearer ${token}` }, 
             params: { year: selectedYear } 
           }),
-          api.get<NationalityCount[]>("/admin/nationality-counts", { 
+          api.get<NationalityCount[]>("/api/admin/nationality-counts", { 
             headers: { Authorization: `Bearer ${token}` }, 
             params: { year: selectedYear, month: selectedMonth } 
           }),
-          api.get<DemographicData[]>("/admin/guest-demographics", { 
+          api.get<DemographicData[]>("/api/admin/guest-demographics", { 
             headers: { Authorization: `Bearer ${token}` }, 
             params: { year: selectedYear, month: selectedMonth } 
           }),

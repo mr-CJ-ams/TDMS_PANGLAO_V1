@@ -96,11 +96,9 @@ const EmailVerificationRequest = () => {
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/request-email-verification`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/request-email-verification`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
 
@@ -215,4 +213,4 @@ const EmailVerificationRequest = () => {
   );
 };
 
-export default EmailVerificationRequest; 
+export default EmailVerificationRequest;

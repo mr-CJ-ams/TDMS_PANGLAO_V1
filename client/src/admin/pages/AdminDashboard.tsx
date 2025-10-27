@@ -157,7 +157,7 @@ const AdminDashboard = () => {
     const fetchUsers = async () => { 
       try { 
         const token = sessionStorage.getItem("token");
-        const { data } = await axios.get<User[]>(`${API_BASE_URL}/admin/users`, { 
+        const { data } = await axios.get<User[]>(`${API_BASE_URL}/api/admin/users`, { 
           headers: { Authorization: `Bearer ${token}` } 
         }); 
         setUsers(data);
@@ -174,7 +174,7 @@ const AdminDashboard = () => {
     const fetchSubmissions = async () => { 
       try { 
         const token = sessionStorage.getItem("token");
-        const { data } = await axios.get<{ submissions: Submission[] }>(`${API_BASE_URL}/admin/submissions`, { 
+        const { data } = await axios.get<{ submissions: Submission[] }>(`${API_BASE_URL}/api/admin/submissions`, { 
           headers: { Authorization: `Bearer ${token}` } 
         }); 
         setSubmissions(data.submissions);
@@ -204,7 +204,7 @@ const AdminDashboard = () => {
   const approveUser = async (userId: string) => {
     try { 
       const token = sessionStorage.getItem("token");
-      await axios.put(`${API_BASE_URL}/admin/approve/${userId}`, {}, { 
+      await axios.put(`${API_BASE_URL}/api/admin/approve/${userId}`, {}, { 
         headers: { Authorization: `Bearer ${token}` } 
       });
       setUsers(users.map(u => u.user_id === userId ? { ...u, is_approved: true } : u));
@@ -217,7 +217,7 @@ const AdminDashboard = () => {
   const declineUser = async (userId: string) => {
     try { 
       const token = sessionStorage.getItem("token");
-      await axios.put(`${API_BASE_URL}/admin/decline/${userId}`, { message: declineMessage }, { 
+      await axios.put(`${API_BASE_URL}/api/admin/decline/${userId}`, { message: declineMessage }, { 
         headers: { Authorization: `Bearer ${token}` } 
       });
       setUsers(users.filter(u => u.user_id !== userId)); 

@@ -81,7 +81,7 @@ const EmailVerification = () => {
     const verifyEmail = async () => {
       try {
         const response = await fetch(
-          `${API_BASE_URL}/auth/verify-email?token=${token}&email=${encodeURIComponent(emailParam)}`
+          `${API_BASE_URL}/api/auth/verify-email?token=${token}&email=${encodeURIComponent(emailParam)}`
         );
         const data = await response.json();
 
@@ -90,7 +90,7 @@ const EmailVerification = () => {
           setMessage(data.message);
         } else {
           // If verification failed, check if email is already verified
-          const statusRes = await fetch(`${API_BASE_URL}/auth/check-email-verification?email=${encodeURIComponent(emailParam)}`);
+          const statusRes = await fetch(`${API_BASE_URL}/api/auth/check-email-verification?email=${encodeURIComponent(emailParam)}`);
           const statusData = await statusRes.json();
           if (statusData.success && statusData.verified) {
             setVerificationStatus("success");

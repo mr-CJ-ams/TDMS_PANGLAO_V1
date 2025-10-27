@@ -82,7 +82,7 @@ const RegionalDistribution = ({ nationalityCounts, selectedYear, selectedMonth, 
       }
 
       try {
-        const res = await apiClient.get("/admin/nationality-counts-by-establishment", {
+        const res = await apiClient.get("/api/admin/nationality-counts-by-establishment", {
           params: { year: selectedYear, month: selectedMonth },
           signal: controller.signal,
         });

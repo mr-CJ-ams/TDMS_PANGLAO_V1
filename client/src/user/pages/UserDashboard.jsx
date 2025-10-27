@@ -84,7 +84,7 @@ const UserDashboard = () => {
     (async () => {
       try {
         const token = sessionStorage.getItem("token");
-        const { data } = await axios.get(`${API_BASE_URL}/auth/user`, { headers: { Authorization: `Bearer ${token}` } });
+        const { data } = await axios.get(`${API_BASE_URL}/api/auth/user`, { headers: { Authorization: `Bearer ${token}` } });
         setUser(data);
       } catch (err) {
         console.error("Error fetching user details:", err);
@@ -100,7 +100,7 @@ const UserDashboard = () => {
   const handleUpdateRooms = async newNumberOfRooms => {
     try {
       const token = sessionStorage.getItem("token");
-      await axios.put(`${API_BASE_URL}/auth/update-rooms`, { number_of_rooms: newNumberOfRooms }, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.put(`${API_BASE_URL}/api/auth/update-rooms`, { number_of_rooms: newNumberOfRooms }, { headers: { Authorization: `Bearer ${token}` } });
       setUser(u => ({ ...u, number_of_rooms: newNumberOfRooms }));
     } catch (err) {
       console.error("Error updating number of rooms:", err);

@@ -121,3 +121,58 @@ CREATE TABLE draft_submissions (
 CREATE INDEX idx_draft_submissions_month_year ON draft_submissions(month, year);
 CREATE INDEX idx_draft_submissions_stayid ON draft_submissions(("data" ->> 'stayId'));
 CREATE INDEX idx_draft_submissions_user ON draft_submissions(user_id);
+
+INSERT INTO users (
+    user_id,
+    email,
+    password,
+    role,
+    is_approved,
+    phone_number,
+    registered_owner,
+    tin,
+    company_address,
+    accommodation_type,
+    number_of_rooms,
+    company_name,
+    accommodation_code,
+    reset_token,
+    reset_token_expiry,
+    profile_picture,
+    region,
+    province,
+    municipality,
+    barangay,
+    is_active,
+    date_established,
+    email_verification_token,
+    email_verification_expires,
+    email_verified
+)
+VALUES (
+    22,
+    'statistics.panglaotourism@gmail.com',
+    '$2b$10$1QoXEk23DUhhDKfEE2AsuOyHjSTljAStnkFgzmEBSF/CrfwbCDzQ2',
+    'admin',
+    TRUE,
+    'N/A',
+    'Panglao LGU',
+    NULL,
+    '',
+    '',
+    NULL,
+    'Panglao Municipal Tourism Office',
+    '',
+    '',
+    NULL,
+    '',
+    '07',
+    'BOHOL',
+    'PANGLAO',
+    '',
+    TRUE,
+    NULL,
+    '',
+    NULL,
+    FALSE
+);

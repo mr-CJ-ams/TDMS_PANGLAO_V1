@@ -82,7 +82,7 @@ const Login = () => {
       setError("Login is taking longer than expected. Please try again.");
     }, LOGIN_TIMEOUT);
     try {
-      const { data } = await axios.post(`${API_BASE_URL}/auth/login`, { email, password });
+      const { data } = await axios.post(`${API_BASE_URL}/api/auth/login`, { email, password });
       clearTimeout(timeoutId);
       if (data.message === "Account is deactivated") {
         setError("Your account has been deactivated. Please contact the administrator.");

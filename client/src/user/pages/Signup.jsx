@@ -111,7 +111,7 @@ const Signup = () => {
     if (!email) return;
     
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/check-email-verification?email=${encodeURIComponent(email)}`);
+      const response = await fetch(`${API_BASE_URL}/api/auth/check-email-verification?email=${encodeURIComponent(email)}`);
       const data = await response.json();
       
       if (data.success) {
@@ -193,29 +193,26 @@ const Signup = () => {
       setSubmitError("Signup is taking longer than expected. Please try again.");
     }, SIGNUP_TIMEOUT);
     try {
-      const response = await axios.post(`${API_BASE_URL}/auth/signup`, {
-        
-        email: formData.email, password: formData.password,
-        phone_number: formData.phoneNumber, registered_owner: formData.registeredOwner, tin: formData.tin,
-        company_name: formData.companyName, company_address: formData.companyAddress,
-        accommodation_type: formData.accommodationType, number_of_rooms: formData.numberOfRooms,
-        region: formData.region, province: formData.province, municipality: formData.municipality,
-        barangay: formData.barangay, dateEstablished: formData.dateEstablished,
+      const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       });
       clearTimeout(timeoutId);
       
-      if (response.data.success) {
+      const data = await response.json();
+      if (data.success) {
         setModal({
           show: true,
           title: "Registration Successful",
-          message: response.data.message,
+          message: data.message,
           onClose: () => {
             setModal(m => ({ ...m, show: false }));
             navigate("/login");
           }
         });
       } else {
-        setSubmitError(response.data.message || "Signup failed. Please try again.");
+        setSubmitError(data.message || "Signup failed. Please try again.");
       }
     } catch (err) {
       setSubmitError(err.response?.data?.message || "Signup failed. Please try again.");

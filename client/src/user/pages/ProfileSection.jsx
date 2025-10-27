@@ -54,8 +54,11 @@
 
 import React, { useState } from "react";
 import { Edit2, Save, X } from "lucide-react";
+import axios from "axios";
 
-const ProfileSection = ({ user, onUpdateRooms }) => {
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+const ProfileSection = ({ user, onUpdateRooms, token }) => {
   const [editingRooms, setEditingRooms] = useState(false);
   const [newNumberOfRooms, setNewNumberOfRooms] = useState(
     user?.number_of_rooms || "",
@@ -63,6 +66,11 @@ const ProfileSection = ({ user, onUpdateRooms }) => {
 
   const handleUpdateRooms = async (e) => {
     e.preventDefault();
+    await axios.put(
+      `${API_BASE_URL}/api/auth/update-rooms`,
+      { number_of_rooms: newNumberOfRooms },
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
     await onUpdateRooms(newNumberOfRooms);
     setEditingRooms(false);
   };

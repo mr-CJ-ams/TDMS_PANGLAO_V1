@@ -81,11 +81,11 @@ const UserApproval = ({
     if (!userId) return;
     try {
       const token = sessionStorage.getItem("token");
-      const res = await fetch(`${API_BASE_URL}/admin/deactivate/${userId}`, { 
+      const res = await fetch(`${API_BASE_URL}/api/admin/deactivate/${userId}`, { 
         method: "PUT", 
         headers: { 
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}` // <-- Add this line
+          "Authorization": `Bearer ${token}`
         } 
       });
       const data = await res.json();

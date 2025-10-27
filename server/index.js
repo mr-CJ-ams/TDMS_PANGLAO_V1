@@ -80,8 +80,8 @@ const authRoutes = require("./routes/auth");
 const adminRoutes = require("./routes/admin");
 const submissionsRoutes = require("./routes/submissions");
 
-app.use("/auth", authRoutes);
-app.use("/admin", adminRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/admin", adminRoutes);
 app.use("/api/submissions", submissionsRoutes);
 
 // ADD THIS ROUTE - IP Detection for Render
