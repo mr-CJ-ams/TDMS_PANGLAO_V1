@@ -171,7 +171,7 @@ const SubmissionOverview: React.FC<SubmissionOverviewProps> = ({
     const fetchSubmissions = async () => {
       try {
         const token = sessionStorage.getItem("token");
-        const { data } = await axios.get(`${API_BASE_URL}/admin/submissions`, {
+        const { data } = await axios.get(`${API_BASE_URL}/api/admin/submissions`, {
           headers: { Authorization: `Bearer ${token}` },
           params: { ...filters, page, limit },
         });
