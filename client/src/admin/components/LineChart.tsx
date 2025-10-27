@@ -14,8 +14,8 @@ interface LineChartComponentProps {
   formatMonth: (month: number) => string;
 }
 
-// Updated actual data for 2023 (all months)
-const actualData2023: MonthlyCheckIn[] = [
+// Actual data for 2022 (all months)
+const actualData2022: MonthlyCheckIn[] = [
   { month: 1, total_check_ins: 7029, isPredicted: true },
   { month: 2, total_check_ins: 15450, isPredicted: true },
   { month: 3, total_check_ins: 23567, isPredicted: true },
@@ -28,6 +28,22 @@ const actualData2023: MonthlyCheckIn[] = [
   { month: 10, total_check_ins: 35641, isPredicted: true },
   { month: 11, total_check_ins: 37466, isPredicted: true },
   { month: 12, total_check_ins: 50383, isPredicted: true },
+];
+
+// Actual data for 2023 (all months)
+const actualData2023: MonthlyCheckIn[] = [
+  { month: 1, total_check_ins: 55321, isPredicted: true },
+  { month: 2, total_check_ins: 52341, isPredicted: true },
+  { month: 3, total_check_ins: 55664, isPredicted: true },
+  { month: 4, total_check_ins: 57980, isPredicted: true },
+  { month: 5, total_check_ins: 55678, isPredicted: true },
+  { month: 6, total_check_ins: 56624, isPredicted: true },
+  { month: 7, total_check_ins: 61441, isPredicted: true },
+  { month: 8, total_check_ins: 68938, isPredicted: true },
+  { month: 9, total_check_ins: 55246, isPredicted: true },
+  { month: 10, total_check_ins: 55503, isPredicted: true },
+  { month: 11, total_check_ins: 59808, isPredicted: true },
+  { month: 12, total_check_ins: 68828, isPredicted: true },
 ];
 
 // Actual data for 2024 (all months)
@@ -80,14 +96,23 @@ const LineChartComponent: React.FC<LineChartComponentProps> = ({
 }) => {
   // Use abbreviated month names for X-Axis
   const formatMonthAbbr = (m: number): string => {
-    // Array of abbreviated month names
     const abbrMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     return abbrMonths[m - 1] || "";
   };
 
-  // Merge actual and predicted data for 2023, 2024, predicted for 2025
+  // Merge actual and predicted data for 2022, 2023, 2024, predicted for 2025
   let chartData: Array<any> = [];
-  if (selectedYear === 2023) {
+  if (selectedYear === 2022) {
+    chartData = Array.from({ length: 12 }, (_, i) => {
+      const month = i + 1;
+      const actual = actualData2022.find(a => a.month === month);
+      return {
+        month,
+        actual_check_ins: actual ? actual.total_check_ins : 0,
+        predicted_check_ins: undefined,
+      };
+    });
+  } else if (selectedYear === 2023) {
     chartData = Array.from({ length: 12 }, (_, i) => {
       const month = i + 1;
       const actual = actualData2023.find(a => a.month === month);
