@@ -193,10 +193,28 @@ const Signup = () => {
       setSubmitError("Signup is taking longer than expected. Please try again.");
     }, SIGNUP_TIMEOUT);
     try {
+      // Map camelCase to snake_case for backend
+      const payload = {
+        email: formData.email,
+        password: formData.password,
+        phone_number: formData.phoneNumber,
+        registered_owner: formData.registeredOwner,
+        tin: formData.tin,
+        company_name: formData.companyName,
+        company_address: formData.companyAddress,
+        accommodation_type: formData.accommodationType,
+        number_of_rooms: formData.numberOfRooms,
+        region: formData.region,
+        province: formData.province,
+        municipality: formData.municipality,
+        barangay: formData.barangay,
+        dateEstablished: formData.dateEstablished,
+      };
+
       const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
       clearTimeout(timeoutId);
       
