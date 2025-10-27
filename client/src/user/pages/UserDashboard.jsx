@@ -80,17 +80,19 @@ const UserDashboard = () => {
     [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
+  // Add this line to define token
+  const token = sessionStorage.getItem("token");
+
   useEffect(() => {
     (async () => {
       try {
-        const token = sessionStorage.getItem("token");
         const { data } = await axios.get(`${API_BASE_URL}/api/auth/user`, { headers: { Authorization: `Bearer ${token}` } });
         setUser(data);
       } catch (err) {
         console.error("Error fetching user details:", err);
       }
     })();
-  }, []);
+  }, [token]);
 
   const handleLogout = () => {
     sessionStorage.removeItem("token");
