@@ -56,10 +56,10 @@ const nodemailer = require("nodemailer");
 const transporter = nodemailer.createTransport({
   host: "smtp-relay.brevo.com",
   port: 587,
-  secure: false, // false for port 587
+  secure: false,
   auth: {
-    user: process.env.BREVO_EMAIL,     // Your Brevo account email
-    pass: process.env.BREVO_SMTP_KEY   // Your Brevo SMTP key
+    user: process.env.BREVO_EMAIL,
+    pass: process.env.BREVO_SMTP_KEY
   },
   connectionTimeout: 10000,
   greetingTimeout: 10000,
@@ -79,7 +79,7 @@ const sendEmailNotification = (email, subject, message) => {
   const mailOptions = {
     from: {
       name: "Panglao Tourism Office",
-      address: process.env.EMAIL_FROM  // Still tourismarrivals@panglaolgu.com
+      address: process.env.EMAIL_FROM
     },
     to: email,
     subject: subject,
