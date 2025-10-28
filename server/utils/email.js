@@ -52,19 +52,22 @@
 require("dotenv").config({ path: require('path').resolve(__dirname, "../../.env") });
 const nodemailer = require("nodemailer");
 
-// Email configuration
+// Improved email configuration with better authentication
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
-  secure: process.env.SMTP_SECURE !== "false",
-  secureConnection: process.env.SMTP_SECURE_CONNECTION === "true",
-  tls: {
-    rejectUnauthorized: process.env.SMTP_TLS_REJECT_UNAUTHORIZED === "true"
-  },
   port: process.env.SMTP_PORT,
+  secure: process.env.SMTP_PORT == 465, // true for 465, false for other ports
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASSWORD
-  }
+  },
+  // Improved settings for deliverability
+  tls: {
+    rejectUnauthorized: false // Allow self-signed certificates
+  },
+  connectionTimeout: 10000, // 10 seconds
+  greetingTimeout: 10000,
+  socketTimeout: 10000
 });
 
 // Verify transporter on startup
@@ -78,20 +81,36 @@ transporter.verify(function (error, success) {
 
 const sendEmailNotification = (email, subject, message) => {
   const mailOptions = {
-    from: process.env.EMAIL_FROM,
+    from: {
+      name: "Panglao Tourism Office",
+      address: process.env.EMAIL_FROM
+    },
     to: email,
     subject: subject,
-    text: message,
-    html: `<p>${message}</p>`,
+    text: message.replace(/<[^>]*>/g, ''), // Plain text version
+    html: message,
+    // Improved headers for deliverability
+    headers: {
+      'X-Priority': '1',
+      'X-Mailer': 'TDMS Node.js',
+      'List-Unsubscribe': `<mailto:${process.env.EMAIL_FROM}?subject=Unsubscribe>`,
+    },
+    // DKIM signing (if available)
+    dkim: {
+      domainName: "panglaolgu.com",
+      keySelector: "default",
+      privateKey: "" // Your IT department can provide this
+    }
   };
 
   return new Promise((resolve, reject) => {
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
-        console.error("Error sending email:", error);
+        console.error("❌ Error sending email:", error);
         reject(error);
       } else {
-        console.log("Email sent:", info.response);
+        console.log("✅ Email sent successfully:", info.response);
+        console.log("📧 Message ID:", info.messageId);
         resolve(info);
       }
     });
