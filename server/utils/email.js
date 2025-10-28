@@ -82,7 +82,7 @@ transporter.verify(function (error, success) {
 const sendEmailNotification = (email, subject, message) => {
   const mailOptions = {
     from: {
-      name: "Panglao Tourism Office",
+      name: "Panglao Municipal Tourism Office",
       address: process.env.EMAIL_FROM
     },
     to: email,
