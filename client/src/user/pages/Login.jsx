@@ -89,7 +89,22 @@ const Login = () => {
         return;
       }
       sessionStorage.setItem("token", data.token);
-      sessionStorage.setItem("user", JSON.stringify(data.user));
+
+      // Only store safe fields
+      const safeUser = {
+        company_name: data.user.company_name,
+        accommodation_type: data.user.accommodation_type,
+        number_of_rooms: data.user.number_of_rooms,
+        region: data.user.region,
+        province: data.user.province,
+        municipality: data.user.municipality,
+        barangay: data.user.barangay,
+        is_active: data.user.is_active,
+        is_approved: data.user.is_approved,
+        email_verified: data.user.email_verified,
+        // Add other non-sensitive fields as needed
+      };
+      sessionStorage.setItem("user", JSON.stringify(safeUser));
       if (data.user.role === "admin") {
         navigate("/admin/dashboard");
       } else {
