@@ -92,6 +92,8 @@ const Login = () => {
 
       // Only store safe fields
       const safeUser = {
+        user_id: data.user.user_id,
+        role: data.user.role,
         company_name: data.user.company_name,
         accommodation_type: data.user.accommodation_type,
         number_of_rooms: data.user.number_of_rooms,
