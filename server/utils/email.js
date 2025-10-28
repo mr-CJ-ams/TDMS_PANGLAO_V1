@@ -52,20 +52,16 @@
 require("dotenv").config({ path: require('path').resolve(__dirname, "../../.env") });
 const nodemailer = require("nodemailer");
 
-// Improved email configuration with better authentication
+// Brevo SMTP configuration
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  secure: process.env.SMTP_PORT == 465, // true for 465, false for other ports
+  host: "smtp-relay.brevo.com",
+  port: 587,
+  secure: false, // false for port 587
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD
+    user: process.env.BREVO_EMAIL,     // Your Brevo account email
+    pass: process.env.BREVO_SMTP_KEY   // Your Brevo SMTP key
   },
-  // Improved settings for deliverability
-  tls: {
-    rejectUnauthorized: false // Allow self-signed certificates
-  },
-  connectionTimeout: 10000, // 10 seconds
+  connectionTimeout: 10000,
   greetingTimeout: 10000,
   socketTimeout: 10000
 });
@@ -73,9 +69,9 @@ const transporter = nodemailer.createTransport({
 // Verify transporter on startup
 transporter.verify(function (error, success) {
   if (error) {
-    console.error('❌ SMTP connection error:', error.message);
+    console.error('❌ Brevo SMTP connection error:', error.message);
   } else {
-    console.log('✅ SMTP server is ready to send emails');
+    console.log('✅ Brevo SMTP server is ready to send emails');
   }
 });
 
@@ -83,33 +79,25 @@ const sendEmailNotification = (email, subject, message) => {
   const mailOptions = {
     from: {
       name: "Panglao Tourism Office",
-      address: process.env.EMAIL_FROM
+      address: process.env.EMAIL_FROM  // Still tourismarrivals@panglaolgu.com
     },
     to: email,
     subject: subject,
-    text: message.replace(/<[^>]*>/g, ''), // Plain text version
+    text: message.replace(/<[^>]*>/g, ''),
     html: message,
-    // Improved headers for deliverability
     headers: {
       'X-Priority': '1',
-      'X-Mailer': 'TDMS Node.js',
-      'List-Unsubscribe': `<mailto:${process.env.EMAIL_FROM}?subject=Unsubscribe>`,
-    },
-    // DKIM signing (if available)
-    dkim: {
-      domainName: "panglaolgu.com",
-      keySelector: "default",
-      privateKey: "" // Your IT department can provide this
+      'X-Mailer': 'TDMS Node.js'
     }
   };
 
   return new Promise((resolve, reject) => {
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
-        console.error("❌ Error sending email:", error);
+        console.error("❌ Error sending email via Brevo:", error);
         reject(error);
       } else {
-        console.log("✅ Email sent successfully:", info.response);
+        console.log("✅ Email sent successfully via Brevo:", info.response);
         console.log("📧 Message ID:", info.messageId);
         resolve(info);
       }
