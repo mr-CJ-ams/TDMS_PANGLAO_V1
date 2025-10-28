@@ -76,7 +76,9 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000
 
 const UserDashboard = () => {
   const [user, setUser] = useState(null),
-    [activeSection, setActiveSection] = useState("home"),
+    [activeSection, setActiveSection] = useState(() => {
+      return sessionStorage.getItem("activeSection") || "home";
+    }),
     [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -109,6 +111,11 @@ const UserDashboard = () => {
     }
   };
 
+  const handleSetActiveSection = (section) => {
+    setActiveSection(section);
+    sessionStorage.setItem("activeSection", section);
+  };
+
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', padding: '16px 0' }}>
@@ -122,7 +129,14 @@ const UserDashboard = () => {
       </div>
       <div className="container-fluid">
         <div className="row">
-          <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} activeSection={activeSection} setActiveSection={setActiveSection} handleLogout={handleLogout} user={user} />
+          <Sidebar
+            open={sidebarOpen}
+            setOpen={setSidebarOpen}
+            activeSection={activeSection}
+            setActiveSection={handleSetActiveSection}
+            handleLogout={handleLogout}
+            user={user}
+          />
           <div
             className="main-content"
             style={{
