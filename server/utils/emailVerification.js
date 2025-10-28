@@ -90,19 +90,13 @@ function createVerificationEmail(email, token, baseUrl) {
           </a>
         </div>
         
-        <p style="margin-bottom: 15px; font-size: 14px; color: #666;">If the button above doesn't work, copy and paste this link into your web browser:</p>
-        
-        <div style="background: #f8f9fa; padding: 12px; border-radius: 4px; border-left: 4px solid #00BCD4; margin-bottom: 20px;">
-          <code style="word-break: break-all; font-size: 13px; color: #2c3e50;">${verificationLink}</code>
-        </div>
-        
         <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; padding: 15px; margin: 20px 0;">
           <p style="margin: 0; color: #856404; font-size: 14px;">
             <strong>Note:</strong> This verification link expires in 24 hours. If you didn't create this account, please ignore this email.
           </p>
         </div>
         
-        <p style="margin-bottom: 10px; font-size: 14px; color: #666;">Need help? Contact the Panglao Tourism Office.</p>
+        <p style="margin-bottom: 10px; font-size: 14px; color: #666;">Need help? Contact the Panglao Municipal Tourism Office.</p>
       </div>
       
       <div style="text-align: center; margin-top: 20px; padding: 20px; color: #666; font-size: 12px;">
