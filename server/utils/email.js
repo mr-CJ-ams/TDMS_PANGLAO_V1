@@ -68,13 +68,15 @@ transporter.verify(function (error, success) {
     console.log('SMTP server ready');
   }
 });
-const sendEmailNotification = (email) => {
+
+// Accepts email, subject, text, html
+const sendEmailNotification = (email, subject, text, html) => {
   const mailOptions = {
     from: "tourismarrivals@panglaolgu.com",
     to: email,
-    subject: "TDMS Email Test - Custom SMTP",
-    text: "Hello! This is a test email from TDMS system.",
-    html: "<p>Hello! This is a test email from TDMS system.</p>"
+    subject: subject,
+    text: text,
+    html: html
   };
   return new Promise((resolve, reject) => {
     transporter.sendMail(mailOptions, (error, info) => {
