@@ -62,12 +62,114 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { sendEmailNotification } = require("../utils/email");
 const userModel = require("../models/userModel");
-const { generateVerificationToken, validateVerificationToken } = require("../utils/emailVerification");
+const { getAutoApproval } = require("../utils/autoApproval");
+const { generateVerificationToken, sendVerificationEmail, validateToken } = require("../utils/emailVerification");
 
 const accommodationCodes = {
   Hotel: "HTL", Condotel: "CON", "Serviced Residence": "SER", Resort: "RES",
   Apartelle: "APA", Motel: "MOT", "Pension House": "PEN", "Home Stay Site": "HSS",
   "Tourist Inn": "TIN", Other: "OTH"
+};
+
+// Request email verification
+exports.requestEmailVerification = async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required" });
+    }
+
+    // Check if email already exists and is verified
+    const existingUser = await userModel.findUserByEmail(email);
+    if (existingUser && existingUser.email_verified) {
+      return res.status(400).json({ success: false, message: "Email is already verified" });
+    }
+
+    // Generate verification token
+    const token = generateVerificationToken();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    // Store verification token
+    await userModel.createEmailVerification(email, token, expiresAt);
+
+    // Send verification email
+    const baseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const emailSent = await sendVerificationEmail(email, token, baseUrl);
+
+    if (emailSent) {
+      res.json({ 
+        success: true, 
+        message: "Verification email sent successfully. Please check your inbox." 
+      });
+    } else {
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to send verification email. Please try again." 
+      });
+    }
+  } catch (err) {
+    console.error("Error requesting email verification:", err);
+    res.status(500).json({ 
+      success: false, 
+      message: "An error occurred while processing your request" 
+    });
+  }
+};
+
+// Verify email token
+exports.verifyEmail = async (req, res) => {
+  try {
+    const { email, token } = req.query;
+
+    if (!email || !token) {
+      return res.status(400).json({ success: false, message: "Email and token are required" });
+    }
+
+    if (!validateToken(token)) {
+      return res.status(400).json({ success: false, message: "Invalid verification token" });
+    }
+
+    // Verify token
+    const verification = await userModel.verifyEmailToken(email, token);
+    if (!verification) {
+      return res.status(400).json({ success: false, message: "Invalid or expired verification token" });
+    }
+
+    // Mark email as verified
+    await userModel.markEmailAsVerified(email);
+
+    res.json({ 
+      success: true, 
+      message: "Email verified successfully! You can now complete your registration." 
+    });
+  } catch (err) {
+    console.error("Error verifying email:", err);
+    res.status(500).json({ 
+      success: false, 
+      message: "An error occurred while verifying your email" 
+    });
+  }
+};
+
+// Check email verification status
+exports.checkEmailVerification = async (req, res) => {
+  try {
+    const { email } = req.query;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required" });
+    }
+
+    const isVerified = await userModel.isEmailVerified(email);
+    res.json({ success: true, verified: isVerified });
+  } catch (err) {
+    console.error("Error checking email verification:", err);
+    res.status(500).json({ 
+      success: false, 
+      message: "An error occurred while checking verification status" 
+    });
+  }
 };
 
 // Modified signup to require email verification
@@ -227,74 +329,5 @@ exports.resetPassword = async (req, res) => {
   } catch (err) {
     console.error("Reset password error:", err);
     res.status(500).json({ message: "Failed to reset password. Please try again later." });
-  }
-};
-
-// Request verification email
-exports.requestEmailVerification = async (req, res) => {
-  const { email } = req.body;
-  if (!email) return res.status(400).json({ success: false, message: "Email is required" });
-
-  try {
-    const alreadyVerified = await userModel.isEmailVerified(email);
-    if (alreadyVerified) {
-      return res.json({ success: true, message: "Email is already verified." });
-    }
-
-    const token = generateVerificationToken(email);
-    await userModel.saveEmailVerificationToken(email, token);
-
-    const verifyUrl = `${process.env.FRONTEND_URL}/email-verification?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
-    const subject = "Verify your email for Panglao TDMS";
-    const html = `
-      <p>Dear User,</p>
-      <p>Thank you for registering with the Panglao Tourist Data Management System (TDMS).</p>
-      <p>Please verify your email address by clicking the link below:</p>
-      <p><a href="${verifyUrl}">${verifyUrl}</a></p>
-      <p>If you did not request this, please ignore this email.</p>
-      <br>
-      <p>Thank you,<br>Panglao Tourism Office</p>
-    `;
-    await sendEmailNotification(email, subject, html);
-
-    res.json({ success: true, message: "Verification email sent. Please check your inbox." });
-  } catch (err) {
-    // Log the full error for debugging
-    console.error("requestEmailVerification error:", err);
-    res.status(500).json({ success: false, message: "Failed to send verification email.", error: err.message, stack: err.stack });
-  }
-};
-
-// Verify email via token
-exports.verifyEmail = async (req, res) => {
-  const { token, email } = req.query;
-  if (!token || !email) return res.status(400).json({ success: false, message: "Invalid verification link." });
-
-  try {
-    // Validate token
-    const valid = validateVerificationToken(token, email);
-    if (!valid) return res.status(400).json({ success: false, message: "Invalid or expired verification link." });
-
-    // Mark as verified in DB
-    await userModel.setEmailVerified(email);
-
-    res.json({ success: true, message: "Your email has been verified! You can now complete your registration." });
-  } catch (err) {
-    console.error("verifyEmail error:", err);
-    res.status(500).json({ success: false, message: "Verification failed. Please try again." });
-  }
-};
-
-// Check if email is verified
-exports.checkEmailVerification = async (req, res) => {
-  const { email } = req.query;
-  if (!email) return res.status(400).json({ success: false, message: "Email is required" });
-
-  try {
-    const verified = await userModel.isEmailVerified(email);
-    res.json({ success: true, verified });
-  } catch (err) {
-    console.error("checkEmailVerification error:", err);
-    res.status(500).json({ success: false, message: "Failed to check verification status." });
   }
 };
