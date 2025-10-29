@@ -71,13 +71,14 @@ transporter.verify(function (error, success) {
   }
 });
 
-const sendEmailNotification = (email, subject, textMessage, htmlMessage) => {
+// This function sends a simple test email (can be used for verification)
+const sendEmailNotification = (email) => {
   const mailOptions = {
     from: "tourismarrivals@panglaolgu.com",
     to: email,
-    subject: subject,
-    text: textMessage,
-    html: htmlMessage
+    subject: "TDMS Email Test - Custom SMTP",
+    text: "Hello! This is a test email from TDMS system.",
+    html: "<p>Hello! This is a test email from TDMS system.</p>"
   };
 
   return new Promise((resolve, reject) => {
