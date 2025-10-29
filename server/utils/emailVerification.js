@@ -58,16 +58,15 @@ function generateVerificationToken() {
 }
 
 // Simple, professional email content
-function createVerificationEmail() {
-  
+function createVerificationEmail(email, token, baseUrl) {
+  const verificationLink = `${baseUrl}/email-verification?token=${token}&email=${encodeURIComponent(email)}`;
   const subject = "Panglao TDMS - Confirm Your Email";
-  
-  // Plain text version - very simple
+
   const textMessage = `
 Panglao Tourism Data Management System
 
-To complete your registration, please confirm your email address:
-
+To complete your registration, please confirm your email address by clicking the link below:
+${verificationLink}
 
 This confirmation link expires in 24 hours.
 
@@ -75,11 +74,13 @@ Municipality of Panglao, Bohol
 Tourism Data Management System
 `;
 
-  // HTML version - minimal and professional
   const htmlMessage = `
 <div>
   <p><strong>Panglao Tourism Data Management System</strong></p>
-  <p>To complete your registration, please confirm your email address:</p>
+  <p>To complete your registration, please confirm your email address by clicking the button below:</p>
+  <p>
+    <a href="${verificationLink}" style="background:#009688;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;display:inline-block;">Verify Email Address</a>
+  </p>
   <p style="font-size: 12px; color: #666;">
     This confirmation link expires in 24 hours.<br>
     Municipality of Panglao, Bohol - Tourism Office
