@@ -236,17 +236,14 @@ exports.requestEmailVerification = async (req, res) => {
   if (!email) return res.status(400).json({ success: false, message: "Email is required" });
 
   try {
-    // Check if already verified
     const alreadyVerified = await userModel.isEmailVerified(email);
     if (alreadyVerified) {
       return res.json({ success: true, message: "Email is already verified." });
     }
 
-    // Generate token and save to DB
     const token = generateVerificationToken(email);
     await userModel.saveEmailVerificationToken(email, token);
 
-    // Send email
     const verifyUrl = `${process.env.FRONTEND_URL}/email-verification?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
     const subject = "Verify your email for Panglao TDMS";
     const html = `
@@ -262,8 +259,9 @@ exports.requestEmailVerification = async (req, res) => {
 
     res.json({ success: true, message: "Verification email sent. Please check your inbox." });
   } catch (err) {
+    // Log the full error for debugging
     console.error("requestEmailVerification error:", err);
-    res.status(500).json({ success: false, message: "Failed to send verification email." });
+    res.status(500).json({ success: false, message: "Failed to send verification email.", error: err.message, stack: err.stack });
   }
 };
 
