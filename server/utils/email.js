@@ -52,6 +52,7 @@
 
 require("dotenv").config({ path: require('path').resolve(__dirname, "../../.env") });
 const nodemailer = require("nodemailer");
+
 const transporter = nodemailer.createTransport({
   port: 465,
   host: "panglaolgu.com",
@@ -61,6 +62,7 @@ const transporter = nodemailer.createTransport({
     pass: "@TourismArrivals2026"
   }
 });
+
 transporter.verify(function (error, success) {
   if (error) {
     console.error('SMTP connection error:', error.message);
@@ -69,26 +71,22 @@ transporter.verify(function (error, success) {
   }
 });
 
-// Accepts email, subject, text, html
-const sendEmailNotification = (email, subject, text, html) => {
-  const mailOptions = {
-    from: "tourismarrivals@panglaolgu.com",
-    to: email,
-    subject: subject,
-    text: text,
-    html: html
-  };
-  return new Promise((resolve, reject) => {
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error("Email error:", error);
-        reject(error);
-      } else {
-        console.log("Email sent to:", email);
-        resolve(info);
-      }
+// Use direct sendMail call with explicit parameters
+const sendEmailNotification = async (to, subject, text, html) => {
+  try {
+    const info = await transporter.sendMail({
+      from: "tourismarrivals@panglaolgu.com",
+      to: to,
+      subject: subject,
+      text: text,
+      html: html
     });
-  });
+    console.log("Email sent to:", to);
+    return info;
+  } catch (error) {
+    console.error("Email error:", error);
+    throw error;
+  }
 };
 
 module.exports = { sendEmailNotification };

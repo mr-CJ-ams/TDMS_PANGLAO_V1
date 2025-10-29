@@ -331,3 +331,19 @@ exports.resetPassword = async (req, res) => {
     res.status(500).json({ message: "Failed to reset password. Please try again later." });
   }
 };
+
+// Test email sending (remove in production)
+exports.testEmail = async (req, res) => {
+  try {
+    await sendEmailNotification(
+      "pesopanglaoweb@gmail.com",
+      "TDMS Email Test - Custom SMTP",
+      "Hello! This is a test email from TDMS system.",
+      "<p>Hello! This is a test email from TDMS system.</p>"
+    );
+    res.json({ message: "Test email sent successfully" });
+  } catch (err) {
+    console.error("Error sending test email:", err);
+    res.status(500).json({ message: "Failed to send test email" });
+  }
+};
