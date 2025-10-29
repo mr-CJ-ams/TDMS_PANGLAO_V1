@@ -52,23 +52,34 @@
 require("dotenv").config({ path: require('path').resolve(__dirname, "../../.env") });
 const nodemailer = require("nodemailer");
 
-// Improved email configuration with better authentication
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  secure: process.env.SMTP_PORT == 465, // true for 465, false for other ports
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD
-  },
-  // Improved settings for deliverability
-  tls: {
-    rejectUnauthorized: false // Allow self-signed certificates
-  },
-  connectionTimeout: 10000, // 10 seconds
-  greetingTimeout: 10000,
-  socketTimeout: 10000
-});
+// Choose SMTP provider based on ENV
+const provider = process.env.EMAIL_PROVIDER || "panglao"; // "panglao" or "sendgrid"
+
+let transporter;
+if (provider === "sendgrid") {
+  transporter = nodemailer.createTransport({
+    host: process.env.SENDGRID_SMTP_HOST,
+    port: Number(process.env.SENDGRID_SMTP_PORT),
+    secure: false,
+    auth: {
+      user: process.env.SENDGRID_SMTP_USER,
+      pass: process.env.SENDGRID_SMTP_PASSWORD
+    }
+  });
+} else {
+  transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT),
+    secure: process.env.SMTP_SECURE === "true" || process.env.SMTP_PORT == 465,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASSWORD
+    },
+    tls: {
+      rejectUnauthorized: false
+    }
+  });
+}
 
 // Verify transporter on startup
 transporter.verify(function (error, success) {
@@ -79,42 +90,31 @@ transporter.verify(function (error, success) {
   }
 });
 
-const sendEmailNotification = (email, subject, message) => {
+const sendEmailNotification = async (to, subject, html) => {
+  const from = provider === "sendgrid"
+    ? process.env.SENDGRID_EMAIL_FROM
+    : process.env.EMAIL_FROM;
+
   const mailOptions = {
-    from: {
-      name: "Panglao Municipal Tourism Office",
-      address: process.env.EMAIL_FROM
-    },
-    to: email,
-    subject: subject,
-    text: message.replace(/<[^>]*>/g, ''), // Plain text version
-    html: message,
-    // Improved headers for deliverability
+    from: `Panglao Tourism Office <${from}>`,
+    to,
+    subject,
+    text: html.replace(/<[^>]*>/g, ''), // Plain text fallback
+    html,
     headers: {
       'X-Priority': '1',
-      'X-Mailer': 'TDMS Node.js',
-      'List-Unsubscribe': `<mailto:${process.env.EMAIL_FROM}?subject=Unsubscribe>`,
-    },
-    // DKIM signing (if available)
-    dkim: {
-      domainName: "panglaolgu.com",
-      keySelector: "default",
-      privateKey: "" // Your IT department can provide this
+      'X-Mailer': 'TDMS Node.js'
     }
   };
 
-  return new Promise((resolve, reject) => {
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error("❌ Error sending email:", error);
-        reject(error);
-      } else {
-        console.log("✅ Email sent successfully:", info.response);
-        console.log("📧 Message ID:", info.messageId);
-        resolve(info);
-      }
-    });
-  });
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`✅ Email sent via ${provider} to:`, to);
+    return info;
+  } catch (error) {
+    console.error("❌ Email error:", error);
+    throw error;
+  }
 };
 
 module.exports = { sendEmailNotification };
