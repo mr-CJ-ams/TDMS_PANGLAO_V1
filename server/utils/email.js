@@ -49,25 +49,19 @@
  * Author: Carlojead Amaquin
  * Date: [2025-08-21] 
  */
+
 require("dotenv").config({ path: require('path').resolve(__dirname, "../../.env") });
 const nodemailer = require("nodemailer");
 
-// Improved email configuration with better authentication
+// Email configuration - using the working settings from your test
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
   port: process.env.SMTP_PORT,
-  secure: process.env.SMTP_PORT == 465, // true for 465, false for other ports
+  host: process.env.SMTP_HOST,
+  secure: process.env.SMTP_SECURE,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASSWORD
-  },
-  // Improved settings for deliverability
-  tls: {
-    rejectUnauthorized: false // Allow self-signed certificates
-  },
-  connectionTimeout: 10000, // 10 seconds
-  greetingTimeout: 10000,
-  socketTimeout: 10000
+  }
 });
 
 // Verify transporter on startup
@@ -81,26 +75,11 @@ transporter.verify(function (error, success) {
 
 const sendEmailNotification = (email, subject, message) => {
   const mailOptions = {
-    from: {
-      name: "Panglao Municipal Tourism Office",
-      address: process.env.EMAIL_FROM
-    },
+    from: process.env.EMAIL_FROM,
     to: email,
     subject: subject,
     text: message.replace(/<[^>]*>/g, ''), // Plain text version
-    html: message,
-    // Improved headers for deliverability
-    headers: {
-      'X-Priority': '1',
-      'X-Mailer': 'TDMS Node.js',
-      'List-Unsubscribe': `<mailto:${process.env.EMAIL_FROM}?subject=Unsubscribe>`,
-    },
-    // DKIM signing (if available)
-    dkim: {
-      domainName: "panglaolgu.com",
-      keySelector: "default",
-      privateKey: "" // Your IT department can provide this
-    }
+    html: `<div>${message}</div>`
   };
 
   return new Promise((resolve, reject) => {
@@ -109,7 +88,7 @@ const sendEmailNotification = (email, subject, message) => {
         console.error("❌ Error sending email:", error);
         reject(error);
       } else {
-        console.log("✅ Email sent successfully:", info.response);
+        console.log("✅ Email sent successfully to:", email);
         console.log("📧 Message ID:", info.messageId);
         resolve(info);
       }
