@@ -49,44 +49,72 @@
  * Author: Carlojead Amaquin
  * Date: [2025-08-21] 
  */
-
 require("dotenv").config({ path: require('path').resolve(__dirname, "../../.env") });
 const nodemailer = require("nodemailer");
 
+// Improved email configuration with better authentication
 const transporter = nodemailer.createTransport({
-  port: 465,
-  host: "panglaolgu.com",
-  secure: true,
+  host: process.env.SMTP_HOST,
+  port: process.env.SMTP_PORT,
+  secure: process.env.SMTP_PORT == 465, // true for 465, false for other ports
   auth: {
-    user: "tourismarrivals@panglaolgu.com",
-    pass: "@TourismArrivals2026"
-  }
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASSWORD
+  },
+  // Improved settings for deliverability
+  tls: {
+    rejectUnauthorized: false // Allow self-signed certificates
+  },
+  connectionTimeout: 10000, // 10 seconds
+  greetingTimeout: 10000,
+  socketTimeout: 10000
 });
 
+// Verify transporter on startup
 transporter.verify(function (error, success) {
   if (error) {
-    console.error('SMTP connection error:', error.message);
+    console.error('❌ SMTP connection error:', error.message);
   } else {
-    console.log('SMTP server ready');
+    console.log('✅ SMTP server is ready to send emails');
   }
 });
 
-// Use direct sendMail call with explicit parameters
-const sendEmailNotification = async (to, subject, text, html) => {
-  try {
-    const info = await transporter.sendMail({
-      from: "tourismarrivals@panglaolgu.com",
-      to: to,
-      subject: subject,
-      text: text,
-      html: html
+const sendEmailNotification = (email, subject, message) => {
+  const mailOptions = {
+    from: {
+      name: "Panglao Municipal Tourism Office",
+      address: process.env.EMAIL_FROM
+    },
+    to: email,
+    subject: subject,
+    text: message.replace(/<[^>]*>/g, ''), // Plain text version
+    html: message,
+    // Improved headers for deliverability
+    headers: {
+      'X-Priority': '1',
+      'X-Mailer': 'TDMS Node.js',
+      'List-Unsubscribe': `<mailto:${process.env.EMAIL_FROM}?subject=Unsubscribe>`,
+    },
+    // DKIM signing (if available)
+    dkim: {
+      domainName: "panglaolgu.com",
+      keySelector: "default",
+      privateKey: "" // Your IT department can provide this
+    }
+  };
+
+  return new Promise((resolve, reject) => {
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error("❌ Error sending email:", error);
+        reject(error);
+      } else {
+        console.log("✅ Email sent successfully:", info.response);
+        console.log("📧 Message ID:", info.messageId);
+        resolve(info);
+      }
     });
-    console.log("Email sent to:", to);
-    return info;
-  } catch (error) {
-    console.error("Email error:", error);
-    throw error;
-  }
+  });
 };
 
 module.exports = { sendEmailNotification };

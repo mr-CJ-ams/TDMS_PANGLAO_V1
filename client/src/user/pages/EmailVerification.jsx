@@ -118,10 +118,6 @@ const EmailVerification = () => {
     navigate("/signup", { state: { requestVerification: true } });
   };
 
-  const handleGoToLogin = () => {
-    navigate("/login");
-  };
-
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-cyan-400 to-teal-500 p-4">
       <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
@@ -147,14 +143,11 @@ const EmailVerification = () => {
               <CheckCircle className="w-12 h-12 text-green-500 mx-auto" />
               <h2 className="text-lg font-semibold text-green-700">Email Verified!</h2>
               <p className="text-gray-600">{message}</p>
-              <p className="text-gray-600">After verifying, you can continue your registration or log in to your account.</p>
               <button
                 onClick={handleContinueToRegistration}
                 className="w-full bg-gradient-to-r from-cyan-400 to-teal-500 text-white py-3 rounded-lg font-medium hover:opacity-90 transition-opacity"
               >
-                {message.includes("already registered") || message.includes("log in")
-                  ? "Go to Login"
-                  : "Continue to Registration"}
+                Continue to Registration
               </button>
             </div>
           )}
