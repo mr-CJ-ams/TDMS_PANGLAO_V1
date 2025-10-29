@@ -52,7 +52,6 @@
 
 require("dotenv").config({ path: require('path').resolve(__dirname, "../../.env") });
 const nodemailer = require("nodemailer");
-
 const transporter = nodemailer.createTransport({
   port: 465,
   host: "panglaolgu.com",
@@ -62,7 +61,6 @@ const transporter = nodemailer.createTransport({
     pass: "@TourismArrivals2026"
   }
 });
-
 transporter.verify(function (error, success) {
   if (error) {
     console.error('SMTP connection error:', error.message);
@@ -70,8 +68,6 @@ transporter.verify(function (error, success) {
     console.log('SMTP server ready');
   }
 });
-
-// This function sends a simple test email (can be used for verification)
 const sendEmailNotification = (email) => {
   const mailOptions = {
     from: "tourismarrivals@panglaolgu.com",
@@ -80,7 +76,6 @@ const sendEmailNotification = (email) => {
     text: "Hello! This is a test email from TDMS system.",
     html: "<p>Hello! This is a test email from TDMS system.</p>"
   };
-
   return new Promise((resolve, reject) => {
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
