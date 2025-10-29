@@ -76,7 +76,7 @@ router.put("/update-rooms", authenticateToken, authController.updateRooms);
 router.post("/forgot-password", authController.forgotPassword);
 router.post("/reset-password", authController.resetPassword);
 
-// Email verification routes
+// Email verification endpoints
 router.post("/request-email-verification", authController.requestEmailVerification);
 router.get("/verify-email", authController.verifyEmail);
 router.get("/check-email-verification", authController.checkEmailVerification);
