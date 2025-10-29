@@ -57,61 +57,45 @@ function generateVerificationToken() {
   return crypto.randomBytes(32).toString('hex');
 }
 
-// Improved email content to avoid spam filters
-function createVerificationEmail(email, token, baseUrl, userName = "") {
+// Simple, professional email content
+function createVerificationEmail(email, token, baseUrl) {
   const verificationLink = `${baseUrl}/email-verification?token=${token}&email=${encodeURIComponent(email)}`;
-  const subject = "Verify your Panglao TDMS account email address";
-
-  // Plain text version
+  
+  const subject = "Panglao TDMS - Confirm Your Email";
+  
+  // Plain text version - very simple
   const textMessage = `
-Hello${userName ? " " + userName : ""},
+Panglao Tourism Data Management System
 
-Thank you for registering for the Panglao Tourist Data Management System.
+To complete your registration, please confirm your email address:
 
-Please verify your email address by clicking the link below:
 ${verificationLink}
 
-This link will expire in 24 hours. If you did not create this account, please ignore this email.
+This confirmation link expires in 24 hours.
 
-Best regards,
-Panglao Tourism Office
+Municipality of Panglao, Bohol
+Tourism Data Management System
 `;
 
-  // HTML version
+  // HTML version - minimal and professional
   const htmlMessage = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Email Verification</title>
-</head>
-<body style="font-family: Arial, sans-serif; color: #333;">
-  <div style="background: #009688; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
-    <img src="https://tourismarrivals.panglaolgu.com/img/Tourism_logo.png" alt="Panglao Logo" style="height: 48px; vertical-align: middle; margin-right: 10px;">
-    <span style="font-size: 22px; font-weight: bold;">Tourism Data Management System</span>
-  </div>
-  <div style="padding: 24px; background: #fff; border-radius: 0 0 8px 8px;">
-    <h2 style="color: #009688;">Complete Your Registration</h2>
-    <p>Hello${userName ? " " + userName : ""},</p>
-    <p>Thank you for registering for the Panglao TDMS. Please verify your email address by clicking the button below:</p>
-    <div style="text-align: center; margin: 32px 0;">
-      <a href="${verificationLink}" style="background: #009688; color: white; padding: 14px 28px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">Verify Email Address</a>
-    </div>
-    <p style="font-size: 13px; color: #666;">This link will expire in 24 hours. If you did not create this account, please ignore this email.</p>
-    <hr style="margin: 24px 0;">
-    <p style="font-size: 12px; color: #888;">Need help? Contact the Panglao Municipal Tourism Office.<br>
-    &copy; ${new Date().getFullYear()} Municipality of Panglao, Bohol.</p>
-  </div>
-</body>
-</html>
+<div>
+  <p><strong>Panglao Tourism Data Management System</strong></p>
+  <p>To complete your registration, please confirm your email address:</p>
+  <p><a href="${verificationLink}" style="color: #0066cc;">Confirm Email Address</a></p>
+  <p style="font-size: 12px; color: #666;">
+    This confirmation link expires in 24 hours.<br>
+    Municipality of Panglao, Bohol - Tourism Office
+  </p>
+</div>
 `;
 
   return { subject, textMessage, htmlMessage };
 }
 
-// Improved email sending with better error handling
-async function sendVerificationEmail(email, token, baseUrl, userName = "") {
-  const { subject, textMessage, htmlMessage } = createVerificationEmail(email, token, baseUrl, userName);
+// Email sending function
+async function sendVerificationEmail(email, token, baseUrl) {
+  const { subject, textMessage, htmlMessage } = createVerificationEmail(email, token, baseUrl);
   return sendEmailNotification(email, subject, textMessage, htmlMessage);
 }
 

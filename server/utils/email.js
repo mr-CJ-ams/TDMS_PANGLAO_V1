@@ -54,43 +54,39 @@ require("dotenv").config({ path: require('path').resolve(__dirname, "../../.env"
 const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
-  port: process.env.SMTP_PORT,
-  host: process.env.SMTP_HOST,
-  secure: process.env.SMTP_SECURE === "true" || process.env.SMTP_SECURE === true,
+  port: 465,
+  host: "panglaolgu.com",
+  secure: true,
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD
+    user: "tourismarrivals@panglaolgu.com",
+    pass: "@TourismArrivals2026"
   }
 });
 
 transporter.verify(function (error, success) {
   if (error) {
-    console.error('❌ SMTP connection error:', error.message);
+    console.error('SMTP connection error:', error.message);
   } else {
-    console.log('✅ SMTP server is ready to send emails');
+    console.log('SMTP server ready');
   }
 });
 
 const sendEmailNotification = (email, subject, textMessage, htmlMessage) => {
   const mailOptions = {
-    from: process.env.EMAIL_FROM,
+    from: "tourismarrivals@panglaolgu.com",
     to: email,
     subject: subject,
     text: textMessage,
-    html: htmlMessage,
-    replyTo: process.env.EMAIL_FROM,
-    headers: {
-      'List-Unsubscribe': `<mailto:${process.env.EMAIL_FROM}>`
-    }
+    html: htmlMessage
   };
 
   return new Promise((resolve, reject) => {
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
-        console.error("❌ Error sending email:", error);
+        console.error("Email error:", error);
         reject(error);
       } else {
-        console.log("✅ Email sent successfully to:", email);
+        console.log("Email sent to:", email);
         resolve(info);
       }
     });
