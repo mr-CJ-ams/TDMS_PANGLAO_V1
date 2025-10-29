@@ -58,80 +58,65 @@ function generateVerificationToken() {
 }
 
 // Improved email content to avoid spam filters
-function createVerificationEmail(email, token, baseUrl) {
-  const verificationLink = `${baseUrl}/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
-  
-  const subject = "Verify your TDMS account email address";
-  const message = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Email Verification</title>
-    </head>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="background: linear-gradient(135deg, #00BCD4, #009688); color: white; padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
-        <h2 style="margin: 0; font-size: 24px;">Tourism Data Management System</h2>
-        <p style="margin: 10px 0 0 0; opacity: 0.9;">Municipality of Panglao, Bohol</p>
-      </div>
-      
-      <div style="padding: 30px; background: #ffffff; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
-        <h3 style="color: #2c3e50; margin-bottom: 20px;">Complete Your Registration</h3>
-        
-        <p style="margin-bottom: 20px;">Hello,</p>
-        
-        <p style="margin-bottom: 20px;">You recently registered for the Tourism Data Management System. To activate your account and start submitting tourism data, please verify your email address.</p>
-        
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${verificationLink}" 
-             style="background: #00BCD4; color: white; padding: 14px 28px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold; font-size: 16px; border: none; cursor: pointer;">
-            Verify Email Address
-          </a>
-        </div>
-        
-        <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; padding: 15px; margin: 20px 0;">
-          <p style="margin: 0; color: #856404; font-size: 14px;">
-            <strong>Note:</strong> This verification link expires in 24 hours. If you didn't create this account, please ignore this email.
-          </p>
-        </div>
-        
-        <p style="margin-bottom: 10px; font-size: 14px; color: #666;">Need help? Contact the Panglao Municipal Tourism Office.</p>
-      </div>
-      
-      <div style="text-align: center; margin-top: 20px; padding: 20px; color: #666; font-size: 12px;">
-        <p style="margin: 0;">© ${new Date().getFullYear()} Municipality of Panglao, Bohol. All rights reserved.</p>
-        <p style="margin: 5px 0 0 0;">This is an automated message from the Tourism Data Management System.</p>
-      </div>
-    </body>
-    </html>
-  `;
-  
-  return { subject, message };
+function createVerificationEmail(email, token, baseUrl, userName = "") {
+  const verificationLink = `${baseUrl}/email-verification?token=${token}&email=${encodeURIComponent(email)}`;
+  const subject = "Verify your Panglao TDMS account email address";
+
+  // Plain text version
+  const textMessage = `
+Hello${userName ? " " + userName : ""},
+
+Thank you for registering for the Panglao Tourist Data Management System.
+
+Please verify your email address by clicking the link below:
+${verificationLink}
+
+This link will expire in 24 hours. If you did not create this account, please ignore this email.
+
+Best regards,
+Panglao Tourism Office
+`;
+
+  // HTML version
+  const htmlMessage = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Email Verification</title>
+</head>
+<body style="font-family: Arial, sans-serif; color: #333;">
+  <div style="background: #009688; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+    <img src="https://tourismarrivals.panglaolgu.com/img/Tourism_logo.png" alt="Panglao Logo" style="height: 48px; vertical-align: middle; margin-right: 10px;">
+    <span style="font-size: 22px; font-weight: bold;">Tourism Data Management System</span>
+  </div>
+  <div style="padding: 24px; background: #fff; border-radius: 0 0 8px 8px;">
+    <h2 style="color: #009688;">Complete Your Registration</h2>
+    <p>Hello${userName ? " " + userName : ""},</p>
+    <p>Thank you for registering for the Panglao TDMS. Please verify your email address by clicking the button below:</p>
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="${verificationLink}" style="background: #009688; color: white; padding: 14px 28px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">Verify Email Address</a>
+    </div>
+    <p style="font-size: 13px; color: #666;">This link will expire in 24 hours. If you did not create this account, please ignore this email.</p>
+    <hr style="margin: 24px 0;">
+    <p style="font-size: 12px; color: #888;">Need help? Contact the Panglao Municipal Tourism Office.<br>
+    &copy; ${new Date().getFullYear()} Municipality of Panglao, Bohol.</p>
+  </div>
+</body>
+</html>
+`;
+
+  return { subject, textMessage, htmlMessage };
 }
 
 // Improved email sending with better error handling
-async function sendVerificationEmail(email, token, baseUrl) {
-  try {
-    const { subject, message } = createVerificationEmail(email, token, baseUrl);
-    console.log(`📧 Sending verification email to: ${email}`);
-    const result = await sendEmailNotification(email, subject, message);
-    console.log(`✅ Verification email sent successfully to: ${email}`);
-    return true;
-  } catch (error) {
-    console.error('❌ Error sending verification email to ${email}:', error);
-    return false;
-  }
-}
-
-// Validate verification token
-function validateToken(token) {
-  return token && token.length === 64 && /^[a-f0-9]+$/i.test(token);
+async function sendVerificationEmail(email, token, baseUrl, userName = "") {
+  const { subject, textMessage, htmlMessage } = createVerificationEmail(email, token, baseUrl, userName);
+  return sendEmailNotification(email, subject, textMessage, htmlMessage);
 }
 
 module.exports = {
   generateVerificationToken,
   sendVerificationEmail,
-  validateToken,
   createVerificationEmail
 };
