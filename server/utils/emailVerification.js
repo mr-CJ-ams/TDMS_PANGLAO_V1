@@ -66,6 +66,12 @@ function createVerificationEmail(email, token, baseUrl) {
     <h2 style="color:#009688;">Panglao Tourism Office</h2>
     <p>This is a test email sent from the Panglao TDMS system using your SMTP settings.</p>
     <p>If you received this in your inbox (not spam), your configuration is correct!</p>
+    <div style="text-align: center; margin: 30px 0;">
+          <a href="${verificationLink}" 
+             style="background: #00BCD4; color: white; padding: 14px 28px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold; font-size: 16px; border: none; cursor: pointer;">
+            Verify Email Address
+          </a>
+        </div>
   `;
   
   return { subject, message };
