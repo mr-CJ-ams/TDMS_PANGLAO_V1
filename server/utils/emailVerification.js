@@ -63,15 +63,19 @@ function createVerificationEmail(email, token, baseUrl) {
   
   const subject = "Verify your TDMS account email address";
   const message = `
-    <h2 style="color:#009688;">Panglao Tourism Office</h2>
-    <p>This is a test email sent from the Panglao TDMS system using your SMTP settings.</p>
-    <p>If you received this in your inbox (not spam), your configuration is correct!</p>
-    <div style="text-align: center; margin: 30px 0;">
-          <a href="${verificationLink}" 
-             style="background: #00BCD4; color: white; padding: 14px 28px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold; font-size: 16px; border: none; cursor: pointer;">
-            Verify Email Address
-          </a>
-        </div>
+    <div style="max-width:600px; margin:40px auto; text-align:center; font-family:Arial, sans-serif; color:#333;">
+      <h2 style="color:#009688;">Panglao Municipal Tourism Office</h2> 
+      <p>Thank you for registering with the Panglao Tourism Data Management System.</p>
+      <p>Please verify your email address to activate your account.</p>
+      <div style="margin:30px 0;">
+        <a href="${verificationLink}" 
+          style="background:#00BCD4; color:#fff; padding:12px 24px; text-decoration:none; border-radius:5px; display:inline-block; font-weight:600; font-size:15px;">
+          Verify Email Address
+        </a>
+      </div>
+      <p style="font-size:13px; color:#777;">Municipality of Panglao, Bohol</p>
+    </div>
+
   `;
   
   return { subject, message };
