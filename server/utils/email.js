@@ -51,70 +51,55 @@
  */
 require("dotenv").config({ path: require('path').resolve(__dirname, "../../.env") });
 const nodemailer = require("nodemailer");
+const readline = require("readline");
 
-// Improved email configuration with better authentication
+// Use SendGrid SMTP for this test
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  secure: process.env.SMTP_PORT == 465, // true for 465, false for other ports
+  host: process.env.SENDGRID_SMTP_HOST,
+  port: Number(process.env.SENDGRID_SMTP_PORT),
+  secure: false,
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD
-  },
-  // Improved settings for deliverability
-  tls: {
-    rejectUnauthorized: false // Allow self-signed certificates
-  },
-  connectionTimeout: 10000, // 10 seconds
-  greetingTimeout: 10000,
-  socketTimeout: 10000
-});
-
-// Verify transporter on startup
-transporter.verify(function (error, success) {
-  if (error) {
-    console.error('❌ SMTP connection error:', error.message);
-  } else {
-    console.log('✅ SMTP server is ready to send emails');
+    user: process.env.SENDGRID_SMTP_USER,
+    pass: process.env.SENDGRID_SMTP_PASSWORD
   }
 });
 
-const sendEmailNotification = (email, subject, message) => {
+function sendTestEmail(to) {
   const mailOptions = {
-    from: {
-      name: "Panglao Municipal Tourism Office",
-      address: process.env.EMAIL_FROM
-    },
-    to: email,
-    subject: subject,
-    text: message.replace(/<[^>]*>/g, ''), // Plain text version
-    html: message,
-    // Improved headers for deliverability
-    headers: {
-      'X-Priority': '1',
-      'X-Mailer': 'TDMS Node.js',
-      'List-Unsubscribe': `<mailto:${process.env.EMAIL_FROM}?subject=Unsubscribe>`,
-    },
-    // DKIM signing (if available)
-    dkim: {
-      domainName: "panglaolgu.com",
-      keySelector: "default",
-      privateKey: "" // Your IT department can provide this
-    }
+    from: `"Panglao Tourism Office" <${process.env.SENDGRID_EMAIL_FROM}>`,
+    to,
+    subject: "TDMS Test Email via SendGrid SMTP",
+    text: "This is a test email sent from the Panglao TDMS system using SendGrid SMTP.",
+    html: `<p>This is a <b>test email</b> sent from the Panglao TDMS system using <b>SendGrid SMTP</b>.</p>`
   };
 
-  return new Promise((resolve, reject) => {
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error("❌ Error sending email:", error);
-        reject(error);
-      } else {
-        console.log("✅ Email sent successfully:", info.response);
-        console.log("📧 Message ID:", info.messageId);
-        resolve(info);
-      }
-    });
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error("❌ Error sending email:", error);
+    } else {
+      console.log("✅ Email sent successfully:", info.response);
+      console.log("📧 Message ID:", info.messageId);
+    }
+    process.exit();
   });
-};
+}
 
-module.exports = { sendEmailNotification };
+// If run directly, prompt for recipient and send
+if (require.main === module) {
+  const toArg = process.argv[2];
+  if (toArg) {
+    sendTestEmail(toArg);
+  } else {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+    rl.question("Enter recipient email address: ", (to) => {
+      rl.close();
+      sendTestEmail(to);
+    });
+  }
+}
+
+// Export for use in other modules (optional)
+module.exports = { sendTestEmail };
