@@ -310,7 +310,7 @@ exports.forgotPassword = async (req, res) => {
         <div style="margin:30px 0;">
           <a href="${resetLink}" 
             style="background:#00BCD4; color:#fff; padding:12px 24px; text-decoration:none; border-radius:5px; display:inline-block; font-weight:600; font-size:15px;">
-            Verify Email Address
+            Reset Password
           </a>
         </div>
         <p>This link will expire in 1 hour.</p>
