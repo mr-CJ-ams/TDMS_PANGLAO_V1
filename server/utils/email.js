@@ -51,27 +51,21 @@
  */
 require("dotenv").config({ path: require('path').resolve(__dirname, "../../.env") });
 const nodemailer = require("nodemailer");
-const readline = require("readline");
 
-// Create readline interface for user input
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-
-// SMTP transporter using your .env config (not SendGrid)
+// Improved email configuration with better authentication
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT),
+  port: process.env.SMTP_PORT,
   secure: process.env.SMTP_PORT == 465, // true for 465, false for other ports
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASSWORD
   },
+  // Improved settings for deliverability
   tls: {
-    rejectUnauthorized: false
+    rejectUnauthorized: false // Allow self-signed certificates
   },
-  connectionTimeout: 10000,
+  connectionTimeout: 10000, // 10 seconds
   greetingTimeout: 10000,
   socketTimeout: 10000
 });
@@ -80,34 +74,12 @@ const transporter = nodemailer.createTransport({
 transporter.verify(function (error, success) {
   if (error) {
     console.error('❌ SMTP connection error:', error.message);
-    process.exit(1);
   } else {
     console.log('✅ SMTP server is ready to send emails');
-    askRecipient();
   }
 });
 
-// Prompt for recipient and send email
-function askRecipient() {
-  rl.question("Enter recipient Gmail address: ", function (recipient) {
-    if (!recipient || !/^[^@]+@gmail\.com$/.test(recipient.trim())) {
-      console.log("❌ Please enter a valid Gmail address.");
-      return askRecipient();
-    }
-    sendTestEmail(recipient.trim());
-  });
-}
-
-function sendTestEmail(email) {
-  const subject = "Panglao TDMS Test Email";
-  const html = `
-    <h2 style="color:#009688;">Panglao Tourism Office</h2>
-    <p>This is a test email sent from the Panglao TDMS system using your SMTP settings.</p>
-    <p>If you received this in your inbox (not spam), your configuration is correct!</p>
-    <hr>
-    <small>Sent at ${new Date().toLocaleString()}</small>
-  `;
-
+const sendEmailNotification = (email, subject, message) => {
   const mailOptions = {
     from: {
       name: "Panglao Municipal Tourism Office",
@@ -115,22 +87,34 @@ function sendTestEmail(email) {
     },
     to: email,
     subject: subject,
-    text: "This is a test email sent from the Panglao TDMS system using your SMTP settings.",
-    html: html,
+    text: message.replace(/<[^>]*>/g, ''), // Plain text version
+    html: message,
+    // Improved headers for deliverability
     headers: {
       'X-Priority': '1',
-      'X-Mailer': 'TDMS Node.js'
+      'X-Mailer': 'TDMS Node.js',
+      'List-Unsubscribe': `<mailto:${process.env.EMAIL_FROM}?subject=Unsubscribe>`,
+    },
+    // DKIM signing (if available)
+    dkim: {
+      domainName: "panglaolgu.com",
+      keySelector: "default",
+      privateKey: "" // Your IT department can provide this
     }
   };
 
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.error("❌ Error sending email:", error);
-    } else {
-      console.log("✅ Email sent successfully:", info.response);
-      console.log("📧 Message ID:", info.messageId);
-    }
-    rl.close();
-    process.exit(0);
+  return new Promise((resolve, reject) => {
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error("❌ Error sending email:", error);
+        reject(error);
+      } else {
+        console.log("✅ Email sent successfully:", info.response);
+        console.log("📧 Message ID:", info.messageId);
+        resolve(info);
+      }
+    });
   });
-}
+};
+
+module.exports = { sendEmailNotification };
