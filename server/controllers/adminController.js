@@ -76,15 +76,16 @@ exports.approveUser = async (req, res) => {
     if (!email) return res.status(404).json({ success: false, message: "User email not found." });
 
     const subject = "Your TDMS Account Has Been Approved";
+    const loginUrl = `${process.env.FRONTEND_URL}/login`;
     const message = `
       Dear Valued User,<br><br>
-      We are pleased to inform you that your account registration for the Tourism Data Management System (TDMS) has been approved.<br><br>
+      We are pleased to inform you that your account registration for the Panglao Tourist Data Management System (TDMS) has been approved.<br><br>
       You may now log in and access the system using the following link:<br>
-      <a href=\"https://tdms-panglao-client.onrender.com\">Login Link</a><br><br>
+      <a href="${loginUrl}">Login Link</a><br><br>
       If you have any questions or require assistance, please do not hesitate to contact our office.<br><br>
       Thank you for your interest in the TDMS.<br><br>
       Best regards,<br>
-      Panglao Tourism Office
+      Panglao Municipal Tourism Office
     `;
     await sendEmailNotification(email, subject, message);
     await AdminModel.approveUser(id);
