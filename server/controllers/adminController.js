@@ -106,12 +106,12 @@ exports.declineUser = async (req, res) => {
     const subject = "Your TDMS Account Application Status";
     const message = `
       Dear Applicant,<br><br>
-      We regret to inform you that your registration for the Tourism Data Management System (TDMS) has not been approved.<br><br>
+      We regret to inform you that your registration for the Panglao Tourist Data Management System (TDMS) has not been approved.<br><br>
       <strong>Reason for decline:</strong> ${declineMessage}<br><br>
       If you believe this decision was made in error or if you have any questions, please contact our office for further clarification.<br><br>
       Thank you for your interest in the TDMS.<br><br>
       Sincerely,<br>
-      Panglao Tourism Office
+      Panglao Municipal Tourism Office
     `;
     await sendEmailNotification(email, subject, message);
     await AdminModel.declineUser(id);

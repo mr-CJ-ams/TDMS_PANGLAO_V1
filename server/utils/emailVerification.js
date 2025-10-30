@@ -65,15 +65,13 @@ function createVerificationEmail(email, token, baseUrl) {
   const message = `
     <div style="max-width:600px; margin:40px auto; text-align:center; font-family:Arial, sans-serif; color:#333;">
       <h2 style="color:#009688;">Panglao Tourist Data Management System</h2> 
-      <p>Greetings!</p>
-      <p>Before completing your registration for the Panglao Tourist Data Management System, please verify your email address.</p> 
+      <p>Greetings! Before completing your registration for the Panglao Tourist Data Management System, please verify your email address.</p> 
       <div style="margin:30px 0;">
         <a href="${verificationLink}" 
           style="background:#00BCD4; color:#fff; padding:12px 24px; text-decoration:none; border-radius:5px; display:inline-block; font-weight:600; font-size:15px;">
           Verify Email Address
         </a>
       </div>
-      <p style="font-size:13px; color:#777; margin-top:40px;">Municipality of Panglao, Bohol</p>
     </div>
 
   `;

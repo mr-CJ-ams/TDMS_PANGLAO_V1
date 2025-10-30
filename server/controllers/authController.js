@@ -215,7 +215,7 @@ exports.signup = async (req, res) => {
         If you have any questions or require assistance, please do not hesitate to contact our office.<br><br>
         Thank you for your interest in the TDMS.<br><br>
         Best regards,<br>
-        Panglao Tourism Office
+        Panglao Municipal Tourism Office
       `;
       await sendEmailNotification(email, subject, message);
     }
