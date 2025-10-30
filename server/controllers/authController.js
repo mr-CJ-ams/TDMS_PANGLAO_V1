@@ -304,9 +304,17 @@ exports.forgotPassword = async (req, res) => {
     const resetLink = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
     const emailSubject = "Password Reset Request";
     const emailMessage = `
-      <p>You requested a password reset. Click the link below to reset your password:</p>
-      <p><a href="${resetLink}">${resetLink}</a></p>
-      <p>This link will expire in 1 hour.</p>
+      <div style="max-width:600px; margin:40px auto; text-align:center; font-family:Arial, sans-serif; color:#333;">
+        <h2 style="color:#009688;">Panglao Tourist Data Management System</h2> 
+        <p>You requested a password reset. Click the link below to reset your password:</p>
+        <div style="margin:30px 0;">
+          <a href="${resetLink}" 
+            style="background:#00BCD4; color:#fff; padding:12px 24px; text-decoration:none; border-radius:5px; display:inline-block; font-weight:600; font-size:15px;">
+            Verify Email Address
+          </a>
+        </div>
+        <p>This link will expire in 1 hour.</p>
+      </div>
     `;
     sendEmailNotification(email, emailSubject, emailMessage);
     res.json({ message: "Reset link sent to your email" });
