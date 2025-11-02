@@ -152,8 +152,8 @@ const LineChartComponent: React.FC<LineChartComponentProps> = ({
   ) => {
     if (active && payload && payload.length) {
       const month = formatMonth(Number(label));
-      const actualArrivals = payload.find((entry) => entry.name === "Actual Arrivals")?.value;
-      const predictedArrivals = payload.find((entry) => entry.name === "Predicted Arrivals")?.value;
+      const actualArrivals = payload.find((entry) => entry.name === "Actual Guest Check-Ins")?.value;
+      const predictedArrivals = payload.find((entry) => entry.name === "Predicted Guest Check-Ins")?.value;
 
       return (
         <div style={{
@@ -164,9 +164,9 @@ const LineChartComponent: React.FC<LineChartComponentProps> = ({
           boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.1)",
         }}>
           <p style={{ fontWeight: "bold", color: "#263238", marginBottom: "8px" }}>{month}</p>
-          <p style={{ color: "#0288D1" }}>Actual Arrivals: {actualArrivals}</p>
+          <p style={{ color: "#0288D1" }}>Actual Guest Check-Ins: {actualArrivals}</p>
           {predictedArrivals !== undefined &&
-            <p style={{ color: "#FF6F00" }}>Predicted Arrivals: {predictedArrivals}</p>
+            <p style={{ color: "#FF6F00" }}>Predicted Guest Check-Ins: {predictedArrivals}</p>
           }
         </div>
       );
@@ -236,7 +236,7 @@ const LineChartComponent: React.FC<LineChartComponentProps> = ({
                 dataKey="actual_check_ins"
                 stroke="#0288D1"
                 activeDot={{ r: 8, fill: "#0288D1" }}
-                name="Actual Arrivals"
+                name="Actual Guest Check-Ins"
                 strokeOpacity={0.8}
                 dot={false}
                 strokeWidth={2}
@@ -246,7 +246,7 @@ const LineChartComponent: React.FC<LineChartComponentProps> = ({
                   type="monotone"
                   dataKey="predicted_check_ins"
                   stroke="#FF6F00"
-                  name="Predicted Arrivals"
+                  name="Predicted Guest Check-Ins"
                   strokeDasharray="5 5"
                   dot={false}
                   strokeWidth={2}
@@ -255,6 +255,25 @@ const LineChartComponent: React.FC<LineChartComponentProps> = ({
             </RechartsLineChart>
           </ResponsiveContainer>
         </div>
+      </div>
+      <div style={{ textAlign: "center", marginTop: "20px" }}>
+        <a
+          href="https://colab.research.google.com/drive/1bu_JoysTvJXpopbX-EA9LscEXdfCl921#scrollTo=fGrg7hbyEm7I"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            backgroundColor: "#0288D1",
+            color: "#FFFFFF",
+            padding: "10px 20px",
+            borderRadius: "5px",
+            textDecoration: "none",
+            fontSize: "16px",
+            fontWeight: "bold",
+            display: "inline-block",
+          }}
+        >
+          Learn More About Prediction Factors
+        </a>
       </div>
     </div>
   );
