@@ -90,18 +90,18 @@ const HelpSupport = () => {
              }}
            >
              <iframe
-               src="https://www.youtube.com/embed/tESZX530Av4?si=7-72btxkwTngeRdH"
-               title="TDMS Tutorial"
-               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-               allowFullScreen
-               className="w-full h-full min-h-[200px]"
-               style={{
-                 aspectRatio: "16/9",
-                 minHeight: "200px",
-                 height: "100%",
-                 maxHeight: "60vw"
-               }}
-             ></iframe>
+                src="https://www.youtube.com/embed/aKG2DPGWxDE"
+                title="TDMS Tutorial"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="w-full h-full min-h-[200px]"
+                style={{
+                  aspectRatio: "16/9",
+                  minHeight: "200px",
+                  height: "100%",
+                  maxHeight: "60vw"
+                }}
+              ></iframe>
            </div>
            <p className="text-gray-600 text-sm sm:text-base mt-2 text-center">
              Need help? Watch our step-by-step video guide on how to use the Panglao Tourist Data Management System.
