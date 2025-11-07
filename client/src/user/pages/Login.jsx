@@ -73,6 +73,8 @@ const MAINTENANCE_MESSAGE = (
     <br />
     We’re also updating system features based on the feedback and suggestions from accommodation establishments during the recent event.
     <br />
+    Before the launch, we’ll also set another schedule for class mentoring session to guide everyone on how to use the system properly.
+    <br />
     <span className="block my-3 font-semibold text-amber-700 bg-amber-100 rounded px-2 py-1">
       For now, please continue submitting your tourist statistics via Google Classroom.
     </span>
