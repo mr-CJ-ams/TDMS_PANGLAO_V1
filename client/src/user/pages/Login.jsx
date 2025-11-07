@@ -67,12 +67,21 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000
 const LOGIN_TIMEOUT = 30000;
 
 const MAINTENANCE_MODE = true;
-const MAINTENANCE_MESSAGE = `The ITDMS is temporarily unavailable as we prepare for its official launch in 2026.
-We’re also updating system features based on the feedback and suggestions from accommodation establishments during the recent event.
-For now, please continue submitting your tourist statistics via Google Classroom.
-
-Thank you for your understanding.
-— Panglao Municipal Tourism Office`;
+const MAINTENANCE_MESSAGE = (
+  <>
+    The ITDMS is temporarily unavailable as we prepare for its official launch in 2026.
+    <br />
+    We’re also updating system features based on the feedback and suggestions from accommodation establishments during the recent event.
+    <br />
+    <span className="block my-3 font-semibold text-amber-700 bg-amber-100 rounded px-2 py-1">
+      For now, please continue submitting your tourist statistics via Google Classroom.
+    </span>
+    <br />
+    Thank you for your understanding.
+    <br />
+    — Panglao Municipal Tourism Office
+  </>
+);
 
 const Login = () => {
   const [email, setEmail] = useState(""),
