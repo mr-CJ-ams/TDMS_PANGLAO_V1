@@ -268,9 +268,14 @@ class AdminModel {
     const query = `
       SELECT 
         g.gender,
-        CASE 
-          WHEN g.age < 18 THEN 'Minors'
-          ELSE 'Adults'
+        CASE
+          WHEN g.age BETWEEN 0 AND 12 THEN 'Children'
+          WHEN g.age BETWEEN 13 AND 17 THEN 'Teens'
+          WHEN g.age BETWEEN 18 AND 24 THEN 'Young Adults'
+          WHEN g.age BETWEEN 25 AND 44 THEN 'Adults'
+          WHEN g.age BETWEEN 45 AND 59 THEN 'Middle-Aged'
+          WHEN g.age >= 60 THEN 'Seniors'
+          ELSE 'Unknown'
         END AS age_group,
         g.status,
         COUNT(*) AS count

@@ -93,31 +93,44 @@ const UserGuestDemographics = ({ user, selectedYear, selectedMonth, formatMonth 
   }, [user, selectedYear, selectedMonth]);
 
   // Calculate summary
-  const summary = {
-    Male: 0,
-    Female: 0,
-    Minors: 0,
-    Adults: 0,
-    Married: 0,
-    Single: 0,
+  const totals = { 
+    Male: 0, 
+    Female: 0, 
+    Children: 0, 
+    Teens: 0, 
+    YoungAdults: 0, 
+    Adults: 0, 
+    MiddleAged: 0, 
+    Seniors: 0, 
+    Married: 0, 
+    Single: 0 
   };
+
   guestDemographics.forEach(({ gender, age_group, status, count }) => {
-    const c = Number(count) || 0;
-    if (gender === "Male") summary.Male += c;
-    if (gender === "Female") summary.Female += c;
-    if (age_group === "Minors") summary.Minors += c;
-    if (age_group === "Adults") summary.Adults += c;
-    if (status === "Married") summary.Married += c;
-    if (status === "Single") summary.Single += c;
+    const c = typeof count === 'string' ? parseInt(count) || 0 : count;
+    if (gender === "Male") totals.Male += c;
+    if (gender === "Female") totals.Female += c;
+    if (age_group === "Children") totals.Children += c;
+    if (age_group === "Teens") totals.Teens += c;
+    if (age_group === "Young Adults") totals.YoungAdults += c;
+    if (age_group === "Adults") totals.Adults += c;
+    if (age_group === "Middle-Aged") totals.MiddleAged += c;
+    if (age_group === "Seniors") totals.Seniors += c;
+    if (status === "Married") totals.Married += c;
+    if (status === "Single") totals.Single += c;
   });
 
   const summaryTableData = [
-    { Category: "Male", Total: summary.Male },
-    { Category: "Female", Total: summary.Female },
-    { Category: "Minors", Total: summary.Minors },
-    { Category: "Adults", Total: summary.Adults },
-    { Category: "Married", Total: summary.Married },
-    { Category: "Single", Total: summary.Single },
+    { Category: "Male", Total: totals.Male },
+    { Category: "Female", Total: totals.Female },
+    { Category: "Children (0–12)", Total: totals.Children },
+    { Category: "Teens (13–17)", Total: totals.Teens },
+    { Category: "Young Adults (18–24)", Total: totals.YoungAdults },
+    { Category: "Adults (25–44)", Total: totals.Adults },
+    { Category: "Middle-Aged (45–59)", Total: totals.MiddleAged },
+    { Category: "Seniors (60+)", Total: totals.Seniors },
+    { Category: "Married", Total: totals.Married },
+    { Category: "Single", Total: totals.Single },
   ];
 
   const exportGuestDemographics = () => {
@@ -198,6 +211,15 @@ const UserGuestDemographics = ({ user, selectedYear, selectedMonth, formatMonth 
       `${user?.company_name || 'Resort'}_${formatMonth(selectedMonth)}_${selectedYear}_Guest_Demographics_Report.xlsx`
     );
   };
+
+  const ageGroupLabels = [
+    "Children",
+    "Teens",
+    "Young Adults",
+    "Adults",
+    "Middle-Aged",
+    "Seniors"
+  ];
 
   return (
     <div style={{ padding: 20, backgroundColor: "#E0F7FA", marginTop: 24, borderRadius: 12 }}>
@@ -288,4 +310,4 @@ const UserGuestDemographics = ({ user, selectedYear, selectedMonth, formatMonth 
   );
 };
 
-export default UserGuestDemographics; 
+export default UserGuestDemographics;

@@ -75,8 +75,12 @@ interface GuestDemographicsProps {
 interface Totals {
   Male: number;
   Female: number;
-  Minors: number;
+  Children: number;
+  Teens: number;
+  YoungAdults: number;
   Adults: number;
+  MiddleAged: number;
+  Seniors: number;
   Married: number;
   Single: number;
 }
@@ -92,12 +96,25 @@ const GuestDemographics: React.FC<GuestDemographicsProps> = ({
   selectedMonth,
   formatMonth
 }) => {
+  const ageGroupLabels = [
+    "Children",
+    "Teens",
+    "Young Adults",
+    "Adults",
+    "Middle-Aged",
+    "Seniors"
+  ];
+
   const calculateTotals = (): Totals => {
     const totals: Totals = { 
       Male: 0, 
       Female: 0, 
-      Minors: 0, 
+      Children: 0, 
+      Teens: 0, 
+      YoungAdults: 0, 
       Adults: 0, 
+      MiddleAged: 0, 
+      Seniors: 0, 
       Married: 0, 
       Single: 0 
     };
@@ -106,8 +123,12 @@ const GuestDemographics: React.FC<GuestDemographicsProps> = ({
       const c = typeof count === 'string' ? parseInt(count) || 0 : count;
       if (gender === "Male") totals.Male += c;
       if (gender === "Female") totals.Female += c;
-      if (age_group === "Minors") totals.Minors += c;
+      if (age_group === "Children") totals.Children += c;
+      if (age_group === "Teens") totals.Teens += c;
+      if (age_group === "Young Adults") totals.YoungAdults += c;
       if (age_group === "Adults") totals.Adults += c;
+      if (age_group === "Middle-Aged") totals.MiddleAged += c;
+      if (age_group === "Seniors") totals.Seniors += c;
       if (status === "Married") totals.Married += c;
       if (status === "Single") totals.Single += c;
     });
@@ -126,8 +147,12 @@ const GuestDemographics: React.FC<GuestDemographicsProps> = ({
     const summaryData = [
       ["Male", totals.Male], 
       ["Female", totals.Female], 
-      ["Minors", totals.Minors],
-      ["Adults", totals.Adults], 
+      ["Children (0–12)", totals.Children],
+      ["Teens (13–17)", totals.Teens],
+      ["Young Adults (18–24)", totals.YoungAdults],
+      ["Adults (25–44)", totals.Adults],
+      ["Middle-Aged (45–59)", totals.MiddleAged],
+      ["Seniors (60+)", totals.Seniors],
       ["Married", totals.Married], 
       ["Single", totals.Single]
     ];
@@ -164,8 +189,12 @@ const GuestDemographics: React.FC<GuestDemographicsProps> = ({
   const summaryTableData: SummaryTableRow[] = [
     { Category: "Male", Total: totals.Male },
     { Category: "Female", Total: totals.Female },
-    { Category: "Minors", Total: totals.Minors },
-    { Category: "Adults", Total: totals.Adults },
+    { Category: "Children (0–12)", Total: totals.Children },
+    { Category: "Teens (13–17)", Total: totals.Teens },
+    { Category: "Young Adults (18–24)", Total: totals.YoungAdults },
+    { Category: "Adults (25–44)", Total: totals.Adults },
+    { Category: "Middle-Aged (45–59)", Total: totals.MiddleAged },
+    { Category: "Seniors (60+)", Total: totals.Seniors },
     { Category: "Married", Total: totals.Married },
     { Category: "Single", Total: totals.Single },
   ];
