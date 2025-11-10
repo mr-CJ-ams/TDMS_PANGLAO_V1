@@ -40,7 +40,8 @@ const UserApproval = ({
   setDeclineMessage,
 }: UserApprovalProps) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeFilter, setActiveFilter] = useState<"all" | "pending" | "approved">("all");
+  // Show Pending by default. Removed "All" filter as requested.
+  const [activeFilter, setActiveFilter] = useState<"pending" | "approved">("approved");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
   const [userToDeactivate, setUserToDeactivate] = useState<string | null>(null);
@@ -52,16 +53,15 @@ const UserApproval = ({
   }>({ show: false, title: "", message: "" });
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
-  const filteredAndSortedUsers = useMemo(() =>
-    users
-      .filter(u => (u.company_name || "").toLowerCase().includes(searchTerm.toLowerCase()) &&
-        (activeFilter === "all" ||
-          (activeFilter === "pending" && !u.is_approved) ||
-          (activeFilter === "approved" && u.is_approved)))
+  const filteredAndSortedUsers = useMemo(() => {
+    return users
+      .filter(u => (u.company_name || "").toLowerCase().includes(searchTerm.toLowerCase()))
+      .filter(u => (activeFilter === "pending" ? !u.is_approved : u.is_approved))
       .sort((a, b) => {
         const cmp = (a.company_name || "").localeCompare(b.company_name || "");
         return sortDirection === "asc" ? cmp : -cmp;
-      }), [users, searchTerm, activeFilter, sortDirection]);
+      });
+  }, [users, searchTerm, activeFilter, sortDirection]);
 
   const activeUsers = filteredAndSortedUsers.filter(u => u.is_active);
   const deactivatedUsers = filteredAndSortedUsers.filter(u => !u.is_active);
@@ -218,22 +218,16 @@ const UserApproval = ({
           />
         </div>
         <div className="flex gap-2">
-          {(["all", "pending", "approved"] as const).map(f => (
-            <button 
-              key={f} 
+          {(["approved", "pending"] as const).map(f => (
+            <button
+              key={f}
               onClick={() => setActiveFilter(f)}
               className={`px-4 py-2 rounded-lg transition-colors ${
                 activeFilter === f
-                  ? f === "all"
-                    ? "bg-sky-500 text-white"
-                    : f === "pending"
+                  ? f === "pending"
                     ? "bg-amber-500 text-white"
                     : "bg-emerald-500 text-white"
-                  : f === "all"
-                  ? "bg-white text-gray-600 hover:bg-sky-50"
-                  : f === "pending"
-                  ? "bg-white text-gray-600 hover:bg-amber-50"
-                  : "bg-white text-gray-600 hover:bg-emerald-50"
+                  : "bg-white text-gray-600 hover:bg-sky-50"
               }`}
             >
               {f.charAt(0).toUpperCase() + f.slice(1)}

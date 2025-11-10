@@ -219,8 +219,9 @@ class AdminModel {
       ORDER BY m.month ASC;
     `;
     const result = await pool.query(query, [year]);
+    // Count only approved users for submission rate calculation
     const usersCount = await pool.query(
-      `SELECT COUNT(*) FROM users WHERE role = 'user'`
+      `SELECT COUNT(*) FROM users WHERE role = 'user' AND is_approved = true`
     );
     return {
       metrics: result.rows,
