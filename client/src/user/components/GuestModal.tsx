@@ -261,6 +261,9 @@ const GuestModal = ({
                     <select className="form-control" value={guest.status} onChange={e => handleUpdateGuest(idx, "status", e.target.value)} disabled={disabled}>
                       <option>Single</option>
                       <option>Married</option>
+                      <option>N/A</option>
+                      <option>Divorced</option>
+                      <option>Widowed</option>
                     </select>
                   </div>
                   <div className="col">

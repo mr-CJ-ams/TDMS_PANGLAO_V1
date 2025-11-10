@@ -59,8 +59,33 @@ import axios from "axios";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { Download } from "lucide-react";
+import {
+  PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, LabelList
+} from "recharts";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+
+const COLORS = ["#42a5f5", "#ec4899"];
+const AGE_COLORS = ["#60a5fa", "#38bdf8", "#34d399", "#4ade80", "#a3e635", "#facc15"];
+const STATUS_COLORS = ["#a78bfa", "#818cf8", "#f472b6", "#f87171", "#fbbf24"];
+
+const ageGroupLabels = [
+  "Children",
+  "Teens",
+  "Young Adults",
+  "Adults",
+  "Middle-Aged",
+  "Seniors"
+];
+
+const statusLabels = [
+  "Married",
+  "Single",
+  "N/A",
+  "Divorced",
+  "Widowed"
+];
 
 const UserGuestDemographics = ({ user, selectedYear, selectedMonth, formatMonth }) => {
   const [guestDemographics, setGuestDemographics] = useState([]);
@@ -68,158 +93,145 @@ const UserGuestDemographics = ({ user, selectedYear, selectedMonth, formatMonth 
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!user || !selectedYear || !selectedMonth) return;
-    setLoading(true);
-    
-    // Fetch both guest demographics and nationality counts
-    Promise.all([
-      axios.get(`${API_BASE_URL}/api/submissions/guest-demographics/${user.user_id}?year=${selectedYear}&month=${selectedMonth}`, {
-        headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` },
-      }),
-      axios.get(`${API_BASE_URL}/api/submissions/nationality-counts/${user.user_id}?year=${selectedYear}&month=${selectedMonth}`, {
-        headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` },
-      })
-    ])
-    .then(([demographicsRes, nationalityRes]) => {
-      setGuestDemographics(demographicsRes.data);
-      setNationalityCounts(nationalityRes.data);
-    })
-    .catch(err => {
+    if (!user) return;
+
+    const year = Number(selectedYear);
+    const month = Number(selectedMonth);
+
+    // if invalid year/month, clear data and don't call API
+    if (!year || !month || month < 1 || month > 12) {
       setGuestDemographics([]);
       setNationalityCounts([]);
-      console.error("Error fetching data:", err);
-    })
-    .finally(() => setLoading(false));
+      return;
+    }
+
+    setLoading(true);
+    const source = axios.CancelToken.source();
+    const token = sessionStorage.getItem("token");
+
+    Promise.all([
+      axios.get(`${API_BASE_URL}/api/submissions/guest-demographics/${user.user_id}`, {
+        params: { year, month },
+        headers: { Authorization: `Bearer ${token}` },
+        cancelToken: source.token
+      }),
+      axios.get(`${API_BASE_URL}/api/submissions/nationality-counts/${user.user_id}`, {
+        params: { year, month },
+        headers: { Authorization: `Bearer ${token}` },
+        cancelToken: source.token
+      })
+    ])
+      .then(([demographicsRes, nationalityRes]) => {
+        setGuestDemographics(Array.isArray(demographicsRes.data) ? demographicsRes.data : []);
+        setNationalityCounts(Array.isArray(nationalityRes.data) ? nationalityRes.data : []);
+      })
+      .catch((err) => {
+        if (!axios.isCancel(err)) {
+          console.error("Error fetching user guest demographics:", err);
+          setGuestDemographics([]);
+          setNationalityCounts([]);
+        }
+      })
+      .finally(() => setLoading(false));
+
+    return () => source.cancel();
   }, [user, selectedYear, selectedMonth]);
 
-  // Calculate summary
-  const totals = { 
-    Male: 0, 
-    Female: 0, 
-    Children: 0, 
-    Teens: 0, 
-    YoungAdults: 0, 
-    Adults: 0, 
-    MiddleAged: 0, 
-    Seniors: 0, 
-    Married: 0, 
-    Single: 0 
-  };
+  // Safely compute totals using maps to avoid key mismatches
+  const genderCounts = { Male: 0, Female: 0 };
+  const ageCounts = ageGroupLabels.reduce((acc, label) => ({ ...acc, [label]: 0 }), {});
+  const statusCounts = statusLabels.reduce((acc, label) => ({ ...acc, [label]: 0 }), {});
 
-  guestDemographics.forEach(({ gender, age_group, status, count }) => {
-    const c = typeof count === 'string' ? parseInt(count) || 0 : count;
-    if (gender === "Male") totals.Male += c;
-    if (gender === "Female") totals.Female += c;
-    if (age_group === "Children") totals.Children += c;
-    if (age_group === "Teens") totals.Teens += c;
-    if (age_group === "Young Adults") totals.YoungAdults += c;
-    if (age_group === "Adults") totals.Adults += c;
-    if (age_group === "Middle-Aged") totals.MiddleAged += c;
-    if (age_group === "Seniors") totals.Seniors += c;
-    if (status === "Married") totals.Married += c;
-    if (status === "Single") totals.Single += c;
+  guestDemographics.forEach((item) => {
+    const c = typeof item.count === "string" ? parseInt(item.count, 10) || 0 : (Number(item.count) || 0);
+    if (item.gender && genderCounts[item.gender] !== undefined) genderCounts[item.gender] += c;
+    if (item.age_group && ageCounts[item.age_group] !== undefined) ageCounts[item.age_group] += c;
+    if (item.status && statusCounts[item.status] !== undefined) statusCounts[item.status] += c;
   });
 
+  // add N/A to summary so users see its total
   const summaryTableData = [
-    { Category: "Male", Total: totals.Male },
-    { Category: "Female", Total: totals.Female },
-    { Category: "Children (0–12)", Total: totals.Children },
-    { Category: "Teens (13–17)", Total: totals.Teens },
-    { Category: "Young Adults (18–24)", Total: totals.YoungAdults },
-    { Category: "Adults (25–44)", Total: totals.Adults },
-    { Category: "Middle-Aged (45–59)", Total: totals.MiddleAged },
-    { Category: "Seniors (60+)", Total: totals.Seniors },
-    { Category: "Married", Total: totals.Married },
-    { Category: "Single", Total: totals.Single },
+    { Category: "Male", Total: genderCounts.Male },
+    { Category: "Female", Total: genderCounts.Female },
+    { Category: "Children (0–12)", Total: ageCounts["Children"] || 0 },
+    { Category: "Teens (13–17)", Total: ageCounts["Teens"] || 0 },
+    { Category: "Young Adults (18–24)", Total: ageCounts["Young Adults"] || 0 },
+    { Category: "Adults (25–44)", Total: ageCounts["Adults"] || 0 },
+    { Category: "Middle-Aged (45–59)", Total: ageCounts["Middle-Aged"] || 0 },
+    { Category: "Seniors (60+)", Total: ageCounts["Seniors"] || 0 },
+    { Category: "Married", Total: statusCounts["Married"] || 0 },
+    { Category: "Single", Total: statusCounts["Single"] || 0 },
+    { Category: "N/A", Total: statusCounts["N/A"] || 0 },
   ];
 
+  // Chart data - include all labels (so axis and labels are stable)
+  const ageGroupData = ageGroupLabels.map((label, i) => ({
+    name: label,
+    value: ageCounts[label] || 0,
+    fill: AGE_COLORS[i % AGE_COLORS.length]
+  }));
+
+  const statusData = statusLabels.map((label, i) => ({
+    name: label,
+    value: statusCounts[label] || 0,
+    fill: STATUS_COLORS[i % STATUS_COLORS.length]
+  }));
+
   const exportGuestDemographics = () => {
-    // Create workbook with multiple sheets
     const wb = XLSX.utils.book_new();
-    
-    // Sheet 1: Guest Demographics
+
     const demographicsData = [
       ["GUEST DEMOGRAPHICS REPORT"],
-      [""], // Empty row for spacing
+      [],
       ["Company Name", user?.company_name || "N/A"],
       ["Accommodation Type", user?.accommodation_type || "N/A"],
       ["Month", formatMonth(selectedMonth)],
       ["Year", selectedYear],
-      [""], // Empty row for spacing
-      [""], // Empty row for spacing
-      // Summary section
+      [],
       ["SUMMARY"],
       ["Category", "Total"],
-      ...summaryTableData.map(row => [row.Category, row.Total]),
-      [""], // Empty row for spacing
-      [""], // Empty row for spacing
-      // Detailed section
+      ...summaryTableData.map(r => [r.Category, r.Total]),
+      [],
       ["DETAILED BREAKDOWN"],
       ["Gender", "Age Group", "Status", "Count"],
       ...guestDemographics.map(demo => [
         demo.gender,
         demo.age_group,
         demo.status,
-        demo.count
+        typeof demo.count === "string" ? parseInt(demo.count, 10) || 0 : demo.count
       ])
     ];
-    
+
     const demographicsWorksheet = XLSX.utils.aoa_to_sheet(demographicsData);
+    demographicsWorksheet['!cols'] = [{ width: 20 }, { width: 25 }, { width: 15 }, { width: 12 }];
     XLSX.utils.book_append_sheet(wb, demographicsWorksheet, "Guest Demographics");
-    
-    // Auto-size columns for demographics sheet
-    demographicsWorksheet['!cols'] = [
-      { width: 20 }, // Company Name, Category, Gender
-      { width: 25 }, // Accommodation Type, Total, Age Group
-      { width: 15 }, // Month, Status
-      { width: 15 }, // Year, Count
-    ];
-    
-    // Sheet 2: Nationality Counts
+
     const nationalityData = [
       ["NATIONALITY COUNTS REPORT"],
-      [""], // Empty row for spacing
+      [],
       ["Company Name", user?.company_name || "N/A"],
       ["Accommodation Type", user?.accommodation_type || "N/A"],
       ["Month", formatMonth(selectedMonth)],
       ["Year", selectedYear],
-      [""], // Empty row for spacing
-      [""], // Empty row for spacing
+      [],
       ["Nationality", "Count", "Male", "Female"],
-      ...nationalityCounts.map(n => [
-        n.nationality,
-        n.count,
-        n.male_count,
-        n.female_count
-      ])
+      ...nationalityCounts.map(n => [n.nationality, n.count, n.male_count, n.female_count])
     ];
-    
     const nationalityWorksheet = XLSX.utils.aoa_to_sheet(nationalityData);
+    nationalityWorksheet['!cols'] = [{ width: 25 }, { width: 12 }, { width: 12 }, { width: 12 }];
     XLSX.utils.book_append_sheet(wb, nationalityWorksheet, "Nationality Counts");
-    
-    // Auto-size columns for nationality sheet
-    nationalityWorksheet['!cols'] = [
-      { width: 25 }, // Nationality
-      { width: 15 }, // Count
-      { width: 15 }, // Male
-      { width: 15 }, // Female
-    ];
-    
+
     const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-    saveAs(
-      new Blob([buf], { type: "application/octet-stream" }), 
-      `${user?.company_name || 'Resort'}_${formatMonth(selectedMonth)}_${selectedYear}_Guest_Demographics_Report.xlsx`
-    );
+    saveAs(new Blob([buf], { type: "application/octet-stream" }), `${user?.company_name || 'Establishment'}_${formatMonth(selectedMonth)}_${selectedYear}_Guest_Demographics.xlsx`);
   };
 
-  const ageGroupLabels = [
-    "Children",
-    "Teens",
-    "Young Adults",
-    "Adults",
-    "Middle-Aged",
-    "Seniors"
-  ];
+  const chartCardStyle = {
+    backgroundColor: "#FFF",
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 16,
+    boxShadow: "0px 4px 12px rgba(0,0,0,0.1)"
+  };
 
   return (
     <div style={{ padding: 20, backgroundColor: "#E0F7FA", marginTop: 24, borderRadius: 12 }}>
@@ -230,53 +242,121 @@ const UserGuestDemographics = ({ user, selectedYear, selectedMonth, formatMonth 
             backgroundColor: "#00BCD4",
             color: "#FFF",
             border: "none",
-            padding: "10px 20px",
+            padding: "8px 14px",
             borderRadius: 8,
             cursor: "pointer",
-            fontSize: "14px"
+            fontSize: "14px",
+            display: "flex",
+            alignItems: "center",
+            gap: 8
           }}
           onClick={exportGuestDemographics}
         >
-          {/* Button: Export Guest Demographics and Nationality Counts */}
-          <Download size={16}/>
+          <Download size={16}/> Export
         </button>
       </div>
-      <div style={{ marginBottom: 20 }}>
+
+      <div style={{ marginBottom: 12 }}>
         <span style={{ color: "#0288D1", fontWeight: 500 }}>
           Year: {selectedYear} &nbsp; | &nbsp; Month: {formatMonth(selectedMonth)}
         </span>
       </div>
+
       {loading ? (
         <div style={{ textAlign: "center", padding: 24 }}>Loading...</div>
       ) : (
         <>
-          <div className="table-responsive">
-            <table style={{
-              width: "100%", borderCollapse: "collapse", backgroundColor: "#FFF",
-              borderRadius: 12, overflow: "hidden", boxShadow: "0px 4px 12px rgba(0,0,0,0.1)"
-            }}>
-              <thead>
-                <tr style={{ backgroundColor: "#00BCD4", color: "#FFF" }}>
-                  <th style={{ padding: 12, textAlign: "left" }}>Category</th>
-                  <th style={{ padding: 12, textAlign: "left" }}>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {summaryTableData.map((row, i) => (
-                  <tr key={i} style={{
-                    borderBottom: "1px solid #B0BEC5",
-                    backgroundColor: i % 2 === 0 ? "#F5F5F5" : "#FFF"
-                  }}>
-                    <td style={{ padding: 12, color: "#37474F" }}>{row.Category}</td>
-                    <td style={{ padding: 12, color: "#37474F" }}>{row.Total}</td>
-                  </tr>
+          {/* Charts row - responsive */}
+          <div style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 16,
+            justifyContent: "center",
+            alignItems: "stretch",
+            marginBottom: 16
+          }}>
+            {/* Donut Chart */}
+            <div style={{ background: "#fff", borderRadius: 12, padding: 12, flex: "1 1 300px", minWidth: 280, maxWidth: 420, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                <span role="img" aria-label="men-vs-women" style={{ fontSize: 20 }}>👥</span>
+                <span style={{ fontWeight: 600, fontSize: 16, color: "#263238" }}>Men vs Women</span>
+              </div>
+              <ResponsiveContainer width="100%" height={180}>
+                <PieChart>
+                  <Pie
+                    data={[{ name: "Male", value: genderCounts.Male }, { name: "Female", value: genderCounts.Female }]
+                    }
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={44}
+                    outerRadius={70}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  >
+                    <Cell fill={COLORS[0]} />
+                    <Cell fill={COLORS[1]} />
+                  </Pie>
+                  <RechartsTooltip />
+                </PieChart>
+              </ResponsiveContainer>
+              <div style={{ marginTop: 8 }}>
+                {["Male", "Female"].map((k, idx) => (
+                  <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                    <span style={{ width: 12, height: 12, borderRadius: "50%", background: COLORS[idx] }} />
+                    <span style={{ color: "#37474F", fontWeight: 500 }}>{k}</span>
+                    <span style={{ marginLeft: "auto", fontWeight: 700 }}>{genderCounts[k]}</span>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </div>
+            </div>
 
-          {/* Detailed Table */}
-          <div className="table-responsive" style={{ marginTop: 24 }}>
+            {/* Age Groups Horizontal */}
+            <div style={{ background: "#fff", borderRadius: 12, padding: 12, flex: "1 1 420px", minWidth: 300, maxWidth: 640, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                <span role="img" aria-label="age-groups" style={{ fontSize: 20 }}>🎂</span>
+                <span style={{ fontWeight: 600, fontSize: 16, color: "#263238" }}>Age Groups</span>
+              </div>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={ageGroupData} layout="vertical" margin={{ top: 8, right: 24, left: 12, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" allowDecimals={false} />
+                  <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 13 }} />
+                  <Bar dataKey="value" radius={[6,6,6,6]}>
+                    {ageGroupData.map((entry, idx) => (
+                      <Cell key={`cell-age-${idx}`} fill={AGE_COLORS[idx % AGE_COLORS.length]} />
+                    ))}
+                    <LabelList dataKey="value" position="right" formatter={v => v} />
+                  </Bar>
+                  <RechartsTooltip />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Relationship Status Vertical */}
+            <div style={{ background: "#fff", borderRadius: 12, padding: 12, flex: "1 1 320px", minWidth: 280, maxWidth: 420, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                <span role="img" aria-label="relationship-status" style={{ fontSize: 20 }}>💜</span>
+                <span style={{ fontWeight: 600, fontSize: 16, color: "#263238" }}>Relationship Status</span>
+              </div>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={statusData} margin={{ top: 8, right: 12, left: 8, bottom: 30 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} interval={0} />
+                  <YAxis allowDecimals={false} />
+                  <Bar dataKey="value" radius={[6,6,0,0]}>
+                    {statusData.map((entry, idx) => (
+                      <Cell key={`cell-status-${idx}`} fill={STATUS_COLORS[idx % STATUS_COLORS.length]} />
+                    ))}
+                    <LabelList dataKey="value" position="top" formatter={v => v} />
+                  </Bar>
+                  <RechartsTooltip />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          {/* Detailed Table (unchanged) */}
+          <div className="table-responsive" style={{ marginBottom: 20 }}>
             <table style={{
               width: "100%", borderCollapse: "collapse", backgroundColor: "#FFF",
               borderRadius: 12, overflow: "hidden", boxShadow: "0px 4px 12px rgba(0,0,0,0.1)"

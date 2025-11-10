@@ -349,8 +349,8 @@ const UserStatistics = ({ user }) => {
         {/* Guest Demographics Table */}
         <UserGuestDemographics
           user={user}
-          selectedYear={selectedYear}
-          selectedMonth={selectedMonth}
+          selectedYear={Number(selectedYear)}
+          selectedMonth={Number(selectedMonth)}
           formatMonth={formatMonth}
         />
 
