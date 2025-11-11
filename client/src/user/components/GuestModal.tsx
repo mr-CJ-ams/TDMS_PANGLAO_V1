@@ -85,10 +85,14 @@ const GuestModal = ({
   selectedMonth
 }: GuestModalProps) => {
   const MAX_LENGTH_OF_STAY = 183;
-  
-  const [lengthOfStay, setLengthOfStay] = useState(initialData?.lengthOfStay?.toString() || "");
-  const [guests, setGuests] = useState(initialData?.guests || []);
-  const [isCheckIn, setIsCheckIn] = useState(initialData?.isCheckIn !== false); // Default to true, but can be false
+
+  const [guests, setGuests] = useState(
+    initialData?.guests?.map(g => ({
+      ...g,
+      lengthOfStay: g.lengthOfStay?.toString() || "",
+      isCheckIn: g.isCheckIn !== false, // default true
+    })) || []
+  );
   const [error, setError] = useState("");
   const [confirmModal, setConfirmModal] = useState<{
     show: boolean;
@@ -96,40 +100,93 @@ const GuestModal = ({
     onConfirm: () => void;
   }>({ show: false, message: "", onConfirm: () => {} });
 
+  const handleAddGuest = () =>
+    setGuests([
+      ...guests,
+      {
+        gender: "Male",
+        age: "",
+        status: "Single",
+        nationality: "Philippines",
+        lengthOfStay: "",
+        isCheckIn: true,
+      },
+    ]);
+  const handleRemoveGuest = idx => setGuests(guests.filter((_, i) => i !== idx));
+  const handleUpdateGuest = (idx, field, value) => {
+    setGuests(
+      guests.map((g, i) =>
+        i === idx
+          ? {
+              ...g,
+              [field]:
+                field === "age" && !/^\d*$/.test(value)
+                  ? g.age
+                  : field === "lengthOfStay" && !/^\d*$/.test(value)
+                  ? g.lengthOfStay
+                  : field === "isCheckIn"
+                  ? value === "true"
+                  : value,
+            }
+          : g
+      )
+    );
+  };
+
   const handleSave = () => {
-    if (!guests.length) return setError("Please add at least one guest before saving.");
-    if (guests.some(g => !g.age || isNaN(g.age) || parseInt(g.age) <= 0))
+    if (!guests.length)
+      return setError("Please add at least one guest before saving.");
+    if (
+      guests.some(
+        g => !g.age || isNaN(g.age) || parseInt(g.age) <= 0
+      )
+    )
       return setError("Please enter a valid age for all guests.");
-    if (!lengthOfStay || isNaN(lengthOfStay) || parseInt(lengthOfStay) <= 0)
-      return setError("Please enter a valid length of stay.");
-    if (parseInt(lengthOfStay) > MAX_LENGTH_OF_STAY)
-      return setError(`Maximum allowed length of stay is ${MAX_LENGTH_OF_STAY} days.`);
+    if (
+      guests.some(
+        g =>
+          !g.lengthOfStay ||
+          isNaN(g.lengthOfStay) ||
+          parseInt(g.lengthOfStay) <= 0
+      )
+    )
+      return setError("Please enter a valid length of stay for all guests.");
+    if (
+      guests.some(g => parseInt(g.lengthOfStay) > MAX_LENGTH_OF_STAY)
+    )
+      return setError(
+        `Maximum allowed length of stay is ${MAX_LENGTH_OF_STAY} days for each guest.`
+      );
 
+    // Check for stays crossing months/years for each guest
     const startDate = new Date(selectedYear, selectedMonth - 1, day);
-    const endDate = new Date(startDate);
-    endDate.setDate(startDate.getDate() + parseInt(lengthOfStay) - 1);
-
-    // Replace window.confirm with modal
-    if (endDate.getFullYear() !== startDate.getFullYear()) {
-      setConfirmModal({
-        show: true,
-        message: `This stay crosses into the next year (ending ${endDate.toLocaleDateString()}). Continue?`,
-        onConfirm: () => {
-          setConfirmModal({ ...confirmModal, show: false });
-          proceedSave();
-        }
-      });
-      return;
-    } else if (endDate.getMonth() !== startDate.getMonth()) {
-      setConfirmModal({
-        show: true,
-        message: `This stay crosses into ${endDate.toLocaleString('default', { month: 'long' })}. Continue?`,
-        onConfirm: () => {
-          setConfirmModal({ ...confirmModal, show: false });
-          proceedSave();
-        }
-      });
-      return;
+    for (const g of guests) {
+      const endDate = new Date(startDate);
+      endDate.setDate(startDate.getDate() + parseInt(g.lengthOfStay) - 1);
+      if (endDate.getFullYear() !== startDate.getFullYear()) {
+        setConfirmModal({
+          show: true,
+          message: `Guest "${g.gender}, Age ${g.age}" stay crosses into the next year (ending ${endDate.toLocaleDateString()}). Continue?`,
+          onConfirm: () => {
+            setConfirmModal({ ...confirmModal, show: false });
+            proceedSave();
+          },
+        });
+        return;
+      } else if (endDate.getMonth() !== startDate.getMonth()) {
+        setConfirmModal({
+          show: true,
+          message: `Guest "${g.gender}, Age ${g.age}" stay crosses into ${endDate.toLocaleString(
+            "default",
+            { month: "long" }
+          )}. Continue?`,
+          onConfirm: () => {
+            setConfirmModal({ ...confirmModal, show: false });
+            proceedSave();
+          },
+        });
+        return;
+      }
     }
 
     proceedSave();
@@ -138,33 +195,24 @@ const GuestModal = ({
   const proceedSave = () => {
     setError("");
     onSave(day, room, {
-      guests: guests.map(g => ({ ...g, roomNumber: room })),
-      lengthOfStay: parseInt(lengthOfStay),
-      isCheckIn,
+      guests: guests.map(g => ({
+        ...g,
+        roomNumber: room,
+        lengthOfStay: parseInt(g.lengthOfStay),
+        isCheckIn: !!g.isCheckIn,
+      })),
     });
     onClose();
   };
 
-  const handleAddGuest = () =>
-    setGuests([...guests, { gender: "Male", age: "", status: "Single", nationality: "Philippines" }]);
-  const handleRemoveGuest = idx => setGuests(guests.filter((_, i) => i !== idx));
-  const handleUpdateGuest = (idx, field, value) => {
-    setGuests(guests.map((g, i) => i === idx ? { ...g, [field]: field === "age" && !/^\d*$/.test(value) ? g.age : value } : g));
-  };
-  const handleLengthOfStayChange = e => {
-    const value = e.target.value;
-    // Only allow numbers and max 183
-    if (/^\d*$/.test(value)) {
-      if (value === "" || parseInt(value) <= MAX_LENGTH_OF_STAY) {
-        setLengthOfStay(value);
-      }
-    }
-  };
   const handleRemoveAll = () => { onRemoveAllGuests(day, room); onClose(); };
 
   const isEditingExisting = initialData && initialData.day === day && initialData.room === room;
   const isStartDay = initialData?.isStartDay;
-  const showConflict = lengthOfStay && hasRoomConflict && hasRoomConflict(day, room, parseInt(lengthOfStay), occupiedRooms);
+  const showConflict = guests.some((guest, idx) => {
+    const lengthOfStay = guest.lengthOfStay;
+    return lengthOfStay && hasRoomConflict && hasRoomConflict(day, room, parseInt(lengthOfStay), occupiedRooms);
+  });
 
   return (
     <div className="modal" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
@@ -173,73 +221,62 @@ const GuestModal = ({
           <div className="modal-header">
             <h5 className="modal-title">
               Day {day} - Room {room}
-              {isStartDay && <span className="badge bg-warning ms-2">Start Day (Editable)</span>}
-              {!isStartDay && isEditingExisting && <span className="badge bg-success ms-2">Following Day (Non-editable)</span>}
             </h5>
           </div>
           <div className="modal-body">
             {error && <div className="alert alert-danger">{error}</div>}
-            
-            {/* Check-in toggle button */}
-            <div className="form-group mb-3">
-              <label className="form-label fw-bold">Guest check-in today?</label>
-              <div className="d-flex gap-2">
-                <button
-                  type="button"
-                  className={`btn ${isCheckIn ? 'btn-warning' : 'btn-outline-warning'} flex-fill`}
-                  onClick={() => setIsCheckIn(true)}
-                  disabled={disabled}
-                >
-                  Yes
-                </button>
-                <button
-                  type="button"
-                  className={`btn ${!isCheckIn ? 'btn-primary' : 'btn-outline-primary'} flex-fill`}
-                  onClick={() => setIsCheckIn(false)}
-                  disabled={disabled}
-                >
-                  No
-                </button>
-              </div>
-              <small className="form-text text-muted">
-                {isCheckIn 
-                  ? "✅ This will count as a check-in and the start day cell will be yellow" 
-                  : "ℹ️ This will NOT count as a check-in and the start day cell will be blue"}
-              </small>
-            </div>
 
-            <div className="form-group">
-              <label>Length of Overnight Stay</label>
-              <input
-                type="number"
-                className="form-control"
-                value={lengthOfStay}
-                onChange={handleLengthOfStayChange}
-                min="1"
-                max={MAX_LENGTH_OF_STAY}
-                disabled={disabled}
-              />
-              <small className="form-text text-muted">
-                Maximum allowed length of stay is {MAX_LENGTH_OF_STAY} days(6 months).
-              </small>
-            </div>
-            {lengthOfStay && hasRoomConflict && showConflict ? (
-              <div className="alert alert-warning mt-2">
-                {isEditingExisting ? "⚠️ Occupied" : "⚠️ This Length of Overnight Stay overlaps with existing occupied rooms"}
-              </div>
-            ) : (
-              !isEditingExisting && <div className="alert alert-info mt-2">✅ These dates are available</div>
-            )}
-            {!isStartDay && isEditingExisting && (
-              <div className="alert alert-info mt-2">
-                ℹ️ This is a following day. Changes will be applied to the entire stay starting from the start day.
+            {/* Only show Add Guest button if no guests yet */}
+            {guests.length === 0 && (
+              <div className="flex justify-end">
+                <button
+                  className="btn btn-success w-20 d-flex align-items-center justify-center gap-2"
+                  onClick={handleAddGuest}
+                  disabled={disabled}
+                >
+                  <PlusIcon size={16} /> Add Guest
+                </button>
               </div>
             )}
+
+            {/* Show guest fields for each guest */}
             {guests.map((guest, idx) => (
-              <div key={idx} className="mb-3">
+              <div key={idx} className="mb-3 border rounded p-2">
+                {/* Per-guest check-in toggle */}
+                <div className="form-group mb-2">
+                  <label className="form-label fw-bold">Guest check-in today?</label>
+                  <div className="d-flex gap-2">
+                    <button
+                      type="button"
+                      className={`btn ${guest.isCheckIn ? "btn-warning" : "btn-outline-warning"} flex-fill`}
+                      onClick={() => handleUpdateGuest(idx, "isCheckIn", "true")}
+                      disabled={disabled}
+                    >
+                      Yes
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn ${!guest.isCheckIn ? "btn-primary" : "btn-outline-primary"} flex-fill`}
+                      onClick={() => handleUpdateGuest(idx, "isCheckIn", "false")}
+                      disabled={disabled}
+                    >
+                      No
+                    </button>
+                  </div>
+                  <small className="form-text text-muted">
+                    {guest.isCheckIn
+                      ? "✅ This will count as a check-in and the start day cell will be yellow"
+                      : "ℹ️ This will NOT count as a check-in and the start day cell will be blue"}
+                  </small>
+                </div>
                 <div className="row">
                   <div className="col">
-                    <select className="form-control" value={guest.gender} onChange={e => handleUpdateGuest(idx, "gender", e.target.value)} disabled={disabled}>
+                    <select
+                      className="form-control"
+                      value={guest.gender}
+                      onChange={e => handleUpdateGuest(idx, "gender", e.target.value)}
+                      disabled={disabled}
+                    >
                       <option>Male</option>
                       <option>Female</option>
                     </select>
@@ -258,7 +295,12 @@ const GuestModal = ({
                 </div>
                 <div className="row mt-2">
                   <div className="col">
-                    <select className="form-control" value={guest.status} onChange={e => handleUpdateGuest(idx, "status", e.target.value)} disabled={disabled}>
+                    <select
+                      className="form-control"
+                      value={guest.status}
+                      onChange={e => handleUpdateGuest(idx, "status", e.target.value)}
+                      disabled={disabled}
+                    >
                       <option>Single</option>
                       <option>Married</option>
                       <option>N/A</option>
@@ -267,52 +309,85 @@ const GuestModal = ({
                     </select>
                   </div>
                   <div className="col">
-                    <select className="form-control" value={guest.nationality} onChange={e => handleUpdateGuest(idx, "nationality", e.target.value)} disabled={disabled}>
-                      {nationalities.map(n => <option key={n} value={n}>{n}</option>)}
+                    <select
+                      className="form-control"
+                      value={guest.nationality}
+                      onChange={e => handleUpdateGuest(idx, "nationality", e.target.value)}
+                      disabled={disabled}
+                    >
+                      {nationalities.map(n => (
+                        <option key={n} value={n}>
+                          {n}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
-                <button className="btn btn-danger btn-sm mt-2" onClick={() => handleRemoveGuest(idx)} disabled={disabled}><Trash2 size={16}/></button>
+                {/* Per-guest Length of Stay */}
+                <div className="row mt-2">
+                  <div className="col">
+                    <label>Length of Stay</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      placeholder="Length of Stay"
+                      value={guest.lengthOfStay}
+                      onChange={e => handleUpdateGuest(idx, "lengthOfStay", e.target.value)}
+                      min="1"
+                      max={MAX_LENGTH_OF_STAY}
+                      disabled={disabled}
+                    />
+                    <small className="form-text text-muted">
+                      Maximum allowed length of stay is {MAX_LENGTH_OF_STAY} days (6 months).
+                    </small>
+                  </div>
+                </div>
+                <button
+                  className="btn btn-danger btn-sm mt-2"
+                  onClick={() => handleRemoveGuest(idx)}
+                  disabled={disabled}
+                >
+                  <Trash2 size={16} />
+                </button>
               </div>
             ))}
-            <div className="flex justify-end">
-              <button className="btn btn-success w-20 d-flex align-items-center justify-center gap-2" 
-                onClick={handleAddGuest} 
-                disabled={disabled}>
-                <PlusIcon size={16} /> Add
-              </button>
-            </div>
 
+            {/* Add Guest button always available */}
+            {guests.length > 0 && (
+              <div className="flex justify-end">
+                <button
+                  className="btn btn-success w-20 d-flex align-items-center justify-center gap-2"
+                  onClick={handleAddGuest}
+                  disabled={disabled}
+                >
+                  <PlusIcon size={16} /> Add Guest
+                </button>
+              </div>
+            )}
           </div>
           <div className="modal-footer">
             <div className="flex justify-between items-center w-full mt-4">
-          {/* Left side */}
-          <button
-          //btn w-100 d-flex align-items-center justify-content-center gap-2 px-2 py-1 border-0
-            className="btn btn-danger w-35 d-flex align-items-center justify-center gap-2"
-            onClick={handleRemoveAll}
-            disabled={disabled}
-          >
-            <Trash2 size={16} />
-            Remove All
-          </button>
-
-
-          {/* Right side */}
-          <div className="flex gap-3"> {/* gap between Cancel and Save */}
-            <button className="btn btn-secondary" onClick={onClose}>
-              Cancel
-            </button>
-            <button
-              className="btn btn-success"
-              onClick={handleSave}
-              disabled={disabled || !guests.length}
-            >
-              Save
-            </button>
-          </div>
-        </div>
-
+              <button
+                className="btn btn-danger w-35 d-flex align-items-center justify-center gap-2"
+                onClick={handleRemoveAll}
+                disabled={disabled}
+              >
+                <Trash2 size={16} />
+                Remove All
+              </button>
+              <div className="flex gap-3">
+                <button className="btn btn-secondary" onClick={onClose}>
+                  Cancel
+                </button>
+                <button
+                  className="btn btn-success"
+                  onClick={handleSave}
+                  disabled={disabled || !guests.length}
+                >
+                  Save
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

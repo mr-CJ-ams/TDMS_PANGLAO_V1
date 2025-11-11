@@ -279,20 +279,7 @@ const SubmissionForm = () => {
 
   // Cell click
   const handleCellClick = (day: number, room: number) => {
-    const roomData = occupiedRooms.find(r => r.day === day && r.room === room);
-    if (roomData && !roomData.isStartDay) {
-      const startDayData = occupiedRooms.find(r => 
-        r.stayId === roomData.stayId && r.isStartDay
-      );
-      if (startDayData) {
-        setModal({
-          show: true,
-          title: "Edit Stay",
-          message: `This day is part of a stay starting on Day ${startDayData.day}. Please edit the start day to modify this stay.`,
-        });
-        return;
-      }
-    }
+
     setSelectedDate(day);
     setSelectedRoom(room);
     setIsModalOpen(true);
@@ -300,108 +287,139 @@ const SubmissionForm = () => {
 
   // Save guest data for a day/room
   const handleSaveGuests = (day: number, room: number, guestData: any) => {
-    const { guests, lengthOfStay, isCheckIn } = guestData;
-    if (!guests?.length) {
-      setModal({
-        show: true,
-        title: "Missing Guests",
-        message: "Please add at least one guest",
-      });
-      return;
-    }
-    const stayLength = parseInt(lengthOfStay);
-    if (isNaN(stayLength) || stayLength <= 0) {
-      setModal({
-        show: true,
-        title: "Invalid Length of Stay",
-        message: "Please enter a valid length of stay",
-      });
-      return;
-    }
-    const existingEntry = occupiedRooms.find(r => r.day === day && r.room === room);
-    const currentStayId = existingEntry?.stayId || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const conflictDetails = findRoomConflictAcrossMonths(day, room, stayLength, occupiedRooms, monthlyData, currentStayId);
-    if (conflictDetails.hasConflict) {
-      setModal({
-        show: true,
-        title: "Room Conflict",
-        message: `⚠️ This Length of Overnight Stay overlaps with existing occupied rooms. Conflict found in ${conflictDetails.month}/${conflictDetails.year}`,
-      });
-      return;
-    }
-    const updatedGuests = guests.map(g => ({ ...g, isCheckIn }));
-    let updatedMonthlyData = monthlyData;
-    if (existingEntry?.stayId) {
-      updatedMonthlyData = removeExistingStay(currentStayId, monthlyData);
-    }
-    const newMonthlyData = addStayToMonthlyData(
-      updatedMonthlyData, day, room, stayLength, updatedGuests, isCheckIn, currentStayId, selectedMonth, selectedYear
-    );
-    setMonthlyData(newMonthlyData);
-    const currentMonthKey = `${selectedYear}-${selectedMonth}`;
-    setOccupiedRooms(newMonthlyData[currentMonthKey] || []);
-    const affectedMonths = getAffectedMonths(day, selectedMonth, selectedYear, stayLength);
-    affectedMonths.forEach(({ month, year }) => {
-      const monthKey = `${year}-${month}`;
-      if (monthKey !== currentMonthKey && newMonthlyData[monthKey]) {
-        setTimeout(() => {
-          setMonthlyData(prev => ({ ...prev }));
-        }, 100);
-      }
+  const { guests, isCheckIn } = guestData;
+  if (!guests?.length) {
+    setModal({
+      show: true,
+      title: "Missing Guests",
+      message: "Please add at least one guest",
     });
-  };
+    return;
+  }
+  if (guests.some(g => isNaN(parseInt(g.lengthOfStay)) || parseInt(g.lengthOfStay) <= 0)) {
+    setModal({
+      show: true,
+      title: "Invalid Length of Stay",
+      message: "Please enter a valid length of stay for all guests",
+    });
+    return;
+  }
+
+  const key = `${selectedYear}-${selectedMonth}`;
+  let updatedMonthlyData = { ...monthlyData };
+  let monthEntries = Array.isArray(updatedMonthlyData[key]) ? updatedMonthlyData[key] : [];
+
+  // Remove previous entries for this day/room that are start days
+  monthEntries = monthEntries.filter(entry => !(entry.day === day && entry.room === room && entry.isStartDay));
+
+  // For each guest, propagate their stay independently
+  guests.forEach((g, idx) => {
+    const guestStayLength = parseInt(g.lengthOfStay);
+    let currentDay = day;
+    let currentMonth = selectedMonth;
+    let currentYear = selectedYear;
+    let remainingDays = guestStayLength;
+    const stayId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${idx}`;
+    let isFirstDay = true;
+
+    while (remainingDays > 0) {
+      const daysInCurrentMonth = getDaysInMonth(currentMonth, currentYear);
+      const daysToAdd = Math.min(remainingDays, daysInCurrentMonth - currentDay + 1);
+      const monthKey = `${currentYear}-${currentMonth}`;
+      if (!updatedMonthlyData[monthKey]) updatedMonthlyData[monthKey] = [];
+
+      for (let d = currentDay; d < currentDay + daysToAdd; d++) {
+        // Find if there's already an entry for this day/room
+        let entry = updatedMonthlyData[monthKey].find(e => e.day === d && e.room === room);
+        if (entry) {
+          entry.guests.push({ ...g, roomNumber: room, lengthOfStay: guestStayLength, isCheckIn: !!g.isCheckIn });
+          // For start day, update isCheckIn if any guest isCheckIn
+          if (d === day) entry.isCheckIn = entry.guests.some(guest => guest.isCheckIn);
+        } else {
+          updatedMonthlyData[monthKey].push({
+            day: d,
+            room,
+            guests: [{ ...g, roomNumber: room, lengthOfStay: guestStayLength, isCheckIn: !!g.isCheckIn }],
+            isCheckIn: d === day ? !!g.isCheckIn : false,
+            isStartDay: d === day,
+            stayId,
+            startDay: day,
+            startMonth: selectedMonth,
+            startYear: selectedYear,
+            lengthOfStay: guestStayLength,
+          });
+        }
+        isFirstDay = false;
+      }
+      remainingDays -= daysToAdd;
+      currentDay = 1;
+      if (++currentMonth > 12) {
+        currentMonth = 1;
+        currentYear++;
+      }
+    }
+  });
+
+  updatedMonthlyData[key] = monthEntries.concat(updatedMonthlyData[key] || []);
+  setMonthlyData(updatedMonthlyData);
+  setOccupiedRooms(updatedMonthlyData[key] || []);
+};
 
   // Room color
   const getRoomColor = (day: number, room: number) => {
     if (!Array.isArray(occupiedRooms)) return "white";
     const roomData = occupiedRooms.find(r => r.day === day && r.room === room);
     if (!roomData) return "white";
-    
-    // Yellow for check-in start days, Blue for non-check-in start days, Green for following days
+
+    // For start day, check per-guest isCheckIn
     if (roomData.isStartDay) {
-      return roomData.isCheckIn ? "#FBBF24" : "#3B82F6"; // Yellow for check-in, Blue for non-check-in
+      const hasCheckIn = roomData.guests.some(g => g.isCheckIn);
+      return hasCheckIn ? "#FBBF24" : "#3B82F6"; // Yellow for check-in, Blue for non-check-in
     }
     return "#34D399"; // Green for following days
   };
 
   // Guest data for modal
-  const getGuestData = (day: number, room: number) => Array.isArray(occupiedRooms) ? occupiedRooms.find(r => r.day === day && r.room === room) : null;
+  const getGuestData = (day: number, room: number) => {
+    if (!Array.isArray(occupiedRooms)) return null;
+    // Find all entries for this day/room
+    const entries = occupiedRooms.filter(r => r.day === day && r.room === room);
+    if (!entries.length) return null;
+    // Aggregate all guests for this day/room
+    const guests = entries.flatMap(r => r.guests.map(g => ({
+      ...g,
+      lengthOfStay: g.lengthOfStay || r.lengthOfStay || "",
+      // Optionally, add stayId, isCheckIn, etc. if needed for editing
+    })));
+    // Use isCheckIn from the first entry (or customize as needed)
+    return {
+      day,
+      room,
+      guests,
+      isCheckIn: entries[0]?.isCheckIn ?? true,
+      // Optionally, add other fields if needed
+    };
+  };
 
   // Daily totals
   const calculateDailyTotals = (day: number) => {
     const rooms = Array.isArray(occupiedRooms) ? occupiedRooms : [];
     if (!rooms.length) return { checkIns: 0, overnight: 0, occupied: 0 };
-    
-    // Filter rooms for the specific day and remove duplicates based on room and stayId
-    const dayRooms = rooms.filter(r => r.day === day);
-    const uniqueRooms = new Map();
-    
-    dayRooms.forEach(room => {
-      const key = `${room.room}-${room.stayId || 'no-stay-id'}`;
-      if (!uniqueRooms.has(key)) {
-        uniqueRooms.set(key, room);
-      } else {
-        // If duplicate found, prefer the one with isStartDay = true or isCheckIn = true
-        const existing = uniqueRooms.get(key);
-        if ((room.isStartDay && !existing.isStartDay) || (room.isCheckIn && !existing.isCheckIn)) {
-          uniqueRooms.set(key, room);
-        }
-      }
-    });
-    
-    const uniqueDayRooms = Array.from(uniqueRooms.values());
-    const checkIns = uniqueDayRooms.filter(r => r.isCheckIn === true).reduce((a, r) => a + (r.guests?.length || 0), 0);
-    const overnight = uniqueDayRooms.reduce((a, r) => a + (r.guests?.length || 0), 0);
-    const occupied = new Set(uniqueDayRooms.map(r => r.room)).size;
-    
-    // Debug logging for Day 1 totals
-    if (day === 1 && (checkIns > 0 || overnight > 0)) {
-      // console.log(`Day ${day} totals:`, { checkIns, overnight, occupied });
-      // console.log(`Day ${day} rooms:`, uniqueDayRooms.map(r => ({ room: r.room, stayId: r.stayId, guests: r.guests?.length, isCheckIn: r.isCheckIn, isStartDay: r.isStartDay })));
-    }
-    
+
+    // Filter entries for the specific day
+    const dayEntries = rooms.filter(r => r.day === day);
+
+    // Count only guests with isCheckIn true on start day for check-ins
+    const checkIns = dayEntries
+      .filter(r => r.isStartDay)
+      .reduce((a, r) => a + r.guests.filter(g => g.isCheckIn).length, 0);
+
+    // Overnight: all guests present
+    const overnight = dayEntries.reduce((a, r) => a + (r.guests?.length || 0), 0);
+    const occupied = new Set(dayEntries.map(r => r.room)).size;
+
     return { checkIns, overnight, occupied };
-  };
+  };  
 
   // Overall metrics
   const calculateOverallTotals = () => {
