@@ -1059,9 +1059,9 @@ const getGuestData = (day: number, room: number) => {
     }
   };
 
-  // In SubmissionForm.tsx - Update the handleRemoveAllGuests function to add logging
+// Remove all guests for a day/room - ONLY for the specific day, not entire stays
 const handleRemoveAllGuests = async (day: number, room: number) => {
-  console.log(`🔥 GLOBAL REMOVE: Removing all guests from Room ${room}, Day ${day}`);
+  console.log(`🔥 GLOBAL REMOVE: Removing all guests from Room ${room}, Day ${day} ONLY`);
   
   const roomEntries = occupiedRooms.filter(r => r.day === day && r.room === room);
   if (!roomEntries.length) {
@@ -1069,91 +1069,52 @@ const handleRemoveAllGuests = async (day: number, room: number) => {
     return;
   }
 
-  console.log(`📋 Found ${roomEntries.length} entries with guests to remove`);
-  
-  // Collect all unique stay IDs from this day/room
-  const stayIdsToRemove = new Set<string>();
-  const guestsToRemove = new Set();
-  
-  roomEntries.forEach(entry => {
-    if (entry.stayId && typeof entry.stayId === 'string') {
-      stayIdsToRemove.add(entry.stayId);
-      console.log(`🎯 Will remove stay ID: ${entry.stayId}`);
-    }
-    
-    // Also collect guest characteristics for fallback removal
-    if (entry.guests) {
-      entry.guests.forEach((guest: any) => {
-        guestsToRemove.add(JSON.stringify({
-          gender: guest.gender,
-          age: guest.age,
-          status: guest.status,
-          nationality: guest.nationality
-        }));
-      });
-    }
-  });
+  console.log(`📋 Found ${roomEntries.length} entries with guests to remove from Day ${day}`);
   
   let updatedMonthlyData = { ...monthlyData };
-  
-  // Method 1: Remove by stay ID (most reliable)
-  if (stayIdsToRemove.size > 0) {
-    console.log(`🗑️ Removing ${stayIdsToRemove.size} unique stay(s) by stay ID`);
-    for (const stayId of stayIdsToRemove) {
-      // Remove from all months
-      Object.keys(updatedMonthlyData).forEach(monthKey => {
-        if (updatedMonthlyData[monthKey]) {
-          const beforeCount = updatedMonthlyData[monthKey].length;
-          updatedMonthlyData[monthKey] = updatedMonthlyData[monthKey].filter(
-            (entry: any) => entry.stayId !== stayId
-          );
-          const afterCount = updatedMonthlyData[monthKey].length;
-          if (beforeCount !== afterCount) {
-            console.log(`✅ Removed ${beforeCount - afterCount} entries from ${monthKey} for stay ${stayId}`);
-          }
-        }
-      });
-      
-      // Remove from database
-      await removeStayFromDatabase(stayId);
-    }
-  } 
-  // Method 2: Fallback - remove by guest characteristics
-  else if (guestsToRemove.size > 0) {
-    console.log(`🗑️ Removing ${guestsToRemove.size} unique guest(s) by characteristics`);
-    const guestArray = Array.from(guestsToRemove).map(g => JSON.parse(g as string));
-    
-    for (const guest of guestArray) {
-      Object.keys(updatedMonthlyData).forEach(monthKey => {
-        if (updatedMonthlyData[monthKey]) {
-          updatedMonthlyData[monthKey] = updatedMonthlyData[monthKey]
-            .map((entry: any) => {
-              if (entry.room === room) {
-                return {
-                  ...entry,
-                  guests: entry.guests.filter((g: any) =>
-                    !(
-                      g.gender === guest.gender &&
-                      g.age === guest.age &&
-                      g.status === guest.status &&
-                      g.nationality === guest.nationality
-                    )
-                  ),
-                };
-              }
-              return entry;
-            })
-            .filter((entry: any) => entry.guests && entry.guests.length > 0);
-        }
-      });
-    }
-  }
-  
   const currentKey = `${selectedYear}-${selectedMonth}`;
+  
+  // Remove guests ONLY from the specific day and room
+  if (updatedMonthlyData[currentKey]) {
+    const beforeCount = updatedMonthlyData[currentKey].length;
+    
+    updatedMonthlyData[currentKey] = updatedMonthlyData[currentKey]
+      .map((entry: any) => {
+        // Only process entries for the specific day and room
+        if (entry.day === day && entry.room === room) {
+          console.log(`🗑️ Removing all ${entry.guests?.length || 0} guests from Room ${room}, Day ${day}`);
+          
+          // Return null to remove the entire entry for this day/room
+          return null;
+        }
+        return entry;
+      })
+      .filter((entry: any) => entry !== null);
+    
+    const afterCount = updatedMonthlyData[currentKey].length;
+    console.log(`✅ Removed ${beforeCount - afterCount} entries from Room ${room}, Day ${day}`);
+  }
+
+  // Also clean up any empty entries in other months for this specific day/room combination
+  Object.keys(updatedMonthlyData).forEach(monthKey => {
+    if (monthKey !== currentKey && updatedMonthlyData[monthKey]) {
+      updatedMonthlyData[monthKey] = updatedMonthlyData[monthKey]
+        .map((entry: any) => {
+          // Only remove if it's the exact same day/room combination in other months
+          if (entry.day === day && entry.room === room) {
+            console.log(`🗑️ Also removing from ${monthKey}: Room ${room}, Day ${day}`);
+            return null;
+          }
+          return entry;
+        })
+        .filter((entry: any) => entry !== null);
+    }
+  });
+
   setMonthlyData(updatedMonthlyData);
   setOccupiedRooms(updatedMonthlyData[currentKey] || []);
   
-  console.log(`✅ GLOBAL REMOVE COMPLETE: All guests removed from Room ${room}, Day ${day}`);
+  console.log(`✅ GLOBAL REMOVE COMPLETE: All guests removed from Room ${room}, Day ${day} ONLY`);
 };
 
   // Days in month
