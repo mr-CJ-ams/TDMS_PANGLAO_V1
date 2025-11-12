@@ -1,6 +1,6 @@
 import { useState } from "react";
 import nationalities from "./Nationality";
-import { Trash2, PlusIcon, X } from "lucide-react";
+import { Trash2, PlusIcon, X, Edit, Save, X as CancelIcon, Copy } from "lucide-react";
 
 interface GuestModalProps {
   day: number;
@@ -36,8 +36,10 @@ const GuestModal = ({
       ...g,
       lengthOfStay: g.lengthOfStay?.toString() || "",
       isCheckIn: g.isCheckIn !== false,
-      _saved: true, // Mark as already saved if loaded from initialData
-      _isStartDay: g._isStartDay !== false, // Track if this guest is on their start day
+      _saved: true,
+      _isStartDay: g._isStartDay !== false,
+      _editing: false,
+      _originalData: null,
     })) || []
   );
   const [error, setError] = useState("");
@@ -46,6 +48,30 @@ const GuestModal = ({
     message: string;
     onConfirm: () => void;
   }>({ show: false, message: "", onConfirm: () => {} });
+
+  // Add state for global remove confirmation
+  const [globalRemoveModal, setGlobalRemoveModal] = useState(false);
+
+  // Copy guest ID to clipboard
+  const copyGuestId = (guestId: string) => {
+    navigator.clipboard.writeText(guestId).then(() => {
+      console.log("Guest ID copied to clipboard:", guestId);
+    }).catch(err => {
+      console.error("Failed to copy guest ID:", err);
+    });
+  };
+
+  // Global Remove All Guests in this room
+  const handleGlobalRemove = () => {
+    setGlobalRemoveModal(true);
+  };
+
+  // Confirm and execute global removal
+  const confirmGlobalRemove = () => {
+    onRemoveAllGuests(day, room);
+    setGlobalRemoveModal(false);
+    onClose(); // Close the modal after removal
+  };
 
   // Add guest (unsaved by default)
   const handleAddGuest = () =>
@@ -59,11 +85,13 @@ const GuestModal = ({
         lengthOfStay: "",
         isCheckIn: true,
         _saved: false,
-        _isStartDay: true, // New guests are always on start day
+        _isStartDay: true,
+        _editing: true,
+        _originalData: null,
       },
     ]);
 
-  // Remove guest (Cancel for unsaved, Trash for saved)
+  // In GuestModal.tsx - Update the handleRemoveGuest function
   const handleRemoveGuest = idx => {
     const guestToRemove = guests[idx];
     
@@ -77,7 +105,7 @@ const GuestModal = ({
         }
       });
       return;
-    }
+  }
 
     // If removing a saved guest that's on start day, show confirmation
     if (guestToRemove._saved && guestToRemove._isStartDay) {
@@ -86,10 +114,13 @@ const GuestModal = ({
         message: "This will remove the guest from ALL days of their stay. This action cannot be undone. Continue?",
         onConfirm: () => {
           setGuests(guests.filter((_, i) => i !== idx));
-          // Call onSave with empty guests array to trigger removal from all days
+          // Call onSave with the guest to be removed - PASS THE STAY ID
           onSave(day, room, {
             guests: [],
-            removeGuest: guestToRemove, // Pass the guest to be removed
+            removeGuest: {
+              ...guestToRemove,
+              _stayId: guestToRemove._stayId // Ensure stay ID is passed
+            },
             singleGuest: true
           });
           setConfirmModal({ ...confirmModal, show: false });
@@ -101,13 +132,13 @@ const GuestModal = ({
     }
   };
 
-  // Update guest field - only allowed for start day guests
+  // Update guest field - only allowed for start day guests in edit mode
   const handleUpdateGuest = (idx, field, value) => {
     const guest = guests[idx];
     
-    // Only allow updates for unsaved guests or saved guests on their start day
-    if (guest._saved && !guest._isStartDay) {
-      return; // Read-only for non-start day guests
+    // Only allow updates for guests in edit mode and start day guests
+    if (!guest._editing || (guest._saved && !guest._isStartDay)) {
+      return;
     }
 
     setGuests(
@@ -129,7 +160,44 @@ const GuestModal = ({
     );
   };
 
-  // Save a single guest (propagate immediately)
+  // Enable edit mode for a saved guest
+  const handleEditGuest = idx => {
+    const guest = guests[idx];
+    setGuests(
+      guests.map((g, i) =>
+        i === idx
+          ? {
+              ...g,
+              _editing: true,
+              _originalData: { ...g }, // Store original data for cancel
+              _originalStayId: g._stayId, // Store original stay ID
+              _originalGender: g.gender,
+              _originalAge: g.age,
+              _originalStatus: g.status,
+              _originalNationality: g.nationality,
+            }
+          : g
+      )
+    );
+  };
+
+  // Cancel edit mode and restore original data
+  const handleCancelEdit = idx => {
+    const guest = guests[idx];
+    if (guest._originalData) {
+      // Restore original data for saved guests
+      setGuests(
+        guests.map((g, i) =>
+          i === idx ? { ...guest._originalData, _editing: false, _originalData: null } : g
+        )
+      );
+    } else {
+      // For unsaved guests, just remove them
+      setGuests(guests.filter((_, i) => i !== idx));
+    }
+  };
+
+  // Update handleSaveGuest to include original data
   const handleSaveGuest = idx => {
     const guest = guests[idx];
     
@@ -156,7 +224,15 @@ const GuestModal = ({
       age: parseInt(guest.age),
       lengthOfStay: parseInt(guest.lengthOfStay),
       _saved: true,
-      _isStartDay: true // When saved, mark as start day guest
+      _isStartDay: guest._isStartDay, // Preserve the actual start day status
+      _editing: false,
+      _originalData: null,
+      // Preserve original data for future edits
+      _originalStayId: guest._originalStayId || guest._stayId,
+      _originalGender: guest._originalGender || guest.gender,
+      _originalAge: guest._originalAge || guest.age,
+      _originalStatus: guest._originalStatus || guest.status,
+      _originalNationality: guest._originalNationality || guest.nationality,
     };
     
     setGuests(
@@ -166,33 +242,46 @@ const GuestModal = ({
     // Send only this guest to be saved/propagated
     onSave(day, room, {
       guests: [savedGuest],
-      singleGuest: true // Flag to indicate single guest save
+      singleGuest: true,
+      isEdit: !!guest._originalStayId,
     });
-  };
-
-  // Cancel unsaved guest
-  const handleCancelGuest = idx => {
-    handleRemoveGuest(idx);
-  };
-
-  // Remove all guests
-  const handleRemoveAll = () => { 
-    onRemoveAllGuests(day, room); 
-    onClose(); 
   };
 
   // Modal exit (X button)
   const handleExit = () => onClose();
 
-  // Check if guest is editable
+ // Check if guest is editable - FIXED: Only editable on actual start day
+  // Check if guest is editable - FIXED: Only editable on actual start day
   const isGuestEditable = (guest) => {
+    return guest._editing || !guest._saved || (guest._saved && guest._isStartDay && !guest._editing);
+  };
+
+  // Check if guest can be deleted - FIXED: Only deletable on actual start day
+  const canDeleteGuest = (guest) => {
+    return guest._saved && guest._isStartDay && !guest._editing;
+  };
+
+  // Check if guest can be edited - FIXED: Only editable on actual start day
+  const canEditGuest = (guest) => {
+    return guest._saved && guest._isStartDay && !guest._editing;
+  };
+
+  // Check if guest shows action buttons - FIXED: Only show on actual start day
+  const showActionButtons = (guest) => {
     return !guest._saved || (guest._saved && guest._isStartDay);
   };
 
-  // Check if guest can be deleted
-  const canDeleteGuest = (guest) => {
-    return guest._saved && guest._isStartDay;
+  // Format guest ID for display (shortened version)
+  const formatGuestId = (stayId: string) => {
+    if (!stayId) return "No ID";
+    if (stayId.length > 16) {
+      return `${stayId.substring(0, 8)}...${stayId.substring(stayId.length - 8)}`;
+    }
+    return stayId;
   };
+
+  // Check if there are any guests to remove
+  const hasGuests = guests.length > 0;
 
   return (
     <div className="modal" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
@@ -202,18 +291,33 @@ const GuestModal = ({
             <h5 className="modal-title">
               Day {day} - Room {room}
             </h5>
-            <button
-              type="button"
-              className="btn btn-light btn-sm"
-              onClick={handleExit}
-              style={{ border: "none", background: "transparent" }}
-              aria-label="Close"
-            >
-              <X size={22} />
-            </button>
+            <div className="d-flex align-items-center gap-2">
+              <button
+                type="button"
+                className="btn btn-light btn-sm"
+                onClick={handleExit}
+                style={{ border: "none", background: "transparent" }}
+                aria-label="Close"
+              >
+                <X size={22} />
+              </button>
+            </div>
           </div>
           <div className="modal-body">
             {error && <div className="alert alert-danger">{error}</div>}
+
+            {/* Global Remove Warning Message */}
+            {hasGuests && (
+              <div className="alert alert-warning mb-3">
+                <div className="d-flex align-items-center">
+                  <Trash2 size={16} className="me-2" />
+                  <small>
+                    <strong>Warning:</strong> The "Remove All" button will delete ALL guests from Room {room} on Day {day}. 
+                    This action cannot be undone.
+                  </small>
+                </div>
+              </div>
+            )}
 
             {/* Show guest fields for each guest */}
             {guests.map((guest, idx) => (
@@ -224,18 +328,55 @@ const GuestModal = ({
                     Guest {idx + 1}
                     {guest._saved && (
                       <span className={`badge ${guest._isStartDay ? 'bg-warning' : 'bg-info'} ms-2`}>
-                        {guest._isStartDay ? 'Start Day' : `Day ${guest._startDay} →`}
+                        {guest._isStartDay ? 'Start Day' : 'Following Day'}
                       </span>
                     )}
+                    {guest._editing && (
+                      <span className="badge bg-success ms-2">Editing</span>
+                    )}
                   </h6>
-                  {!isGuestEditable(guest) && (
-                    <small className="text-muted">
-                      Read-only (started on day {guest._startDay})
-                    </small>
+                  {!isGuestEditable(guest) && !guest._editing && (
+                    <small className="text-muted">Read-only (not start day)</small>
                   )}
                 </div>
 
-                {/* Per-guest check-in toggle - only editable on start day */}
+                {/* Guest ID Display - Show for saved guests */}
+                {guest._saved && guest._stayId && (
+                  <div className="mb-3 p-2 bg-light rounded">
+                    <div className="d-flex justify-between align-items-center">
+                      <div>
+                        <small className="text-muted d-block">Guest ID:</small>
+                        <code className="text-primary" style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>
+                          {formatGuestId(guest._stayId)}
+                        </code>
+                        {guest._startDay && (
+                          <small className="text-muted d-block mt-1">
+                            Start: Day {guest._startDay} • Length: {guest.lengthOfStay} days • 
+                            <span className={guest._isStartDay ? "text-success fw-bold" : "text-muted"}>
+                              {guest._isStartDay ? " Currently on Start Day" : " Following Day"}
+                            </span>
+                          </small>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary btn-sm"
+                        onClick={() => copyGuestId(guest._stayId)}
+                        title="Copy Guest ID"
+                      >
+                        <Copy size={14} />
+                      </button>
+                    </div>
+                    <small className="text-muted">
+                      {guest._isStartDay 
+                        ? "You can edit or delete this guest from their start day."
+                        : "This guest is read-only. Edit or delete from their start day (Day " + guest._startDay + ")."
+                      }
+                    </small>
+                  </div>
+                )}
+
+                {/* Per-guest check-in toggle - only editable in edit mode */}
                 <div className="form-group mb-2">
                   <label className="form-label fw-bold">Guest check-in today?</label>
                   <div className="d-flex gap-2">
@@ -321,7 +462,7 @@ const GuestModal = ({
                     </select>
                   </div>
                 </div>
-                {/* Per-guest Length of Stay - only editable on start day */}
+                {/* Per-guest Length of Stay - only editable in edit mode */}
                 <div className="row mt-2">
                   <div className="col">
                     <label className="form-label">Length of Stay</label>
@@ -341,36 +482,61 @@ const GuestModal = ({
                   </div>
                 </div>
                 
-                {/* Action buttons */}
-                <div className="d-flex justify-end gap-2 mt-2">
-                  {!guest._saved ? (
-                    <>
-                      <button
-                        className="btn btn-success btn-sm"
-                        onClick={() => handleSaveGuest(idx)}
-                        disabled={disabled}
-                      >
-                        Save
-                      </button>
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => handleCancelGuest(idx)}
-                        disabled={disabled}
-                      >
-                        Cancel
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      className="btn btn-danger btn-sm"
-                      onClick={() => handleRemoveGuest(idx)}
-                      disabled={disabled || !canDeleteGuest(guest)}
-                      title={canDeleteGuest(guest) ? "Remove guest from all days" : "Cannot remove from following days"}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  )}
-                </div>
+                {/* Action buttons - Only show for start day guests or unsaved guests */}
+                {showActionButtons(guest) && (
+                  <div className="d-flex justify-end gap-2 mt-2">
+                    {!guest._saved || guest._editing ? (
+                      <>
+                        <button
+                          className="btn btn-success btn-sm d-flex align-items-center gap-1"
+                          onClick={() => handleSaveGuest(idx)}
+                          disabled={disabled}
+                        >
+                          <Save size={14} />
+                          Save
+                        </button>
+                        <button
+                          className="btn btn-secondary btn-sm d-flex align-items-center gap-1"
+                          onClick={() => handleCancelEdit(idx)}
+                          disabled={disabled}
+                        >
+                          <CancelIcon size={14} />
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {canEditGuest(guest) && (
+                          <button
+                            className="btn btn-warning btn-sm d-flex align-items-center gap-1"
+                            onClick={() => handleEditGuest(idx)}
+                            disabled={disabled}
+                          >
+                            <Edit size={14} />
+                            Edit
+                          </button>
+                        )}
+                        <button
+                          className="btn btn-danger btn-sm d-flex align-items-center gap-1"
+                          onClick={() => handleRemoveGuest(idx)}
+                          disabled={disabled || !canDeleteGuest(guest)}
+                          title={canDeleteGuest(guest) ? "Remove guest from all days" : "Cannot remove from following days"}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+                
+                {/* Message for read-only guests */}
+                {!showActionButtons(guest) && (
+                  <div className="text-center mt-2 p-2 bg-light rounded">
+                    <small className="text-muted">
+                      This guest is read-only. Edit or delete from their start day (Day {guest._startDay}).
+                    </small>
+                  </div>
+                )}
               </div>
             ))}
 
@@ -387,14 +553,17 @@ const GuestModal = ({
           </div>
           <div className="modal-footer">
             <div className="flex justify-between items-center w-full">
-              <button
-                className="btn btn-danger d-flex align-items-center justify-center gap-2"
-                onClick={handleRemoveAll}
-                disabled={disabled || guests.length === 0}
-              >
-                <Trash2 size={16} />
-                Remove All Guests
-              </button>
+              {/* Global Remove Button in Footer (alternative placement) */}
+              {hasGuests && (
+                <button
+                  className="btn btn-outline-danger d-flex align-items-center gap-2"
+                  onClick={handleGlobalRemove}
+                  disabled={disabled}
+                >
+                  <Trash2 size={16} />
+                  Remove All Guests
+                </button>
+              )}
               <button
                 className="btn btn-secondary"
                 onClick={handleExit}
@@ -407,7 +576,42 @@ const GuestModal = ({
         </div>
       </div>
       
-      {/* Confirmation Modal */}
+      {/* Global Remove Confirmation Modal */}
+      {globalRemoveModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 max-w-md w-full">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-red-100 p-2 rounded-full">
+                <Trash2 size={24} className="text-red-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-red-700">Remove All Guests</h3>
+            </div>
+            <p className="mb-4 text-gray-700">
+              <strong>Warning: This action cannot be undone!</strong>
+            </p>
+            <p className="mb-6 text-gray-700">
+              You are about to remove <strong>all {guests.length} guest(s)</strong> from <strong>Room {room} on Day {day}</strong>. 
+              This will delete all guest data for this room and day.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setGlobalRemoveModal(false)}
+                className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmGlobalRemove}
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+              >
+                Remove All Guests
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Individual Guest Removal Confirmation Modal */}
       {confirmModal.show && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full">
