@@ -58,6 +58,7 @@ const router = express.Router();
 const multer = require("multer");
 const path = require("path");
 const authController = require("../controllers/authController");
+const submissionsController = require("../controllers/submissionsController");
 const { authenticateToken } = require("../middleware/auth");
 
 // Configure multer for file uploads
@@ -80,5 +81,11 @@ router.post("/reset-password", authController.resetPassword);
 router.post("/request-email-verification", authController.requestEmailVerification);
 router.get("/verify-email", authController.verifyEmail);
 router.get("/check-email-verification", authController.checkEmailVerification);
+
+// GET room names
+router.get('/user/:userId/room-names', authenticateToken, submissionsController.getRoomNames);
+
+// POST/PUT room names
+router.post('/user/:userId/room-names', authenticateToken, submissionsController.saveRoomNames);
 
 module.exports = router;

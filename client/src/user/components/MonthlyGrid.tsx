@@ -1,5 +1,3 @@
-
-
 import React, { useMemo, useRef } from "react";
 import { FixedSizeGrid as VirtualizedGrid } from "react-window";
 import useMediaQuery from "../hooks/useMediaQuery";
@@ -7,6 +5,7 @@ import useMediaQuery from "../hooks/useMediaQuery";
 interface MonthlyGridProps {
   daysInMonth: number;
   numberOfRooms: number;
+  roomNames: string[]; // <-- Add this
   onCellClick: (day: number, room: number) => void;
   getRoomColor: (day: number, room: number) => string;
   calculateDailyTotals: (day: number) => { checkIns: number; overnight: number; occupied: number };
@@ -21,6 +20,7 @@ const CELL_PADDING = 4;
 const MonthlyGrid = ({
   daysInMonth,
   numberOfRooms,
+  roomNames, // <-- Add this
   onCellClick,
   getRoomColor,
   calculateDailyTotals,
@@ -127,7 +127,7 @@ const MonthlyGrid = ({
             borderBottom: "2px solid #bcd",
             borderRight: "1px solid #bcd",
           }}>
-            Room {rooms[columnIndex]}
+            {roomNames[columnIndex] || `Room ${rooms[columnIndex]}`}
           </div>
         );
       }
@@ -172,10 +172,14 @@ const MonthlyGrid = ({
               width: "100%",
               height: "100%",
               margin: 0,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
             }}
             disabled={disabled}
+            title={roomNames[columnIndex] || `Room ${room}`} // show full name on hover
           >
-            Room {room}
+            {roomNames[columnIndex] || `Room ${room}`}
           </button>
         </div>
       );

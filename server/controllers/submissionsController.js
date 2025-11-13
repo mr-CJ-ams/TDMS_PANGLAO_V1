@@ -480,3 +480,24 @@ exports.removeStayFromAllMonths = async (req, res) => {
   }
 };
 
+exports.getRoomNames = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const result = await pool.query("SELECT room_names FROM users WHERE user_id = $1", [userId]);
+    res.json({ roomNames: result.rows[0]?.room_names || [] });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch room names" });
+  }
+};
+
+exports.saveRoomNames = async (req, res) => {
+  const { userId } = req.params;
+  const { roomNames } = req.body;
+  try {
+    await pool.query("UPDATE users SET room_names = $1 WHERE user_id = $2", [JSON.stringify(roomNames), userId]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to save room names" });
+  }
+};
+

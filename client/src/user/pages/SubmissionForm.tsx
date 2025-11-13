@@ -8,7 +8,7 @@ import SaveButton from "../components/SubmitButton";
 import RoomSearchBar from "../components/RoomSearchBar";
 import DolphinSpinner from "../components/DolphinSpinner";
 import { FixedSizeGrid as VirtualizedGrid } from "react-window";
-import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
+import { ArrowBigLeft, ArrowBigRight, ChevronDown, ChevronUp, Edit2, Save, X } from "lucide-react"; // Add icons for toggle/edit/save/cancel
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
@@ -27,7 +27,12 @@ const SubmissionForm = () => {
     [user, setUser] = useState<any | null>(null),
     [numberOfRooms, setNumberOfRooms] = useState(0),
     [hasSubmitted, setHasSubmitted] = useState(false),
-    [isLoading, setIsLoading] = useState(true);
+    [isLoading, setIsLoading] = useState(true),
+    [roomNames, setRoomNames] = useState<string[]>([]),
+    [editingRoomNames, setEditingRoomNames] = useState(false),
+    [roomNamesDraft, setRoomNamesDraft] = useState<string[]>([]),
+    [roomNamesLoading, setRoomNamesLoading] = useState(false),
+    [roomNamesCollapsed, setRoomNamesCollapsed] = useState(true);
 
   const mainGridRef = useRef<VirtualizedGrid>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
@@ -116,6 +121,9 @@ const generateStayId = (day: number, room: number, guest: any, startMonth: numbe
         const { data } = await axios.get(`${API_BASE_URL}/api/auth/user`, { headers: { Authorization: `Bearer ${token}` } });
         setUser(data);
         setNumberOfRooms(data.number_of_rooms);
+
+        // Initialize room names if not set
+        setRoomNames(Array.from({ length: data.number_of_rooms }, (_, i) => `Room ${i + 1}`));
       } catch (err) { console.error("Error fetching user profile:", err); }
     })();
   }, []);
@@ -1354,6 +1362,35 @@ const removeStayFromDatabase = async (stayId: string) => {
     return { hasConflict: false };
   }
 
+  useEffect(() => {
+    if (!user) return;
+    setRoomNamesLoading(true);
+    axios.get(`${API_BASE_URL}/api/auth/user/${user.user_id}/room-names`, {
+      headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` }
+    })
+      .then(res => {
+        let names = Array.isArray(res.data.roomNames) ? res.data.roomNames : [];
+        // If numberOfRooms increased, add default names for new rooms
+        if (names.length < numberOfRooms) {
+          names = [
+            ...names,
+            ...Array.from({ length: numberOfRooms - names.length }, (_, i) => `Room ${names.length + i + 1}`)
+          ];
+        }
+        // If numberOfRooms decreased, trim the names
+        if (names.length > numberOfRooms) {
+          names = names.slice(0, numberOfRooms);
+        }
+        setRoomNames(names);
+        setRoomNamesDraft(names);
+      })
+      .catch(() => {
+        setRoomNames(Array.from({ length: numberOfRooms }, (_, i) => `Room ${i + 1}`));
+        setRoomNamesDraft(Array.from({ length: numberOfRooms }, (_, i) => `Room ${i + 1}`));
+      })
+      .finally(() => setRoomNamesLoading(false));
+  }, [user, numberOfRooms]);
+
   return (
     <div className="container mt-5" style={{ position: 'relative' }}>
       {/* Loading Overlay */}
@@ -1426,10 +1463,117 @@ const removeStayFromDatabase = async (stayId: string) => {
            <ArrowBigRight size={16}/>
         </button>
       </div>
-      <div ref={gridRef}>
+      <div className="mb-3">
+      <div className="d-flex align-items-center mb-2" style={{ gap: "0.5rem" }}>
+        <h5 className="mb-0">Edit Room Names</h5>
+        <button
+          className="btn btn-link d-flex align-items-center gap-1"
+          style={{
+            fontWeight: 500,
+            fontSize: "1rem",
+            textDecoration: "none",
+            marginLeft: "0.5rem"
+          }}
+          onClick={() => setRoomNamesCollapsed(!roomNamesCollapsed)}
+          aria-expanded={!roomNamesCollapsed}
+          aria-controls="room-names-edit-section"
+        >
+          {roomNamesCollapsed ? (
+            <>
+              <span>Show</span>
+              <ChevronDown size={18} />
+            </>
+          ) : (
+            <>
+              <span>Hide</span>
+              <ChevronUp size={18} />
+            </>
+          )}
+        </button>
+      </div>
+      {!roomNamesCollapsed && (
+        <div id="room-names-edit-section" className="p-3 rounded bg-light border mb-2">
+          <div className="d-flex flex-wrap gap-2 mb-2">
+            {(editingRoomNames ? roomNamesDraft : roomNames).map((name, idx) => (
+              <input
+                key={idx}
+                type="text"
+                value={editingRoomNames ? roomNamesDraft[idx] : name}
+                onChange={e => {
+                  if (!editingRoomNames) return;
+                  const newNames = [...roomNamesDraft];
+                  newNames[idx] = e.target.value;
+                  setRoomNamesDraft(newNames);
+                }}
+                className="form-control"
+                style={{
+                  width: 120,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis"
+                }}
+                disabled={!editingRoomNames || hasSubmitted || isLoading || roomNamesLoading}
+                aria-label={`Room ${idx + 1} name`}
+              />
+            ))}
+          </div>
+          <div className="mt-2">
+            {!editingRoomNames ? (
+              <button
+                className="btn btn-outline-primary d-flex align-items-center gap-1"
+                onClick={() => setEditingRoomNames(true)}
+                disabled={hasSubmitted || isLoading || roomNamesLoading}
+              >
+                <Edit2 size={16} />
+                Edit Room Names
+              </button>
+            ) : (
+              <>
+                <button
+                  className="btn btn-success me-2 d-flex align-items-center gap-1"
+                  onClick={async () => {
+                    setRoomNamesLoading(true);
+                    try {
+                      await axios.post(
+                        `${API_BASE_URL}/api/auth/user/${user.user_id}/room-names`,
+                        { roomNames: roomNamesDraft },
+                        { headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` } }
+                      );
+                      setRoomNames(roomNamesDraft);
+                      setEditingRoomNames(false);
+                    } catch {
+                      alert("Failed to save room names.");
+                    } finally {
+                      setRoomNamesLoading(false);
+                    }
+                  }}
+                  disabled={roomNamesLoading}
+                >
+                  <Save size={16} />
+                  Save Room Names
+                </button>
+                <button
+                  className="btn btn-secondary d-flex align-items-center gap-1"
+                  onClick={() => {
+                    setRoomNamesDraft(roomNames);
+                    setEditingRoomNames(false);
+                  }}
+                  disabled={roomNamesLoading}
+                >
+                  <X size={16} />
+                  Cancel
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+    <div ref={gridRef}>
         <MonthlyGrid
           daysInMonth={daysInMonth}
           numberOfRooms={numberOfRooms}
+          roomNames={roomNames}
           onCellClick={handleCellClick}
           getRoomColor={getRoomColor}
           calculateDailyTotals={calculateDailyTotals}
