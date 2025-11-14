@@ -282,8 +282,11 @@ const GuestModal = ({
   // Check if there are any guests to remove
   const hasGuests = guests.length > 0;
 
-// Add this function to handle setting the length of stay to 1 day and saving immediately
-const handleSetLengthOfStayToOne = (idx) => {
+// Add this function to handle setting the length of stay to 1 day and deleting the guest
+const handleSetLengthOfStayToOneAndDelete = (idx) => {
+  const guestToDelete = guests[idx];
+
+  // Update the guest's length of stay to 1 day
   setGuests((prevGuests) => {
     const updatedGuests = prevGuests.map((g, i) =>
       i === idx
@@ -296,12 +299,14 @@ const handleSetLengthOfStayToOne = (idx) => {
         : g
     );
 
-    // Automatically save the updated guest
-    const updatedGuest = updatedGuests[idx];
+    // Automatically delete the guest after updating
     onSave(day, room, {
-      guests: [updatedGuest],
+      guests: [],
+      removeGuest: {
+        ...guestToDelete,
+        _stayId: guestToDelete._stayId, // Ensure stay ID is passed for deletion
+      },
       singleGuest: true,
-      isEdit: !!updatedGuest._stayId, // Check if it's an edit
     });
 
     return updatedGuests;
@@ -535,10 +540,10 @@ const handleSetLengthOfStayToOne = (idx) => {
                           <>
                             <button
                               className="btn btn-info btn-sm d-flex align-items-center gap-1"
-                              onClick={() => handleSetLengthOfStayToOne(idx)}
+                              onClick={() => handleSetLengthOfStayToOneAndDelete(idx)}
                               disabled={disabled}
                             >
-                              <Clock size={14} />
+                              <Trash2 size={14} />
                               1 Day
                             </button>
                             <button
