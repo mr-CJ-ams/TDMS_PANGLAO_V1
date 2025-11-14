@@ -445,20 +445,18 @@ useEffect(() => {
 
   // Room color - FIXED: Properly handles multiple guests and updates after deletions
   const getRoomColor = (day: number, room: number) => {
-    if (!Array.isArray(occupiedRooms)) return "white";
-
   // Find all entries for this day/room
-  const roomEntries = occupiedRooms.filter(r => r.day === day && r.room === room);
+  const roomEntries = occupiedRooms.filter((entry) => entry.day === day && entry.room === room);
   if (!roomEntries.length) return "white";
 
-  // Check if ANY guest in this room/day is on their start day AND has check-in
-  const hasStartDayWithCheckIn = roomEntries.some(entry =>
-    entry.guests.some(g => g._isStartDay && g.isCheckIn)
+  // Check if any guest in this room/day is on their start day AND has check-in
+  const hasStartDayWithCheckIn = roomEntries.some((entry) =>
+    entry.guests.some((guest) => guest._isStartDay && guest.isCheckIn)
   );
 
-  // Check if ANY guest in this room/day is on their start day but NO check-in
-  const hasStartDayWithoutCheckIn = roomEntries.some(entry =>
-    entry.guests.some(g => g._isStartDay && !g.isCheckIn)
+  // Check if any guest in this room/day is on their start day but has no check-in
+  const hasStartDayWithoutCheckIn = roomEntries.some((entry) =>
+    entry.guests.some((guest) => guest._isStartDay && !guest.isCheckIn)
   );
 
   // Priority: Check-in > No check-in > Following days
@@ -469,7 +467,7 @@ useEffect(() => {
   } else {
     return "#34D399"; // Green for following days
   }
-  };
+};
 
   // Guest data for modal - FIXED start day detection
   const getGuestData = (day: number, room: number) => {
@@ -609,34 +607,44 @@ useEffect(() => {
 
   // Daily totals
   const calculateDailyTotals = (day: number) => {
-    const rooms = Array.isArray(occupiedRooms) ? occupiedRooms : [];
-    if (!rooms.length) return { checkIns: 0, overnight: 0, occupied: 0 };
-
     // Filter entries for the specific day
-    const dayEntries = rooms.filter(r => r.day === day);
+    const dayEntries = occupiedRooms.filter((entry) => entry.day === day);
 
-    // Count only guests with isCheckIn true on start day for check-ins
-    const checkIns = dayEntries
-      .filter(r => r.isStartDay)
-      .reduce((a, r) => a + r.guests.filter(g => g.isCheckIn).length, 0);
+    // Check-Ins: Count guests who are on their start day and marked as check-in
+    const checkIns = dayEntries.reduce((total, entry) => {
+      const startDayGuests = entry.guests.filter((guest) => guest._isStartDay && guest.isCheckIn);
+      return total + startDayGuests.length;
+    }, 0);
 
-    // Overnight: all guests present
-    const overnight = dayEntries.reduce((a, r) => a + (r.guests?.length || 0), 0);
-    const occupied = new Set(dayEntries.map(r => r.room)).size;
+    // Overnight: Count all guests staying in the room for the given day
+    const overnight = dayEntries.reduce((total, entry) => total + entry.guests.length, 0);
+
+    // Occupied: Count unique rooms that have at least one guest
+    const occupied = new Set(dayEntries.map((entry) => entry.room)).size;
 
     return { checkIns, overnight, occupied };
   };  
 
   // Overall metrics
   const calculateOverallTotals = () => {
-    const totalCheckIns = occupiedRooms.filter(r => r.isCheckIn === true && r.guests.length > 0).reduce((a, r) => a + r.guests.length, 0);
-    const totalOvernight = occupiedRooms.filter(r => r.guests.length > 0).reduce((a, r) => a + r.guests.length, 0);
-    const totalRoomsOccupied = new Set(occupiedRooms.filter(r => r.guests.length > 0).map(r => r.room)).size;
-    const totalRoomsAvailable = numberOfRooms;
+    // Aggregate totals for all days in the current month
+    const totals = Array.from({ length: daysInMonth }, (_, i) => calculateDailyTotals(i + 1));
+
+    const totalCheckIns = totals.reduce((sum, day) => sum + day.checkIns, 0);
+    const totalOvernight = totals.reduce((sum, day) => sum + day.overnight, 0);
+    const totalRoomsOccupied = totals.reduce((sum, day) => sum + day.occupied, 0);
+
+    // Calculate averages
+    const totalRoomsAvailable = numberOfRooms * daysInMonth;
+    const averageGuestNights = totalCheckIns > 0 ? (totalOvernight / totalCheckIns).toFixed(2) : "0";
+    const averageRoomOccupancyRate =
+      totalRoomsAvailable > 0 ? ((totalRoomsOccupied / totalRoomsAvailable) * 100).toFixed(2) : "0";
+    const averageGuestsPerRoom = totalRoomsOccupied > 0 ? (totalOvernight / totalRoomsOccupied).toFixed(2) : "0";
+
     return {
-      averageGuestNights: totalCheckIns > 0 ? (totalOvernight / totalCheckIns).toFixed(2) : "0",
-      averageRoomOccupancyRate: totalRoomsAvailable > 0 ? ((totalRoomsOccupied / totalRoomsAvailable) * 100).toFixed(2) : "0",
-      averageGuestsPerRoom: totalRoomsOccupied > 0 ? (totalOvernight / totalRoomsOccupied).toFixed(2) : "0"
+      averageGuestNights,
+      averageRoomOccupancyRate,
+      averageGuestsPerRoom,
     };
   };
 
