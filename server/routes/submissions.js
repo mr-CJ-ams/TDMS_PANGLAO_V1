@@ -109,4 +109,7 @@ router.get("/draft/:draftId", authenticateToken, submissionsController.getDraftD
 // Remove a stay from all months for a user
 router.delete("/stay/:userId/:stayId", authenticateToken, submissionsController.removeStayFromAllMonths);
 
+// Fetch all drafts for a user
+router.get("/all-drafts/:userId", authenticateToken, submissionsController.getAllDraftsForUser);
+
 module.exports = router;

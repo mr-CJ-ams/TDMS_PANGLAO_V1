@@ -155,24 +155,61 @@ const generateStayId = (day: number, room: number, guest: any, startMonth: numbe
     })();
   }, [user, selectedMonth, selectedYear]);
 
+  // Load all data for all months from the server on app start
+useEffect(() => {
+  if (!user) return;
+
+  const loadData = async () => {
+    try {
+      const token = sessionStorage.getItem("token");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      const { data } = await axios.get(`${API_BASE_URL}/api/submissions/all-drafts/${user.user_id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 10000,
+      });
+
+      // Merge server data with local data
+      const serverData = data || {};
+      const localData = loadDataFromLocalStorage(user.user_id);
+      const mergedData = { ...serverData, ...localData };
+
+      setMonthlyData(mergedData);
+
+      // Set occupied rooms for the current month
+      const currentKey = `${selectedYear}-${selectedMonth}`;
+      setOccupiedRooms(mergedData[currentKey] || []);
+    } catch (err) {
+      console.error("Error loading data from server:", err);
+    }
+  };
+
+  loadData();
+}, [user, selectedMonth, selectedYear]);
+
   // Save to localStorage and server on monthlyData change
   useEffect(() => {
     if (!user || isLoading) return;
+
     const saveData = async () => {
       try {
+        // Save to localStorage
         saveDataToLocalStorage(user.user_id, monthlyData);
+
         const token = sessionStorage.getItem("token");
         if (!token) {
           console.warn("No authentication token found for saving data");
           return;
         }
-        
+
         // Save data for all months that have data
         const allMonthKeys = Object.keys(monthlyData);
         for (const monthKey of allMonthKeys) {
           const [year, month] = monthKey.split('-').map(Number);
           const monthData = monthlyData[monthKey] || [];
-          
+
           // Only save if there's actual data
           if (monthData.length > 0) {
             const cleanMonthData = monthData.map(item => ({
@@ -185,34 +222,38 @@ const generateStayId = (day: number, room: number, guest: any, startMonth: numbe
                 status: g.status,
                 nationality: g.nationality,
                 lengthOfStay: Number(g.lengthOfStay) || 0,
-                // Always include these fields for correct restoration
                 _isStartDay: g._isStartDay,
                 _stayId: g._stayId,
                 _startDay: g._startDay,
                 _startMonth: g._startMonth,
                 _startYear: g._startYear,
-              }))
+              })),
             }));
-            
+
             try {
-              await axios.post(`${API_BASE_URL}/api/submissions/draft`, {
-                userId: user.user_id, 
-                month, 
-                year, 
-                data: cleanMonthData
-              }, { 
-                headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-                timeout: 10000
-              });
+              await axios.post(
+                `${API_BASE_URL}/api/submissions/draft`,
+                {
+                  userId: user.user_id,
+                  month,
+                  year,
+                  data: cleanMonthData,
+                },
+                {
+                  headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+                  timeout: 10000,
+                }
+              );
             } catch (err) {
               console.error(`Background save failed for ${month}/${year}:`, err);
             }
           }
         }
-      } catch (err) { 
+      } catch (err) {
         console.error("Background save failed:", err);
       }
     };
+
     const debounceTimer = setTimeout(saveData, 500);
     return () => clearTimeout(debounceTimer);
   }, [monthlyData, user, isLoading]);
@@ -722,7 +763,16 @@ const handleRemoveAllGuests = async (day: number, room: number) => {
     try { localStorage.setItem(`submission_${userId}`, JSON.stringify(data)); } catch (err) { console.error("Error saving to localStorage:", err); }
   };
   const loadDataFromLocalStorage = (userId: string) => {
-    try { const d = localStorage.getItem(`submission_${userId}`); return d ? JSON.parse(d) : {}; } catch { return {}; }
+    try {
+      const data = localStorage.getItem(`submission_${userId}`);
+      if (!data) {
+        console.warn("Local storage is empty. Falling back to server data.");
+        return {};
+      }
+      return JSON.parse(data);
+    } catch {
+      return {};
+    }
   };
 
   // Month helpers

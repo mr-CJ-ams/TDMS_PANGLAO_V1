@@ -370,6 +370,22 @@ class SubmissionModel {
     );
     return result.rows;
   }
+
+  static async getAllDraftsForUser(userId) {
+    const result = await pool.query(
+      `SELECT month, year, data 
+       FROM draft_submissions 
+       WHERE user_id = $1
+       ORDER BY year ASC, month ASC`,
+      [userId]
+    );
+
+    return result.rows.map(row => ({
+      month: row.month,
+      year: row.year,
+      data: row.data,
+    }));
+  }
 }
 // Export the pool along with the class
 module.exports = {

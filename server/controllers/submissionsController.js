@@ -501,3 +501,24 @@ exports.saveRoomNames = async (req, res) => {
   }
 };
 
+exports.getAllDraftsForUser = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    // Fetch all drafts for the user
+    const drafts = await SubmissionModel.getAllDraftsForUser(userId);
+
+    // Transform drafts into the desired format
+    const data = drafts.reduce((acc, draft) => {
+      const key = `${draft.year}-${draft.month}`;
+      acc[key] = draft.data;
+      return acc;
+    }, {});
+
+    res.json(data);
+  } catch (err) {
+    console.error("Error fetching drafts:", err);
+    res.status(500).json({ error: "Failed to fetch drafts" });
+  }
+};
+
