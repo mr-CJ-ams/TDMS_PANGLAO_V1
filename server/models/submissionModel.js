@@ -260,7 +260,12 @@ class SubmissionModel {
         age: Number(guest.age) || 0,
         status: String(guest.status || ''),
         nationality: String(guest.nationality || ''),
-        isCheckIn: Boolean(guest.isCheckIn)
+        isCheckIn: Boolean(guest.isCheckIn),
+        _isStartDay: guest._isStartDay ?? false,
+        _stayId: guest._stayId ?? '',
+        _startDay: guest._startDay ?? 0,
+        _startMonth: guest._startMonth ?? 0,
+        _startYear: guest._startYear ?? 0,
       })) : [],
       lengthOfStay: Number(item.lengthOfStay) || 0,
       isCheckIn: Boolean(item.isCheckIn),

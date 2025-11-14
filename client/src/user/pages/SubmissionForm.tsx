@@ -41,70 +41,8 @@ const SubmissionForm = () => {
   const [modal, setModal] = useState<{ show: boolean; title: string; message: string; onClose?: () => void }>({ show: false, title: "", message: "" });
   const [confirmModal, setConfirmModal] = useState(false);
 
-  // Helper function to find all entries for a specific stay across all months
-  const findAllStayEntries = (stayId: string, monthlyData: any) => {
-    const allEntries = [];
-    
-    Object.keys(monthlyData).forEach(monthKey => {
-      const monthEntries = monthlyData[monthKey] || [];
-      const stayEntries = monthEntries.filter((entry: any) => entry.stayId === stayId);
-      allEntries.push(...stayEntries);
-    });
-    
-    return allEntries;
-  };
-
-  
-
-  // Helper function to find stay ID by guest characteristics - FIXED VERSION
-const findStayIdByGuest = (guest: any, room: number, day: number, monthlyData: any) => {
-  // First, try to find the exact stay by matching the start day
-  for (const monthKey in monthlyData) {
-    const monthEntries = monthlyData[monthKey] || [];
-    for (const entry of monthEntries) {
-      // Match by room, start day, and guest characteristics
-      if (entry.room === room && 
-          entry.startDay === day && 
-          entry.startMonth === selectedMonth && 
-          entry.startYear === selectedYear && 
-          entry.guests) {
-        const matchingGuest = entry.guests.find((g: any) =>
-          g.gender === guest.gender &&
-          g.age === guest.age &&
-          g.status === guest.status &&
-          g.nationality === guest.nationality
-        );
-        if (matchingGuest && entry.stayId) {
-          return entry.stayId;
-        }
-      }
-    }
-  }
-  
-  // Fallback: find by guest characteristics in any start day entry for this room
-  for (const monthKey in monthlyData) {
-    const monthEntries = monthlyData[monthKey] || [];
-    for (const entry of monthEntries) {
-      if (entry.room === room && entry.isStartDay && entry.guests) {
-        const matchingGuest = entry.guests.find((g: any) =>
-          g.gender === guest.gender &&
-          g.age === guest.age &&
-          g.status === guest.status &&
-          g.nationality === guest.nationality
-        );
-        if (matchingGuest && entry.stayId) {
-          return entry.stayId;
-        }
-      }
-    }
-  }
-  
-  return null;
-};
-
 // Generate a unique stay ID for each guest - ENHANCED for better readability
 const generateStayId = (day: number, room: number, guest: any, startMonth: number, startYear: number) => {
-  const timestamp = Date.now();
   const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase(); // Shorter, uppercase random suffix
   
   // Create a more readable ID format: G-YYYY-MM-DD-RR-GENDER-AGE-RANDOM
@@ -239,14 +177,20 @@ const generateStayId = (day: number, room: number, guest: any, startMonth: numbe
           if (monthData.length > 0) {
             const cleanMonthData = monthData.map(item => ({
               ...item,
-              guests: item.guests.map(g => ({ 
-                ...g, 
-                age: Number(g.age) || 0, 
+              guests: item.guests.map(g => ({
+                ...g,
+                age: Number(g.age) || 0,
                 isCheckIn: Boolean(g.isCheckIn),
                 gender: g.gender,
                 status: g.status,
                 nationality: g.nationality,
-                lengthOfStay: Number(g.lengthOfStay) || 0
+                lengthOfStay: Number(g.lengthOfStay) || 0,
+                // Always include these fields for correct restoration
+                _isStartDay: g._isStartDay,
+                _stayId: g._stayId,
+                _startDay: g._startDay,
+                _startMonth: g._startMonth,
+                _startYear: g._startYear,
               }))
             }));
             
@@ -300,35 +244,9 @@ const generateStayId = (day: number, room: number, guest: any, startMonth: numbe
     setIsModalOpen(true);
   };
 
-  // Helper function to check if an entry falls within a guest's stay period
-  const isEntryInGuestStayPeriod = (entry: any, startDay: number, room: number, lengthOfStay: number, guest: any, startMonth: number, startYear: number) => {
-    if (entry.room !== room) return false;
-    
-    // Calculate the end date of the stay
-    let endDay = startDay + lengthOfStay - 1;
-    let endMonth = startMonth;
-    let endYear = startYear;
-    
-    const daysInStartMonth = getDaysInMonth(startMonth, startYear);
-    if (endDay > daysInStartMonth) {
-      endDay = endDay - daysInStartMonth;
-      endMonth = startMonth === 12 ? 1 : startMonth + 1;
-      endYear = startMonth === 12 ? startYear + 1 : startYear;
-    }
-    
-    // Check if entry is within the stay period
-    if (entry.month === startMonth && entry.year === startYear) {
-      return entry.day >= startDay && entry.day <= startDay + lengthOfStay - 1;
-    } else if (entry.month === endMonth && entry.year === endYear) {
-      return entry.day <= endDay;
-    }
-    
-    return false;
-  };
-
   // Save guest data for a day/room - Fixed cross-month propagation and deletion
   const handleSaveGuests = async (day: number, room: number, guestData: any) => {
-    const { guests, singleGuest, removeGuest, isEdit } = guestData;
+    const { guests, removeGuest, isEdit } = guestData;
     
     // In the handleSaveGuests function - ENHANCED removal section:
   // ...inside handleSaveGuests...
@@ -342,26 +260,13 @@ if (removeGuest && removeGuest._stayId) {
     if (updatedMonthlyData[monthKey]) {
       updatedMonthlyData[monthKey] = updatedMonthlyData[monthKey]
         .map((entry: any) => {
-          // Remove only the guest with the matching stayId
-          const filteredGuests = entry.guests.filter(g => g._stayId !== guestStayId);
-          if (filteredGuests.length > 0) {
-            // Update entry with remaining guests and recalculate flags
-            const hasCheckIn = filteredGuests.some(g => g.isCheckIn);
-            const hasStartDay = filteredGuests.some(g => g._isStartDay && entry.day === g._startDay);
-            const newStartDay = filteredGuests.find(g => g._isStartDay && entry.day === g._startDay)?._startDay;
-            const newStayId = filteredGuests.find(g => g._isStartDay && entry.day === g._startDay)?._stayId || entry.stayId;
-            return {
-              ...entry,
-              guests: filteredGuests,
-              isCheckIn: hasCheckIn,
-              isStartDay: hasStartDay,
-              startDay: newStartDay || entry.startDay,
-              stayId: newStayId,
-              lengthOfStay: filteredGuests[0]?.lengthOfStay || entry.lengthOfStay
-            };
+          // Remove guest from entry if their _stayId matches
+          if (entry.guests && Array.isArray(entry.guests)) {
+            entry.guests = entry.guests.filter((g: any) => g._stayId !== guestStayId);
           }
-          // If no guests left, remove the entry
-          return null;
+          // Remove entry if no guests left
+          if (!entry.guests || entry.guests.length === 0) return null;
+          return entry;
         })
         .filter((entry: any) => entry !== null);
     }
@@ -398,7 +303,7 @@ if (removeGuest && removeGuest._stayId) {
       // If this is an EDIT operation, we need to find and remove the OLD guest data first
       if (isEdit && guest._originalStayId) {
         console.log(`✏️ Editing guest with original stay ID: ${guest._originalStayId}`);
-        console.log(`📝 Original: Gender=${guest._originalGender}, Age=${guest._originalAge}, Status=${guest._originalStatus}, Nationality=${guest._originalNationality}`);
+        console.log(`📝 Original: Gender=${guest._originalGender}, Age=${guest._originalAge}, Status=${guest._originalStatus}, Nationality=${guest._originalNationality}`)
         console.log(`🔄 New: Gender=${guest.gender}, Age=${guest.age}, Status=${guest.status}, Nationality=${guest.nationality}`);
         console.log(`📅 New length of stay: ${guestStayLength} days`);
         
@@ -703,166 +608,166 @@ if (removeGuest && removeGuest._stayId) {
   // Room color - FIXED: Properly handles multiple guests and updates after deletions
   const getRoomColor = (day: number, room: number) => {
     if (!Array.isArray(occupiedRooms)) return "white";
+
+  // Find all entries for this day/room
+  const roomEntries = occupiedRooms.filter(r => r.day === day && r.room === room);
+  if (!roomEntries.length) return "white";
+
+  // Check if ANY guest in this room/day is on their start day AND has check-in
+  const hasStartDayWithCheckIn = roomEntries.some(entry =>
+    entry.guests.some(g => g._isStartDay && g.isCheckIn)
+  );
+
+  // Check if ANY guest in this room/day is on their start day but NO check-in
+  const hasStartDayWithoutCheckIn = roomEntries.some(entry =>
+    entry.guests.some(g => g._isStartDay && !g.isCheckIn)
+  );
+
+  // Priority: Check-in > No check-in > Following days
+  if (hasStartDayWithCheckIn) {
+    return "#FBBF24"; // Yellow for check-in start day
+  } else if (hasStartDayWithoutCheckIn) {
+    return "#3B82F6"; // Blue for no check-in start day
+  } else {
+    return "#34D399"; // Green for following days
+  }
+  };
+
+  // Guest data for modal - FIXED start day detection
+  const getGuestData = (day: number, room: number) => {
+    if (!Array.isArray(occupiedRooms)) return null;
     
     // Find all entries for this day/room
-    const roomEntries = occupiedRooms.filter(r => r.day === day && r.room === room);
-    if (!roomEntries.length) return "white";
-
-    // Check if ANY guest in this room/day is on their start day AND has check-in
-    const hasStartDayWithCheckIn = roomEntries.some(entry => 
-      entry.isStartDay && entry.guests.some(g => g.isCheckIn)
-    );
-
-    // Check if ANY guest in this room/day is on their start day but NO check-in
-    const hasStartDayWithoutCheckIn = roomEntries.some(entry => 
-      entry.isStartDay && !entry.guests.some(g => g.isCheckIn)
-    );
-
-    // Priority: Check-in > No check-in > Following days
-    if (hasStartDayWithCheckIn) {
-      return "#FBBF24"; // Yellow for check-in start day
-    } else if (hasStartDayWithoutCheckIn) {
-      return "#3B82F6"; // Blue for no check-in start day
-    } else {
-      return "#34D399"; // Green for following days
-    }
-  };
-
-// Guest data for modal - FIXED start day detection
-const getGuestData = (day: number, room: number) => {
-  if (!Array.isArray(occupiedRooms)) return null;
-  
-  // Find all entries for this day/room
-  const entries = occupiedRooms.filter(r => r.day === day && r.room === room);
-  if (!entries.length) return null;
-  
-  // Build comprehensive guest stay information from ALL monthly data
-  const guestStayInfo = new Map();
-  
-  // First pass: Find the ACTUAL start day for each guest across ALL months
-  Object.keys(monthlyData).forEach(monthKey => {
-    const monthData = monthlyData[monthKey] || [];
-    monthData.forEach((entry: any) => {
-      if (entry.room === room && entry.guests && entry.isStartDay) {
-        // This is a start day entry - use it as authoritative source
-        entry.guests.forEach((guest: any) => {
-          const guestKey = `${guest.gender}-${guest.age}-${guest.status}-${guest.nationality}`;
-          const [entryYear, entryMonth] = monthKey.split('-').map(Number);
-          
-          const guestInfo = {
-            startDay: entry.startDay || entry.day,
-            stayId: entry.stayId,
-            lengthOfStay: entry.lengthOfStay || guest.lengthOfStay,
-            startMonth: entry.startMonth || entryMonth,
-            startYear: entry.startYear || entryYear,
-            isCheckIn: entry.isCheckIn,
-            // Mark this as the authoritative start day information
-            _isAuthoritative: true
-          };
-          
-          // Only set if this is the earliest start day we've found for this guest
-          const currentInfo = guestStayInfo.get(guestKey);
-          if (!currentInfo || guestInfo.startDay < currentInfo.startDay) {
-            guestStayInfo.set(guestKey, guestInfo);
-          }
-        });
-      }
-    });
-  });
-  
-  // Second pass: For guests without start day entries, try to find their stay info
-  Object.keys(monthlyData).forEach(monthKey => {
-    const monthData = monthlyData[monthKey] || [];
-    monthData.forEach((entry: any) => {
-      if (entry.room === room && entry.guests) {
-        entry.guests.forEach((guest: any) => {
-          const guestKey = `${guest.gender}-${guest.age}-${guest.status}-${guest.nationality}`;
-          if (!guestStayInfo.has(guestKey)) {
-            // Use guest's own stored start day information
-            if (guest._startDay) {
-              const [entryYear, entryMonth] = monthKey.split('-').map(Number);
-              guestStayInfo.set(guestKey, {
-                startDay: guest._startDay,
-                stayId: guest._stayId || entry.stayId,
-                lengthOfStay: guest.lengthOfStay || entry.lengthOfStay,
-                startMonth: guest._startMonth || entryMonth,
-                startYear: guest._startYear || entryYear,
-                isCheckIn: guest.isCheckIn,
-                _isAuthoritative: false
-              });
+    const entries = occupiedRooms.filter(r => r.day === day && r.room === room);
+    if (!entries.length) return null;
+    
+    // Build comprehensive guest stay information from ALL monthly data
+    const guestStayInfo = new Map();
+    
+    // First pass: Find the ACTUAL start day for each guest across ALL months
+    Object.keys(monthlyData).forEach(monthKey => {
+      const monthData = monthlyData[monthKey] || [];
+      monthData.forEach((entry: any) => {
+        if (entry.room === room && entry.guests && entry.isStartDay) {
+          // This is a start day entry - use it as authoritative source
+          entry.guests.forEach((guest: any) => {
+            const guestKey = `${guest.gender}-${guest.age}-${guest.status}-${guest.nationality}`;
+            const [entryYear, entryMonth] = monthKey.split('-').map(Number);
+            
+            const guestInfo = {
+              startDay: entry.startDay || entry.day,
+              stayId: entry.stayId,
+              lengthOfStay: entry.lengthOfStay || guest.lengthOfStay,
+              startMonth: entry.startMonth || entryMonth,
+              startYear: entry.startYear || entryYear,
+              isCheckIn: entry.isCheckIn,
+              // Mark this as the authoritative start day information
+              _isAuthoritative: true
+            };
+            
+            // Only set if this is the earliest start day we've found for this guest
+            const currentInfo = guestStayInfo.get(guestKey);
+            if (!currentInfo || guestInfo.startDay < currentInfo.startDay) {
+              guestStayInfo.set(guestKey, guestInfo);
             }
-          }
-        });
-      }
+          });
+        }
+      });
     });
-  });
-  
-  // Third pass: Aggregate guests for the current day/room with correct start day flags
-  const guestMap = new Map();
-  
-  entries.forEach(entry => {
-    entry.guests.forEach(guest => {
-      const guestKey = `${guest.gender}-${guest.age}-${guest.status}-${guest.nationality}`;
-      const guestStayData = guestStayInfo.get(guestKey);
-      
-      if (guestStayData) {
-        // Determine if this is the ACTUAL start day for this guest
-        const isActualStartDay = 
-          guestStayData.startDay === day && 
-          guestStayData.startMonth === selectedMonth && 
-          guestStayData.startYear === selectedYear;
+    
+    // Second pass: For guests without start day entries, try to find their stay info
+    Object.keys(monthlyData).forEach(monthKey => {
+      const monthData = monthlyData[monthKey] || [];
+      monthData.forEach((entry: any) => {
+        if (entry.room === room && entry.guests) {
+          entry.guests.forEach((guest: any) => {
+            const guestKey = `${guest.gender}-${guest.age}-${guest.status}-${guest.nationality}`;
+            if (!guestStayInfo.has(guestKey)) {
+              // Use guest's own stored start day information
+              if (guest._startDay) {
+                const [entryYear, entryMonth] = monthKey.split('-').map(Number);
+                guestStayInfo.set(guestKey, {
+                  startDay: guest._startDay,
+                  stayId: guest._stayId || entry.stayId,
+                  lengthOfStay: guest.lengthOfStay || entry.lengthOfStay,
+                  startMonth: guest._startMonth || entryMonth,
+                  startYear: guest._startYear || entryYear,
+                  isCheckIn: guest.isCheckIn,
+                  _isAuthoritative: false
+                });
+              }
+            }
+          });
+        }
+      });
+    });
+    
+    // Third pass: Aggregate guests for the current day/room with correct start day flags
+    const guestMap = new Map();
+    
+    entries.forEach(entry => {
+      entry.guests.forEach(guest => {
+        const guestKey = `${guest.gender}-${guest.age}-${guest.status}-${guest.nationality}`;
+        const guestStayData = guestStayInfo.get(guestKey);
         
-       // In getGuestData function, update the guest mapping:
-        if (!guestMap.has(guestKey)) {
-          guestMap.set(guestKey, {
-            ...guest,
-            lengthOfStay: guestStayData?.lengthOfStay || guest.lengthOfStay || "",
-            _saved: true,
-            _isStartDay: isActualStartDay,
-            _startDay: guestStayData.startDay,
-            _stayId: guestStayData.stayId,
-            _startMonth: guestStayData.startMonth,
-            _startYear: guestStayData.startYear,
-            // Store original data for editing including length of stay
-            _originalGender: guest.gender,
-            _originalAge: guest.age,
-            _originalStatus: guest.status,
-            _originalNationality: guest.nationality,
-            _originalStayId: guestStayData.stayId,
-            _originalLengthOfStay: guestStayData.lengthOfStay || guest.lengthOfStay // Track original length
-          });
+        if (guestStayData) {
+          // Determine if this is the ACTUAL start day for this guest
+          const isActualStartDay = 
+            guestStayData.startDay === day && 
+            guestStayData.startMonth === selectedMonth && 
+            guestStayData.startYear === selectedYear;
+          
+         // In getGuestData function, update the guest mapping:
+          if (!guestMap.has(guestKey)) {
+            guestMap.set(guestKey, {
+              ...guest,
+              lengthOfStay: guestStayData?.lengthOfStay || guest.lengthOfStay || "",
+              _saved: true,
+              _isStartDay: isActualStartDay,
+              _stayId: guestStayData.stayId,
+              _startDay: guestStayData.startDay,
+              _startMonth: guestStayData.startMonth,
+              _startYear: guestStayData.startYear,
+              // Store original data for editing including length of stay
+              _originalGender: guest.gender,
+              _originalAge: guest.age,
+              _originalStatus: guest.status,
+              _originalNationality: guest.nationality,
+              _originalStayId: guestStayData.stayId,
+              _originalLengthOfStay: guestStayData.lengthOfStay || guest.lengthOfStay // Track original length
+            });
+          }
+        } else {
+          // Fallback for guests without stay information
+          if (!guestMap.has(guestKey)) {
+            guestMap.set(guestKey, {
+              ...guest,
+              _saved: true,
+              _isStartDay: false, // Assume not start day if we can't find info
+              _startDay: day,
+              _stayId: entry.stayId,
+              _startMonth: selectedMonth,
+              _startYear: selectedYear,
+              _originalGender: guest.gender,
+              _originalAge: guest.age,
+              _originalStatus: guest.status,
+              _originalNationality: guest.nationality,
+              _originalStayId: entry.stayId
+            });
+          }
         }
-      } else {
-        // Fallback for guests without stay information
-        if (!guestMap.has(guestKey)) {
-          guestMap.set(guestKey, {
-            ...guest,
-            _saved: true,
-            _isStartDay: false, // Assume not start day if we can't find info
-            _startDay: day,
-            _stayId: entry.stayId,
-            _startMonth: selectedMonth,
-            _startYear: selectedYear,
-            _originalGender: guest.gender,
-            _originalAge: guest.age,
-            _originalStatus: guest.status,
-            _originalNationality: guest.nationality,
-            _originalStayId: entry.stayId
-          });
-        }
-      }
+      });
     });
-  });
-  
-  const guests = Array.from(guestMap.values());
-  
-  return {
-    day,
-    room,
-    guests,
-    isCheckIn: entries[0]?.isCheckIn ?? true,
+    
+    const guests = Array.from(guestMap.values());
+    
+    return {
+      day,
+      room,
+      guests,
+      isCheckIn: entries[0]?.isCheckIn ?? true,
+    };
   };
-};
 
   // Daily totals
   const calculateDailyTotals = (day: number) => {
@@ -1033,30 +938,6 @@ const handleRemoveAllGuests = async (day: number, room: number) => {
     return y > cy || (y === cy && m > cm);
   };
 
-  const getAffectedMonths = (startDay: number, startMonth: number, startYear: number, lengthOfStay: number) => {
-    const affectedMonths = [];
-    let currentDay = startDay;
-    let currentMonth = startMonth;
-    let currentYear = startYear;
-    let remainingDays = lengthOfStay;
-
-    while (remainingDays > 0) {
-      const daysInCurrentMonth = getDaysInMonth(currentMonth, currentYear);
-      const daysToAdd = Math.min(remainingDays, daysInCurrentMonth - currentDay + 1);
-      
-      affectedMonths.push({ month: currentMonth, year: currentYear });
-      
-      remainingDays -= daysToAdd;
-      currentDay = 1;
-      if (++currentMonth > 12) {
-        currentMonth = 1;
-        currentYear++;
-      }
-    }
-    
-    return affectedMonths;
-  };
-
   // Helper function to remove duplicate entries
   const removeDuplicateEntries = (rooms: any[]) => {
     const uniqueEntries = new Map();
@@ -1075,137 +956,6 @@ const handleRemoveAllGuests = async (day: number, room: number) => {
     });
     
     return Array.from(uniqueEntries.values());
-  };
-
-// Helper function to remove stay from database for all months - FIXED
-const removeStayFromDatabase = async (stayId: string) => {
-  try {
-    const token = sessionStorage.getItem("token");
-    if (!token || !user) {
-      console.log("No token or user found, skipping database removal");
-      return;
-    }
-    
-    // Find all months that might contain this specific stay
-    const affectedMonths = new Set<string>();
-    Object.keys(monthlyData).forEach(monthKey => {
-      const monthData = monthlyData[monthKey] || [];
-      const hasStay = monthData.some((entry: any) => entry.stayId === stayId);
-      if (hasStay) {
-        affectedMonths.add(monthKey);
-      }
-    });
-    
-    // Remove from each affected month - only remove the specific stay
-    for (const monthKey of Array.from(affectedMonths)) {
-      const [year, month] = monthKey.split('-').map(Number);
-      try {
-        // Get current data for this month
-        const response = await axios.get(
-          `${API_BASE_URL}/api/submissions/draft/${user.user_id}/${month}/${year}`,
-          { headers: { Authorization: `Bearer ${token}` }, timeout: 5000 }
-        );
-        
-        const monthData = response.data?.days || [];
-        
-        // Remove only entries with this specific stay ID
-        const filteredData = monthData
-          .map((entry: any) => {
-            if (entry.stayId === stayId) {
-              // This entry belongs to the stay we're removing, so remove it entirely
-              return null;
-            }
-            return entry;
-          })
-          .filter((entry: any) => entry !== null);
-        
-        // Save filtered data back
-        await axios.post(
-          `${API_BASE_URL}/api/submissions/draft`,
-          {
-            userId: user.user_id,
-            month,
-            year,
-            data: filteredData
-          },
-          { 
-            headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-            timeout: 5000
-          }
-        );
-        
-        console.log(`✅ Removed stay ${stayId} from database for ${month}/${year}`);
-        
-      } catch (err) {
-        console.warn(`Could not update database for ${month}/${year}:`, err);
-      }
-    }
-    
-  } catch (err: any) {
-    console.error("Error removing stay from database:", err);
-  }
-};
-
-  // Fallback method for removing stay from database (old implementation)
-  const removeStayFromDatabaseFallback = async (stayId: string) => {
-    try {
-      const token = sessionStorage.getItem("token");
-      if (!token || !user) return;
-      
-      // Find the start day entry to determine which months to check
-      const startEntry = Object.values(monthlyData).flat().find((entry: any) => 
-        entry.stayId === stayId && entry.isStartDay
-      ) as any;
-      
-      if (!startEntry) {
-        return;
-      }
-      
-      // Calculate which months are likely to contain this stay
-      const { startDay, startMonth, startYear, lengthOfStay } = startEntry;
-      const affectedMonths = getAffectedMonths(startDay, startMonth, startYear, lengthOfStay);
-      
-      for (const { month, year } of affectedMonths) {
-        try {
-          // Get the draft data for this month
-          const response = await axios.get(
-            `${API_BASE_URL}/api/submissions/draft/${user.user_id}/${month}/${year}`,
-            { 
-              headers: { Authorization: `Bearer ${token}` },
-              timeout: 5000
-            }
-          );
-          
-          const monthData = response.data?.days || [];
-          const hasStayData = monthData.some((entry: any) => entry.stayId === stayId);
-          
-          if (hasStayData) {
-            // Remove the stay from this month's data
-            const filteredData = monthData.filter((entry: any) => entry.stayId !== stayId);
-            
-            // Save the updated data back to database
-            await axios.post(
-              `${API_BASE_URL}/api/submissions/draft`,
-              {
-                userId: user.user_id,
-                month,
-                year,
-                data: filteredData
-              },
-              { 
-                headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-                timeout: 5000
-              }
-            );
-          }
-        } catch (err) {
-          // Ignore errors for months that don't have data
-          console.warn(`Could not check/update ${month}/${year}:`, err instanceof Error ? err.message : String(err));
-        }
-      }
-    } catch (err) {
-      console.error("Fallback: Error removing stay from database:", err);
-    }
   };
 
   const isFutureMonthValue = isFutureMonth(selectedMonth, selectedYear);

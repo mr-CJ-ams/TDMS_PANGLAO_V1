@@ -24,10 +24,6 @@ const GuestModal = ({
   onRemoveAllGuests,
   initialData,
   disabled,
-  hasRoomConflict,
-  occupiedRooms,
-  selectedYear,
-  selectedMonth
 }: GuestModalProps) => {
   const MAX_LENGTH_OF_STAY = 183;
 
@@ -37,7 +33,11 @@ const GuestModal = ({
       lengthOfStay: g.lengthOfStay?.toString() || "",
       isCheckIn: g.isCheckIn !== false,
       _saved: true,
-      _isStartDay: g._isStartDay !== false,
+      _isStartDay: g._isStartDay !== false, // <-- use saved value
+      _stayId: g._stayId,                   // <-- use saved value
+      _startDay: g._startDay,
+      _startMonth: g._startMonth,
+      _startYear: g._startYear,
       _editing: false,
       _originalData: null,
     })) || []
@@ -162,7 +162,6 @@ const GuestModal = ({
 
   // Enable edit mode for a saved guest
   const handleEditGuest = idx => {
-    const guest = guests[idx];
     setGuests(
       guests.map((g, i) =>
         i === idx
