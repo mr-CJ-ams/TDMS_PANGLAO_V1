@@ -247,363 +247,160 @@ const generateStayId = (day: number, room: number, guest: any, startMonth: numbe
   // Save guest data for a day/room - Fixed cross-month propagation and deletion
   const handleSaveGuests = async (day: number, room: number, guestData: any) => {
     const { guests, removeGuest, isEdit } = guestData;
-    
-    // In the handleSaveGuests function - ENHANCED removal section:
-  // ...inside handleSaveGuests...
 
-if (removeGuest && removeGuest._stayId) {
-  let updatedMonthlyData = { ...monthlyData };
-  const guestStayId = removeGuest._stayId;
-
-  // Remove guest from ALL months and ALL days by stayId
-  Object.keys(updatedMonthlyData).forEach(monthKey => {
-    if (updatedMonthlyData[monthKey]) {
-      updatedMonthlyData[monthKey] = updatedMonthlyData[monthKey]
-        .map((entry: any) => {
-          // Remove guest from entry if their _stayId matches
-          if (entry.guests && Array.isArray(entry.guests)) {
-            entry.guests = entry.guests.filter((g: any) => g._stayId !== guestStayId);
-          }
-          // Remove entry if no guests left
-          if (!entry.guests || entry.guests.length === 0) return null;
-          return entry;
-        })
-        .filter((entry: any) => entry !== null);
-    }
-  });
-
-  // Clean up any empty months
-  Object.keys(updatedMonthlyData).forEach(monthKey => {
-    if (updatedMonthlyData[monthKey] && updatedMonthlyData[monthKey].length === 0) {
-      delete updatedMonthlyData[monthKey];
-    }
-  });
-
-  setMonthlyData(updatedMonthlyData);
-  setOccupiedRooms(updatedMonthlyData[`${selectedYear}-${selectedMonth}`] || []);
-  return;
-}
-
-    if (!guests?.length) {
-      setModal({
-        show: true,
-        title: "Missing Guests",
-        message: "Please add at least one guest",
-      });
-      return;
-    }
-
+  // --- REMOVAL LOGIC ---
+  if (removeGuest && removeGuest._stayId) {
     let updatedMonthlyData = { ...monthlyData };
-    
-    // Process each guest individually
-    guests.forEach(guest => {
-      const guestStayLength = parseInt(guest.lengthOfStay);
-      const newStayId = generateStayId(day, room, guest, selectedMonth, selectedYear);
+    const guestStayId = removeGuest._stayId;
 
-      // If this is an EDIT operation, we need to find and remove the OLD guest data first
-      if (isEdit && guest._originalStayId) {
-        console.log(`✏️ Editing guest with original stay ID: ${guest._originalStayId}`);
-        console.log(`📝 Original: Gender=${guest._originalGender}, Age=${guest._originalAge}, Status=${guest._originalStatus}, Nationality=${guest._originalNationality}`)
-        console.log(`🔄 New: Gender=${guest.gender}, Age=${guest.age}, Status=${guest.status}, Nationality=${guest.nationality}`);
-        console.log(`📅 New length of stay: ${guestStayLength} days`);
-        
-        // ENHANCED: Calculate the COMPLETE range of the OLD stay to ensure proper removal across ALL months
-        let oldStayStartDay = day;
-        let oldStayStartMonth = selectedMonth;
-        let oldStayStartYear = selectedYear;
-        let oldLengthOfStay = guest._originalLengthOfStay || guestStayLength;
-
-        // First, find the actual original start day and length of stay
-        Object.keys(updatedMonthlyData).forEach(monthKey => {
-          if (updatedMonthlyData[monthKey]) {
-            updatedMonthlyData[monthKey].forEach((entry: any) => {
-              if (entry.guests) {
-                entry.guests.forEach((g: any) => {
-                  if (g.gender === guest._originalGender &&
-                      g.age === guest._originalAge &&
-                      g.status === guest._originalStatus &&
-                      g.nationality === guest._originalNationality) {
-                    
-                    if (entry.isStartDay || g._isStartDay) {
-                      oldStayStartDay = entry.startDay || entry.day;
-                      oldStayStartMonth = entry.startMonth || entry.month;
-                      oldStayStartYear = entry.startYear || entry.year;
-                      oldLengthOfStay = entry.lengthOfStay || g.lengthOfStay || oldLengthOfStay;
-                      console.log(`📅 Found original stay: Start Day ${oldStayStartDay}, Length ${oldLengthOfStay} days`);
-                    }
-                  }
-                });
-              }
-            });
-          }
-        });
-
-        // Calculate ALL months and days that contained the OLD guest
-        const oldAffectedMonths = new Set();
-        const oldAffectedDays = new Set();
-        let currentDay = oldStayStartDay;
-        let currentMonth = oldStayStartMonth;
-        let currentYear = oldStayStartYear;
-        let remainingOldDays = oldLengthOfStay;
-
-        console.log(`🗑️ Removing OLD guest from ${oldLengthOfStay} days starting from Day ${oldStayStartDay}`);
-
-        while (remainingOldDays > 0) {
-          const daysInCurrentMonth = getDaysInMonth(currentMonth, currentYear);
-          const daysToRemove = Math.min(remainingOldDays, daysInCurrentMonth - currentDay + 1);
-          const monthKey = `${currentYear}-${currentMonth}`;
-          
-          oldAffectedMonths.add(monthKey);
-          
-          for (let i = 0; i < daysToRemove; i++) {
-            const targetDay = currentDay + i;
-            oldAffectedDays.add(`${monthKey}-${targetDay}`);
-          }
-          
-          remainingOldDays -= daysToRemove;
-          currentDay = 1;
-          if (++currentMonth > 12) {
-            currentMonth = 1;
-            currentYear++;
-          }
-        }
-
-        console.log(`📋 OLD affected months:`, Array.from(oldAffectedMonths));
-        console.log(`📋 OLD affected days:`, Array.from(oldAffectedDays));
-
-        // CRITICAL FIX: Remove OLD guest from ALL previously affected months and days
-        Object.keys(updatedMonthlyData).forEach(monthKey => {
-          if (updatedMonthlyData[monthKey]) {
-            // Check if this month was part of the OLD stay
-            const wasPartOfOldStay = oldAffectedMonths.has(monthKey);
-            
-            updatedMonthlyData[monthKey] = updatedMonthlyData[monthKey]
-              .map((entry: any) => {
-                const entryKey = `${monthKey}-${entry.day}`;
-                const wasAffectedByOldStay = oldAffectedDays.has(entryKey);
-                const containsOldGuest = entry.guests?.some((g: any) =>
-                  g.gender === guest._originalGender &&
-                  g.age === guest._originalAge &&
-                  g.status === guest._originalStatus &&
-                  g.nationality === guest._originalNationality
-                );
-                
-                // Remove the guest if:
-                // 1. This day was part of the OLD stay AND contains the guest, OR
-                // 2. This month was part of the OLD stay AND contains the guest (safety check)
-                if ((wasAffectedByOldStay && containsOldGuest) || (wasPartOfOldStay && containsOldGuest)) {
-                  // Remove only the OLD guest from this entry
-                  const filteredGuests = entry.guests.filter((g: any) =>
-                    !(
-                      g.gender === guest._originalGender &&
-                      g.age === guest._originalAge &&
-                      g.status === guest._originalStatus &&
-                      g.nationality === guest._originalNationality
-                    )
-                  );
-                  
-                  console.log(`🗑️ Removed OLD guest from ${monthKey} day ${entry.day}, ${filteredGuests.length} guests remain`);
-                  
-                  // If there are still other guests, update the entry
-                  if (filteredGuests.length > 0) {
-                    // Recalculate entry metadata based on remaining guests
-                    const hasCheckIn = filteredGuests.some((g: any) => g.isCheckIn);
-                    const hasStartDay = filteredGuests.some((g: any) => g._isStartDay);
-                    const remainingStartDays = filteredGuests
-                      .filter(g => g._startDay)
-                      .map(g => g._startDay)
-                      .sort((a, b) => a - b);
-                    
-                    const newStartDay = remainingStartDays.length > 0 ? remainingStartDays[0] : entry.startDay;
-                    
-                    // Find the stay ID from remaining start day guests
-                    let newStayId = entry.stayId;
-                    const startDayGuest = filteredGuests.find(g => g._startDay === newStartDay);
-                    if (startDayGuest && startDayGuest._stayId) {
-                      newStayId = startDayGuest._stayId;
-                    }
-                    
-                    // Calculate max length of stay among remaining guests
-                    const maxLengthOfStay = Math.max(
-                      ...filteredGuests.map((g: any) => g.lengthOfStay || 0),
-                      entry.lengthOfStay || 0
-                    );
-                    
-                    return {
-                      ...entry,
-                      guests: filteredGuests,
-                      isCheckIn: hasCheckIn,
-                      isStartDay: entry.day === newStartDay && hasStartDay,
-                      startDay: newStartDay,
-                      stayId: newStayId,
-                      lengthOfStay: maxLengthOfStay
-                    };
-                  }
-                  // If no guests left, remove the entire entry
-                  return null;
-                }
-                return entry;
-              })
-              .filter((entry: any) => entry !== null);
-          }
-        });
-
-        // EXTRA SAFETY: Clean up any empty months that might have been left behind
-        Object.keys(updatedMonthlyData).forEach(monthKey => {
-          if (updatedMonthlyData[monthKey] && updatedMonthlyData[monthKey].length === 0) {
-            delete updatedMonthlyData[monthKey];
-            console.log(`🧹 Cleaned up empty month: ${monthKey}`);
-          }
-        });
-        
-        console.log(`🔄 Adding updated guest with new length of stay: ${guestStayLength} days`);
-      }
-
-      // Add the guest for each day of their stay (including cross-month) - ENHANCED cross-month handling
-      let currentDay = day;
-      let currentMonth = selectedMonth;
-      let currentYear = selectedYear;
-      let remainingDays = guestStayLength;
-      let isFirstDay = true;
-
-      console.log(`📅 Adding guest for ${guestStayLength} days starting from ${currentMonth}/${currentDay}/${currentYear}`);
-
-      while (remainingDays > 0) {
-        const daysInCurrentMonth = getDaysInMonth(currentMonth, currentYear);
-        const daysToAdd = Math.min(remainingDays, daysInCurrentMonth - currentDay + 1);
-        const monthKey = `${currentYear}-${currentMonth}`;
-        
-        console.log(`📋 Adding ${daysToAdd} days in ${monthKey} from day ${currentDay}`);
-        
-        if (!updatedMonthlyData[monthKey]) {
-          updatedMonthlyData[monthKey] = [];
-        }
-
-        // Add guest for each day in the current month
-        for (let i = 0; i < daysToAdd; i++) {
-          const targetDay = currentDay + i;
-          
-          // Create new guest entry
-          const guestEntry = {
-            ...guest,
-            roomNumber: room,
-            lengthOfStay: guestStayLength,
-            isCheckIn: isFirstDay ? !!guest.isCheckIn : false,
-            _isStartDay: isFirstDay,
-            _startDay: day,
-            _stayId: newStayId,
-            _startMonth: selectedMonth,
-            _startYear: selectedYear
-          };
-
-          // Check if entry already exists for this day/room
-          const existingEntryIndex = updatedMonthlyData[monthKey].findIndex(
-            (e: any) => e.day === targetDay && e.room === room
-          );
-
-          if (existingEntryIndex !== -1) {
-            // Entry exists - handle shared entry
-            const existingEntry = updatedMonthlyData[monthKey][existingEntryIndex];
-            
-            // Check if our guest is already in this entry
-            const guestExistsIndex = existingEntry.guests.findIndex((g: any) =>
-              g.gender === guest.gender &&
-              g.age === guest.age &&
-              g.status === guest.status &&
-              g.nationality === guest.nationality
-            );
-
-            if (guestExistsIndex !== -1) {
-              // Update existing guest in the entry
-              existingEntry.guests[guestExistsIndex] = guestEntry;
-            } else {
-              // Add our guest to existing entry with other guests
-              existingEntry.guests.push(guestEntry);
-            }
-            
-            // Update entry metadata
-            if (isFirstDay) {
-              existingEntry.isCheckIn = existingEntry.guests.some((g: any) => g.isCheckIn);
-              existingEntry.isStartDay = true;
-              existingEntry.startDay = day;
-              existingEntry.startMonth = selectedMonth;
-              existingEntry.startYear = selectedYear;
-              
-              // Use this guest's stay ID if it's their start day
-              existingEntry.stayId = newStayId;
-              existingEntry.lengthOfStay = guestStayLength;
-            } else {
-              // For following days, ensure lengthOfStay is appropriate
-              const maxLengthOfStay = Math.max(
-                existingEntry.lengthOfStay || 0,
-                guestStayLength,
-                ...existingEntry.guests.map((g: any) => g.lengthOfStay || 0)
-              );
-              existingEntry.lengthOfStay = maxLengthOfStay;
-            }
-          } else {
-            // Create new entry
-            const newEntry = {
-              day: targetDay,
-              room,
-              guests: [guestEntry],
-              isCheckIn: isFirstDay ? !!guest.isCheckIn : false,
-              isStartDay: isFirstDay,
-              stayId: newStayId,
-              startDay: day,
-              startMonth: selectedMonth,
-              startYear: selectedYear,
-              lengthOfStay: guestStayLength,
-              month: currentMonth,
-              year: currentYear,
-            };
-            updatedMonthlyData[monthKey].push(newEntry);
-            console.log(`✅ Created new entry for ${monthKey} day ${targetDay}`);
-          }
-          
-          isFirstDay = false;
-        }
-
-        remainingDays -= daysToAdd;
-        
-        // Move to next month if there are remaining days
-        if (remainingDays > 0) {
-          currentDay = 1;
-          currentMonth = currentMonth === 12 ? 1 : currentMonth + 1;
-          currentYear = currentMonth === 1 ? currentYear + 1 : currentYear;
-          console.log(`🔄 Moving to next month: ${currentMonth}/${currentYear}`);
-        }
-      }
-    }); // <-- This closing brace was missing in your code
-
-    // Clean up any empty entries and remove duplicates
+    // Remove guest from ALL months and ALL days by stayId
     Object.keys(updatedMonthlyData).forEach(monthKey => {
       if (updatedMonthlyData[monthKey]) {
-        // Remove empty entries
-        updatedMonthlyData[monthKey] = updatedMonthlyData[monthKey].filter((entry: any) => 
-          entry.guests && entry.guests.length > 0
-        );
-        
-        // Remove duplicate entries (same day, room, and guest combination)
-        const uniqueEntries = [];
-        const entryMap = new Map();
-        
-        updatedMonthlyData[monthKey].forEach((entry: any) => {
-          const key = `${entry.day}-${entry.room}-${entry.stayId}`;
-          if (!entryMap.has(key)) {
-            entryMap.set(key, entry);
-            uniqueEntries.push(entry);
-          }
-        });
-        
-        updatedMonthlyData[monthKey] = uniqueEntries;
+        updatedMonthlyData[monthKey] = updatedMonthlyData[monthKey]
+          .map((entry: any) => {
+            if (entry.guests && Array.isArray(entry.guests)) {
+              // Remove only guests with matching stayId
+              entry.guests = entry.guests.filter((g: any) => g._stayId !== guestStayId);
+            }
+            // Remove entry if no guests left
+            if (!entry.guests || entry.guests.length === 0) return null;
+            return entry;
+          })
+          .filter((entry: any) => entry !== null);
       }
     });
 
-    const currentKey = `${selectedYear}-${selectedMonth}`;
+    // Clean up any empty months
+    Object.keys(updatedMonthlyData).forEach(monthKey => {
+      if (updatedMonthlyData[monthKey] && updatedMonthlyData[monthKey].length === 0) {
+        delete updatedMonthlyData[monthKey];
+      }
+    });
+
     setMonthlyData(updatedMonthlyData);
-    setOccupiedRooms(updatedMonthlyData[currentKey] || []);
-  };
+    setOccupiedRooms(updatedMonthlyData[`${selectedYear}-${selectedMonth}`] || []);
+    return;
+  }
+
+  // --- EDIT LOGIC ---
+  let updatedMonthlyData = { ...monthlyData };
+
+  guests.forEach(guest => {
+    const guestStayLength = parseInt(guest.lengthOfStay);
+    const newStayId = guest._stayId || generateStayId(day, room, guest, selectedMonth, selectedYear);
+
+    // If editing, remove all old entries with the original stayId
+    if (isEdit && guest._originalStayId) {
+      Object.keys(updatedMonthlyData).forEach(monthKey => {
+        if (updatedMonthlyData[monthKey]) {
+          updatedMonthlyData[monthKey] = updatedMonthlyData[monthKey]
+            .map((entry: any) => {
+              if (entry.guests && Array.isArray(entry.guests)) {
+                entry.guests = entry.guests.filter((g: any) => g._stayId !== guest._originalStayId);
+              }
+              if (!entry.guests || entry.guests.length === 0) return null;
+              return entry;
+            })
+            .filter((entry: any) => entry !== null);
+        }
+      });
+    }
+
+    // Propagate the new/edited guest across all months
+    let currentDay = day;
+    let currentMonth = selectedMonth;
+    let currentYear = selectedYear;
+    let remainingDays = guestStayLength;
+    let isFirstDay = true;
+
+    while (remainingDays > 0) {
+      const daysInCurrentMonth = getDaysInMonth(currentMonth, currentYear);
+      const daysToAdd = Math.min(remainingDays, daysInCurrentMonth - currentDay + 1);
+      const monthKey = `${currentYear}-${currentMonth}`;
+
+      if (!updatedMonthlyData[monthKey]) {
+        updatedMonthlyData[monthKey] = [];
+      }
+
+      for (let i = 0; i < daysToAdd; i++) {
+        const targetDay = currentDay + i;
+        // Create new guest entry
+        const guestEntry = {
+          ...guest,
+          age: parseInt(guest.age),
+          lengthOfStay: guestStayLength,
+          roomNumber: room,
+          isCheckIn: isFirstDay ? !!guest.isCheckIn : false,
+          _isStartDay: isFirstDay,
+          _startDay: day,
+          _stayId: newStayId,
+          _startMonth: selectedMonth,
+          _startYear: selectedYear
+        };
+
+        // Find or create entry for this day/room
+        const existingEntryIndex = updatedMonthlyData[monthKey].findIndex(
+          (e: any) => e.day === targetDay && e.room === room
+        );
+
+        if (existingEntryIndex !== -1) {
+          // Remove any guest with the same stayId before adding
+          updatedMonthlyData[monthKey][existingEntryIndex].guests = updatedMonthlyData[monthKey][existingEntryIndex].guests.filter(
+            (g: any) => g._stayId !== newStayId
+          );
+          updatedMonthlyData[monthKey][existingEntryIndex].guests.push(guestEntry);
+        } else {
+          updatedMonthlyData[monthKey].push({
+            day: targetDay,
+            room,
+            guests: [guestEntry],
+            isCheckIn: isFirstDay ? !!guest.isCheckIn : false,
+            isStartDay: isFirstDay,
+            stayId: newStayId,
+            startDay: day,
+            startMonth: selectedMonth,
+            startYear: selectedYear,
+            lengthOfStay: guestStayLength,
+            month: currentMonth,
+            year: currentYear,
+          });
+        }
+        isFirstDay = false;
+      }
+
+      remainingDays -= daysToAdd;
+      currentDay = 1;
+      if (++currentMonth > 12) {
+        currentMonth = 1;
+        currentYear++;
+      }
+    }
+  });
+
+  // Clean up any empty entries and remove duplicates
+  Object.keys(updatedMonthlyData).forEach(monthKey => {
+    if (updatedMonthlyData[monthKey]) {
+      updatedMonthlyData[monthKey] = updatedMonthlyData[monthKey].filter((entry: any) =>
+        entry.guests && entry.guests.length > 0
+      );
+      // Remove duplicate entries (same day, room, and guest combination)
+      const uniqueEntries = [];
+      const entryMap = new Map();
+      updatedMonthlyData[monthKey].forEach((entry: any) => {
+        const key = `${entry.day}-${entry.room}-${entry.stayId}`;
+        if (!entryMap.has(key)) {
+          entryMap.set(key, entry);
+          uniqueEntries.push(entry);
+        }
+      });
+      updatedMonthlyData[monthKey] = uniqueEntries;
+    }
+  });
+
+  const currentKey = `${selectedYear}-${selectedMonth}`;
+  setMonthlyData(updatedMonthlyData);
+  setOccupiedRooms(updatedMonthlyData[currentKey] || []);
+};
 
   // Room color - FIXED: Properly handles multiple guests and updates after deletions
   const getRoomColor = (day: number, room: number) => {
