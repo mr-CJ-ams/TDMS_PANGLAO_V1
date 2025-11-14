@@ -52,6 +52,12 @@ const GuestModal = ({
   // Add state for global remove confirmation
   const [globalRemoveModal, setGlobalRemoveModal] = useState(false);
 
+  // New state for confirming removal of a guest and setting length of stay to 1 day
+  const [confirmOneDayModal, setConfirmOneDayModal] = useState<{
+    show: boolean;
+    guestIndex: number | null;
+  }>({ show: false, guestIndex: null });
+
   // Copy guest ID to clipboard
   const copyGuestId = (guestId: string) => {
     navigator.clipboard.writeText(guestId).then(() => {
@@ -283,35 +289,37 @@ const GuestModal = ({
   const hasGuests = guests.length > 0;
 
 // Add this function to handle setting the length of stay to 1 day and deleting the guest
-const handleSetLengthOfStayToOneAndDelete = (idx) => {
-  const guestToDelete = guests[idx];
+const handleSetLengthOfStayToOneAndDelete = (idx: number) => {
+  setConfirmOneDayModal({ show: true, guestIndex: idx });
+};
 
-  // Update the guest's length of stay to 1 day
-  setGuests((prevGuests) => {
-    const updatedGuests = prevGuests.map((g, i) =>
-      i === idx
-        ? {
-            ...g,
-            lengthOfStay: "1", // Set length of stay to 1
-            _editing: false, // Disable editing mode
-            _saved: true, // Mark as saved
-          }
-        : g
-    );
+  // Confirm Set Length of Stay to 1 Day and Delete Guest
+  const confirmSetLengthOfStayToOneAndDelete = () => {
+    if (confirmOneDayModal.guestIndex === null) return;
 
-    // Automatically delete the guest after updating
-    onSave(day, room, {
-      guests: [],
-      removeGuest: {
-        ...guestToDelete,
-        _stayId: guestToDelete._stayId, // Ensure stay ID is passed for deletion
-      },
-      singleGuest: true,
+    const idx = confirmOneDayModal.guestIndex;
+    const guestToDelete = guests[idx];
+
+    // Update the guest's length of stay to 1 day and remove the guest
+    setGuests((prevGuests) => {
+      const updatedGuests = prevGuests.filter((_, i) => i !== idx); // Remove the guest from the list
+
+      // Automatically save the updated guest
+      onSave(day, room, {
+        guests: [],
+        removeGuest: {
+          ...guestToDelete,
+          _stayId: guestToDelete._stayId, // Ensure stay ID is passed for deletion
+        },
+        singleGuest: true,
+      });
+
+      return updatedGuests;
     });
 
-    return updatedGuests;
-  });
-};
+    // Close the confirmation modal
+    setConfirmOneDayModal({ show: false, guestIndex: null });
+  };
 
   return (
     <div className="modal" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
@@ -681,6 +689,32 @@ const handleSetLengthOfStayToOneAndDelete = (idx) => {
                   Remove
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Set Length of Stay to 1 Day and Delete Guest Modal */}
+      {confirmOneDayModal.show && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full">
+            <h3 className="text-xl font-semibold text-sky-900 mb-4">Confirm Action</h3>
+            <p className="mb-6 text-gray-700">
+              Are you sure you want to change the length of stay to 1 day? This will automatically remove the guest record.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setConfirmOneDayModal({ show: false, guestIndex: null })}
+                className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmSetLengthOfStayToOneAndDelete}
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+              >
+                Confirm
+              </button>
             </div>
           </div>
         </div>
