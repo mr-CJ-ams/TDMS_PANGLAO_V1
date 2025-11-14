@@ -1,6 +1,6 @@
 import { useState } from "react";
 import nationalities from "./Nationality";
-import { Trash2, PlusIcon, X, Edit, Save, X as CancelIcon, Copy } from "lucide-react";
+import { Trash2, PlusIcon, X, Edit, Save, X as CancelIcon, Copy, Clock } from "lucide-react"; // Add Clock icon
 
 interface GuestModalProps {
   day: number;
@@ -282,6 +282,32 @@ const GuestModal = ({
   // Check if there are any guests to remove
   const hasGuests = guests.length > 0;
 
+// Add this function to handle setting the length of stay to 1 day and saving immediately
+const handleSetLengthOfStayToOne = (idx) => {
+  setGuests((prevGuests) => {
+    const updatedGuests = prevGuests.map((g, i) =>
+      i === idx
+        ? {
+            ...g,
+            lengthOfStay: "1", // Set length of stay to 1
+            _editing: false, // Disable editing mode
+            _saved: true, // Mark as saved
+          }
+        : g
+    );
+
+    // Automatically save the updated guest
+    const updatedGuest = updatedGuests[idx];
+    onSave(day, room, {
+      guests: [updatedGuest],
+      singleGuest: true,
+      isEdit: !!updatedGuest._stayId, // Check if it's an edit
+    });
+
+    return updatedGuests;
+  });
+};
+
   return (
     <div className="modal" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
       <div className="modal-dialog">
@@ -506,14 +532,24 @@ const GuestModal = ({
                     ) : (
                       <>
                         {canEditGuest(guest) && (
-                          <button
-                            className="btn btn-warning btn-sm d-flex align-items-center gap-1"
-                            onClick={() => handleEditGuest(idx)}
-                            disabled={disabled}
-                          >
-                            <Edit size={14} />
-                            Edit
-                          </button>
+                          <>
+                            <button
+                              className="btn btn-info btn-sm d-flex align-items-center gap-1"
+                              onClick={() => handleSetLengthOfStayToOne(idx)}
+                              disabled={disabled}
+                            >
+                              <Clock size={14} />
+                              1 Day
+                            </button>
+                            <button
+                              className="btn btn-warning btn-sm d-flex align-items-center gap-1"
+                              onClick={() => handleEditGuest(idx)}
+                              disabled={disabled}
+                            >
+                              <Edit size={14} />
+                              Edit
+                            </button>
+                          </>
                         )}
                         <button
                           className="btn btn-danger btn-sm d-flex align-items-center gap-1"
