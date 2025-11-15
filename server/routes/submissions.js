@@ -112,4 +112,15 @@ router.delete("/stay/:userId/:stayId", authenticateToken, submissionsController.
 // Fetch all drafts for a user
 router.get("/all-drafts/:userId", authenticateToken, submissionsController.getAllDraftsForUser);
 
+// Draft Stays routes
+router.post("/draft-stays", authenticateToken, submissionsController.saveDraftStay);
+router.get("/draft-stays/:userId/:month/:year", authenticateToken, submissionsController.getDraftStays);
+router.delete("/draft-stays/:userId/:stayId", authenticateToken, submissionsController.deleteDraftStay);
+router.delete("/draft-stays/:userId/:month/:year", authenticateToken, submissionsController.deleteDraftStaysByMonth);
+
+router.get("/draft-stays/:userId", authenticateToken, submissionsController.getAllDraftStaysForUser);
+
+router.get("/last-update/:userId", authenticateToken, submissionsController.getLastUpdateTimestamp);
+
+router.delete("/draft-stays/:userId/:day/:month/:year/:roomNumber", authenticateToken, submissionsController.deleteDraftStaysByDayRoom);
 module.exports = router;

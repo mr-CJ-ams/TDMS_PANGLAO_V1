@@ -522,3 +522,224 @@ exports.getAllDraftsForUser = async (req, res) => {
   }
 };
 
+// Draft Stays endpoints
+exports.saveDraftStay = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { 
+      userId, day, month, year, roomNumber, stayId, 
+      isCheckIn, isStartDay, lengthOfStay, startDay, 
+      startMonth, startYear, guests 
+    } = req.body;
+
+    await client.query("BEGIN");
+
+    // Upsert the stay record - multiple stays can exist for same room/day
+    await client.query(
+      `INSERT INTO draft_stays 
+       (user_id, day, month, year, room_number, stay_id, is_check_in, is_start_day, 
+        length_of_stay, start_day, start_month, start_year, guests)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::jsonb)
+       ON CONFLICT (user_id, day, month, year, room_number, stay_id) 
+       DO UPDATE SET 
+         is_check_in = $7, is_start_day = $8, 
+         length_of_stay = $9, start_day = $10, start_month = $11, 
+         start_year = $12, guests = $13::jsonb, last_updated = CURRENT_TIMESTAMP`,
+      [userId, day, month, year, roomNumber, stayId, isCheckIn, isStartDay,
+       lengthOfStay, startDay, startMonth, startYear, JSON.stringify(guests)]
+    );
+
+    await client.query("COMMIT");
+    res.status(200).json({ message: "Draft stay saved successfully" });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("Error saving draft stay:", err);
+    res.status(500).json({ error: "Failed to save draft stay" });
+  } finally {
+    client.release();
+  }
+};
+
+exports.getDraftStays = async (req, res) => {
+  try {
+    const { userId, month, year } = req.params;
+    
+    const result = await pool.query(
+      `SELECT * FROM draft_stays 
+       WHERE user_id = $1 AND month = $2 AND year = $3
+       ORDER BY day, room_number`,
+      [userId, month, year]
+    );
+    
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Error fetching draft stays:", err);
+    res.status(500).json({ error: "Failed to fetch draft stays" });
+  }
+};
+
+exports.deleteDraftStay = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { userId, stayId } = req.params;
+    
+    console.log(`🗑️ Deleting ALL entries for stayId: ${stayId}, user: ${userId}`);
+    
+    await client.query("BEGIN");
+    
+    // Delete all stays with this stayId for the user
+    const result = await client.query(
+      `DELETE FROM draft_stays WHERE user_id = $1 AND stay_id = $2 RETURNING *`,
+      [userId, stayId]
+    );
+    
+    await client.query("COMMIT");
+    
+    console.log(`✅ Deleted ${result.rows.length} entries for stayId: ${stayId}`);
+    
+    res.json({ 
+      message: "Draft stay deleted successfully",
+      deletedCount: result.rows.length 
+    });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("Error deleting draft stay:", err);
+    res.status(500).json({ error: "Failed to delete draft stay" });
+  } finally {
+    client.release();
+  }
+};
+
+exports.deleteDraftStaysByMonth = async (req, res) => {
+  try {
+    const { userId, month, year } = req.params;
+    
+    await pool.query(
+      `DELETE FROM draft_stays WHERE user_id = $1 AND month = $2 AND year = $3`,
+      [userId, month, year]
+    );
+    
+    res.json({ message: "Draft stays deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting draft stays:", err);
+    res.status(500).json({ error: "Failed to delete draft stays" });
+  }
+};
+
+exports.getAllDraftStaysForUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const result = await pool.query(
+      `SELECT * FROM draft_stays 
+       WHERE user_id = $1
+       ORDER BY year, month, day, room_number`,
+      [userId]
+    );
+    
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Error fetching all draft stays:", err);
+    res.status(500).json({ error: "Failed to fetch draft stays" });
+  }
+};
+
+exports.getLastUpdateTimestamp = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const result = await pool.query(
+      `SELECT MAX(last_updated) as last_update 
+       FROM draft_stays 
+       WHERE user_id = $1`,
+      [userId]
+    );
+    
+    // If no draft stays, use current time
+    const lastUpdate = result.rows[0]?.last_update || new Date();
+    
+    res.json({ 
+      lastUpdate: new Date(lastUpdate).getTime()
+    });
+  } catch (err) {
+    console.error("Error getting last update:", err);
+    
+    // Fallback: return current time if there's an error
+    res.json({ 
+      lastUpdate: Date.now()
+    });
+  }
+};
+
+// Also fix the saveDraftStay method to use the correct column name
+exports.saveDraftStay = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { 
+      userId, day, month, year, roomNumber, stayId, 
+      isCheckIn, isStartDay, lengthOfStay, startDay, 
+      startMonth, startYear, guests 
+    } = req.body;
+
+    await client.query("BEGIN");
+
+    // Use the correct column name: last_updated (with underscore)
+    await client.query(
+      `INSERT INTO draft_stays 
+       (user_id, day, month, year, room_number, stay_id, is_check_in, is_start_day, 
+        length_of_stay, start_day, start_month, start_year, guests, last_updated)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::jsonb, CURRENT_TIMESTAMP)
+       ON CONFLICT (user_id, day, month, year, room_number, stay_id) 
+       DO UPDATE SET 
+         is_check_in = $7, is_start_day = $8, 
+         length_of_stay = $9, start_day = $10, start_month = $11, 
+         start_year = $12, guests = $13::jsonb, last_updated = CURRENT_TIMESTAMP`,
+      [userId, day, month, year, roomNumber, stayId, isCheckIn, isStartDay,
+       lengthOfStay, startDay, startMonth, startYear, JSON.stringify(guests)]
+    );
+
+    await client.query("COMMIT");
+    res.status(200).json({ message: "Draft stay saved successfully" });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("Error saving draft stay:", err);
+    res.status(500).json({ error: "Failed to save draft stay" });
+  } finally {
+    client.release();
+  }
+};
+
+// In submissionsController.js - Add this endpoint
+exports.deleteDraftStaysByDayRoom = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { userId, day, month, year, roomNumber } = req.params;
+    
+    console.log(`🗑️ Deleting all stays for user ${userId}, room ${roomNumber}, day ${day}, ${month}/${year}`);
+    
+    await client.query("BEGIN");
+    
+    // Delete all stays matching the criteria
+    const result = await client.query(
+      `DELETE FROM draft_stays 
+       WHERE user_id = $1 AND day = $2 AND month = $3 AND year = $4 AND room_number = $5
+       RETURNING *`,
+      [userId, day, month, year, roomNumber]
+    );
+    
+    await client.query("COMMIT");
+    
+    console.log(`✅ Deleted ${result.rows.length} stays`);
+    
+    res.json({ 
+      message: "Draft stays deleted successfully",
+      deletedCount: result.rows.length 
+    });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("Error deleting draft stays by day/room:", err);
+    res.status(500).json({ error: "Failed to delete draft stays" });
+  } finally {
+    client.release();
+  }
+};

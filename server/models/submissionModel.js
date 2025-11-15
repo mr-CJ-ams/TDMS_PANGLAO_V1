@@ -251,81 +251,138 @@ class SubmissionModel {
   }
 
   // Draft related methods
-  static async saveDraft(client, userId, month, year, data) {
-    const cleanData = data.map(item => ({
-      day: Number(item.day) || 0,
-      room: Number(item.room) || 0,
-      guests: Array.isArray(item.guests) ? item.guests.map(guest => ({
-        gender: String(guest.gender || ''),
-        age: Number(guest.age) || 0,
-        status: String(guest.status || ''),
-        nationality: String(guest.nationality || ''),
-        isCheckIn: Boolean(guest.isCheckIn),
-        _isStartDay: guest._isStartDay ?? false,
-        _stayId: guest._stayId ?? '',
-        _startDay: guest._startDay ?? 0,
-        _startMonth: guest._startMonth ?? 0,
-        _startYear: guest._startYear ?? 0,
-      })) : [],
-      lengthOfStay: Number(item.lengthOfStay) || 0,
-      isCheckIn: Boolean(item.isCheckIn),
-      stayId: String(item.stayId || ''),
-      startDay: Number(item.startDay) || 0,
-      startMonth: Number(item.startMonth) || 0,
-      startYear: Number(item.startYear) || 0,
-      isStartDay: Boolean(item.isStartDay)
-    }));
+  // static async saveDraft(client, userId, month, year, data) {
+  //   const cleanData = data.map(item => ({
+  //     day: Number(item.day) || 0,
+  //     room: Number(item.room) || 0,
+  //     guests: Array.isArray(item.guests) ? item.guests.map(guest => ({
+  //       gender: String(guest.gender || ''),
+  //       age: Number(guest.age) || 0,
+  //       status: String(guest.status || ''),
+  //       nationality: String(guest.nationality || ''),
+  //       isCheckIn: Boolean(guest.isCheckIn),
+  //       _isStartDay: guest._isStartDay ?? false,
+  //       _stayId: guest._stayId ?? '',
+  //       _startDay: guest._startDay ?? 0,
+  //       _startMonth: guest._startMonth ?? 0,
+  //       _startYear: guest._startYear ?? 0,
+  //     })) : [],
+  //     lengthOfStay: Number(item.lengthOfStay) || 0,
+  //     isCheckIn: Boolean(item.isCheckIn),
+  //     stayId: String(item.stayId || ''),
+  //     startDay: Number(item.startDay) || 0,
+  //     startMonth: Number(item.startMonth) || 0,
+  //     startYear: Number(item.startYear) || 0,
+  //     isStartDay: Boolean(item.isStartDay)
+  //   }));
 
-    await client.query(
-      `INSERT INTO draft_submissions (user_id, month, year, data)
-       VALUES ($1, $2, $3, $4::jsonb)
-       ON CONFLICT (user_id, month, year) 
-       DO UPDATE SET data = $4::jsonb, last_updated = CURRENT_TIMESTAMP`,
-      [userId, month, year, JSON.stringify(cleanData)]
-    );
-  }
+  //   await client.query(
+  //     `INSERT INTO draft_submissions (user_id, month, year, data)
+  //      VALUES ($1, $2, $3, $4::jsonb)
+  //      ON CONFLICT (user_id, month, year) 
+  //      DO UPDATE SET data = $4::jsonb, last_updated = CURRENT_TIMESTAMP`,
+  //     [userId, month, year, JSON.stringify(cleanData)]
+  //   );
+  // }
 
-  static async getDraft(userId, month, year) {
-    const result = await pool.query(
-      `SELECT data FROM draft_submissions 
-       WHERE user_id = $1 AND month = $2 AND year = $3`,
-      [userId, month, year]
-    );
-    return result.rows[0]?.data || [];
-  }
+  // static async getDraft(userId, month, year) {
+  //   const result = await pool.query(
+  //     `SELECT data FROM draft_submissions 
+  //      WHERE user_id = $1 AND month = $2 AND year = $3`,
+  //     [userId, month, year]
+  //   );
+  //   return result.rows[0]?.data || [];
+  // }
 
-  static async deleteDraft(userId, month, year) {
-    await pool.query(
-      `DELETE FROM draft_submissions 
-       WHERE user_id = $1 AND month = $2 AND year = $3`,
-      [userId, month, year]
-    );
-  }
+  // static async deleteDraft(userId, month, year) {
+  //   await pool.query(
+  //     `DELETE FROM draft_submissions 
+  //      WHERE user_id = $1 AND month = $2 AND year = $3`,
+  //     [userId, month, year]
+  //   );
+  // }
 
-  static async getAllDrafts() {
-    const result = await pool.query(
-      `SELECT 
-         ds.draft_id, ds.user_id, ds.month, ds.year, 
-         ds.last_updated, u.company_name
-       FROM draft_submissions ds
-       JOIN users u ON ds.user_id = u.user_id
-       ORDER BY ds.last_updated DESC`
-    );
-    return result.rows;
-  }
+  // static async getAllDrafts() {
+  //   const result = await pool.query(
+  //     `SELECT 
+  //        ds.draft_id, ds.user_id, ds.month, ds.year, 
+  //        ds.last_updated, u.company_name
+  //      FROM draft_submissions ds
+  //      JOIN users u ON ds.user_id = u.user_id
+  //      ORDER BY ds.last_updated DESC`
+  //   );
+  //   return result.rows;
+  // }
 
-  static async getDraftDetails(draftId) {
-    const result = await pool.query(
-      `SELECT 
-         ds.data, ds.month, ds.year,
-         u.company_name, u.number_of_rooms
-       FROM draft_submissions ds
-       JOIN users u ON ds.user_id = u.user_id
-       WHERE ds.draft_id = $1`,
-      [draftId]
+  // static async getDraftDetails(draftId) {
+  //   const result = await pool.query(
+  //     `SELECT 
+  //        ds.data, ds.month, ds.year,
+  //        u.company_name, u.number_of_rooms
+  //      FROM draft_submissions ds
+  //      JOIN users u ON ds.user_id = u.user_id
+  //      WHERE ds.draft_id = $1`,
+  //     [draftId]
+  //   );
+  //   return result.rows[0];
+  // }
+
+  // Add migration method if you want to migrate existing data
+static async migrateDraftSubmissionsToStays() {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    
+    // Get all draft submissions
+    const draftsResult = await client.query(
+      "SELECT * FROM draft_submissions"
     );
-    return result.rows[0];
+    
+    for (const draft of draftsResult.rows) {
+      const data = draft.data || [];
+      
+      for (const entry of data) {
+        if (entry.guests && entry.guests.length > 0) {
+          for (const guest of entry.guests) {
+            await client.query(
+              `INSERT INTO draft_stays 
+               (user_id, day, month, year, room_number, stay_id, is_check_in, is_start_day,
+                length_of_stay, start_day, start_month, start_year, guests)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::jsonb)
+               ON CONFLICT (user_id, day, month, year, room_number) DO NOTHING`,
+              [
+                draft.user_id, entry.day, draft.month, draft.year, entry.room,
+                guest._stayId || entry.stayId, 
+                guest.isCheckIn || entry.isCheckIn,
+                guest._isStartDay || entry.isStartDay,
+                guest.lengthOfStay || entry.lengthOfStay,
+                guest._startDay || entry.startDay,
+                guest._startMonth || entry.startMonth,
+                guest._startYear || entry.startYear,
+                JSON.stringify([guest])
+              ]
+            );
+          }
+        }
+      }
+      
+      // Delete the old draft submission
+      await client.query(
+        "DELETE FROM draft_submissions WHERE draft_id = $1",
+        [draft.draft_id]
+      );
+    }
+    
+    await client.query("COMMIT");
+    console.log("Draft submissions migrated to draft stays successfully");
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("Migration error:", err);
+    throw err;
+  } finally {
+    client.release();
   }
+}
 
   static async getUserGuestDemographics(userId, year, month) {
     const result = await pool.query(
@@ -371,21 +428,21 @@ class SubmissionModel {
     return result.rows;
   }
 
-  static async getAllDraftsForUser(userId) {
-    const result = await pool.query(
-      `SELECT month, year, data 
-       FROM draft_submissions 
-       WHERE user_id = $1
-       ORDER BY year ASC, month ASC`,
-      [userId]
-    );
+  // static async getAllDraftsForUser(userId) {
+  //   const result = await pool.query(
+  //     `SELECT month, year, data 
+  //      FROM draft_submissions 
+  //      WHERE user_id = $1
+  //      ORDER BY year ASC, month ASC`,
+  //     [userId]
+  //   );
 
-    return result.rows.map(row => ({
-      month: row.month,
-      year: row.year,
-      data: row.data,
-    }));
-  }
+  //   return result.rows.map(row => ({
+  //     month: row.month,
+  //     year: row.year,
+  //     data: row.data,
+  //   }));
+  // }
 }
 // Export the pool along with the class
 module.exports = {

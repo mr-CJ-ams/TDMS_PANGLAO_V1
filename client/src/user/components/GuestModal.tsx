@@ -6,14 +6,15 @@ interface GuestModalProps {
   day: number;
   room: number;
   onClose: () => void;
-  onSave: (day: number, room: number, data: any) => void;
-  onRemoveAllGuests: (day: number, room: number) => void;
+  onSave: (day: number, room: number, data: any) => Promise<boolean>;
+  onRemoveAllGuests: (day: number, room: number) => Promise<void>; // Make it return Promise<void>
   initialData?: any;
   disabled: boolean;
   hasRoomConflict: (day: number, room: number, lengthOfStay: number, occupiedRooms: any[]) => boolean;
   occupiedRooms: any[];
   selectedYear: number;
   selectedMonth: number;
+  onChange?: (hasChanges: boolean) => void;
 }
 
 const GuestModal = ({
@@ -24,6 +25,7 @@ const GuestModal = ({
   onRemoveAllGuests,
   initialData,
   disabled,
+  onChange
 }: GuestModalProps) => {
   const MAX_LENGTH_OF_STAY = 183;
 
@@ -51,7 +53,9 @@ const GuestModal = ({
 
   // Add state for global remove confirmation
   const [globalRemoveModal, setGlobalRemoveModal] = useState(false);
-
+  const [savingGuestIndex, setSavingGuestIndex] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [removingAllGuests, setRemovingAllGuests] = useState(false);
   // New state for confirming removal of a guest and setting length of stay to 1 day
   const [confirmOneDayModal, setConfirmOneDayModal] = useState<{
     show: boolean;
@@ -73,33 +77,62 @@ const GuestModal = ({
   };
 
   // Confirm and execute global removal
-  const confirmGlobalRemove = () => {
-    onRemoveAllGuests(day, room);
-    setGlobalRemoveModal(false);
-    onClose(); // Close the modal after removal
-  };
+const confirmGlobalRemove = async () => {
+  setGlobalRemoveModal(false);
+  setRemovingAllGuests(true);
+
+  try {
+    // Notify parent that changes are being made
+    if (onChange) {
+      onChange(true);
+    }
+
+    // Call the remove all guests function
+    await onRemoveAllGuests(day, room);
+    
+    // Success - data will be automatically refreshed by onRemoveAllGuests
+    console.log("✅ Remove All Guests operation completed successfully");
+    
+    // Close the modal after successful operation
+    onClose();
+
+  } catch (error) {
+    setError("Failed to remove all guests. Please try again.");
+  } finally {
+    setRemovingAllGuests(false);
+  }
+};
 
   // Add guest (unsaved by default)
-  const handleAddGuest = () =>
-    setGuests([
-      ...guests,
-      {
-        gender: "Male",
-        age: "",
-        status: "Single",
-        nationality: "Philippines",
-        lengthOfStay: "",
-        isCheckIn: true,
-        _saved: false,
-        _isStartDay: true,
-        _editing: true,
-        _originalData: null,
-      },
-    ]);
-
+ const handleAddGuest = () => {
+  // Notify parent that changes are being made
+  if (onChange) {
+    onChange(true);
+  }
+  
+  setGuests([
+    ...guests,
+    {
+      gender: "Male",
+      age: "",
+      status: "Single",
+      nationality: "Philippines",
+      lengthOfStay: "",
+      isCheckIn: true,
+      _saved: false,
+      _isStartDay: true,
+      _editing: true,
+      _originalData: null,
+    },
+  ]);
+};
   // In GuestModal.tsx - Update the handleRemoveGuest function
   const handleRemoveGuest = idx => {
     const guestToRemove = guests[idx];
+
+     if (onChange) {
+    onChange(true);
+  }
     
     // Only allow removal for start day guests
     if (guestToRemove._saved && !guestToRemove._isStartDay) {
@@ -147,6 +180,10 @@ const GuestModal = ({
       return;
     }
 
+   if (onChange) {
+    onChange(true);
+  }
+
     setGuests(
       guests.map((g, i) =>
         i === idx
@@ -168,6 +205,11 @@ const GuestModal = ({
 
   // Enable edit mode for a saved guest
   const handleEditGuest = idx => {
+
+    if (onChange) {
+    onChange(true);
+  }
+
     setGuests(
       guests.map((g, i) =>
         i === idx
@@ -187,79 +229,101 @@ const GuestModal = ({
   };
 
   // Cancel edit mode and restore original data
-  const handleCancelEdit = idx => {
-    const guest = guests[idx];
+ const handleCancelEdit = (idx: number) => {
+  const guest = guests[idx];
+  
+  // Notify parent that changes are being made (or cleared)
+  if (onChange) {
     if (guest._originalData) {
-      // Restore original data for saved guests
-      setGuests(
-        guests.map((g, i) =>
-          i === idx ? { ...guest._originalData, _editing: false, _originalData: null } : g
-        )
-      );
+      onChange(false); // Changes were cancelled
     } else {
-      // For unsaved guests, just remove them
-      setGuests(guests.filter((_, i) => i !== idx));
+      onChange(true); // Still have changes (removing unsaved guest)
     }
-  };
+  }
+  
+  if (guest._originalData) {
+    setGuests(
+      guests.map((g, i) =>
+        i === idx ? { ...guest._originalData, _editing: false, _originalData: null } : g
+      )
+    );
+  } else {
+    setGuests(guests.filter((_, i) => i !== idx));
+  }
+};
 
   // Update handleSaveGuest to include original data
-  const handleSaveGuest = idx => {
-    const guest = guests[idx];
-    
-    // Validate guest
-    if (!guest.age || isNaN(guest.age) || parseInt(guest.age) <= 0) {
-      setError("Please enter a valid age for this guest.");
-      return;
-    }
-    if (!guest.lengthOfStay || isNaN(guest.lengthOfStay) || parseInt(guest.lengthOfStay) <= 0) {
-      setError("Please enter a valid length of stay for this guest.");
-      return;
-    }
-    if (parseInt(guest.lengthOfStay) > MAX_LENGTH_OF_STAY) {
-      setError(`Maximum allowed length of stay is ${MAX_LENGTH_OF_STAY} days for each guest.`);
-      return;
+const handleSaveGuest = async (idx: number) => {
+  const guest = guests[idx];
+  
+  // Validate guest
+  if (!guest.age || isNaN(guest.age) || parseInt(guest.age) <= 0) {
+    setError("Please enter a valid age for this guest.");
+    return;
+  }
+  if (!guest.lengthOfStay || isNaN(guest.lengthOfStay) || parseInt(guest.lengthOfStay) <= 0) {
+    setError("Please enter a valid length of stay for this guest.");
+    return;
+  }
+  if (parseInt(guest.lengthOfStay) > MAX_LENGTH_OF_STAY) {
+    setError(`Maximum allowed length of stay is ${MAX_LENGTH_OF_STAY} days for each guest.`);
+    return;
+  }
+
+  // Clear error if validation passes
+  setError("");
+  setSaving(true);
+
+  try {
+    // Notify parent that changes are being saved
+    if (onChange) {
+      onChange(false);
     }
 
-    // Clear error if validation passes
-    setError("");
-
-    // Save guest and propagate
+    // Prepare the guest data for saving
     const savedGuest = {
       ...guest,
       age: parseInt(guest.age),
       lengthOfStay: parseInt(guest.lengthOfStay),
       _saved: true,
-      _isStartDay: guest._isStartDay, // Preserve the actual start day status
+      _isStartDay: guest._isStartDay,
       _editing: false,
       _originalData: null,
-      // Preserve original data for future edits
-      _originalStayId: guest._originalStayId || guest._stayId,
-      _originalGender: guest._originalGender || guest.gender,
-      _originalAge: guest._originalAge || guest.age,
-      _originalStatus: guest._originalStatus || guest.status,
-      _originalNationality: guest._originalNationality || guest.nationality,
     };
-    
-    setGuests(
-      guests.map((g, i) => (i === idx ? savedGuest : g))
-    );
-    
-    // Send only this guest to be saved/propagated
-    onSave(day, room, {
+
+    // Call the parent save function and wait for it to complete
+    const success = await onSave(day, room, {
       guests: [savedGuest],
       singleGuest: true,
       isEdit: !!guest._originalStayId,
     });
-  };
+
+    if (success) {
+      // Update local state only after successful save
+      setGuests(guests.map((g, i) => (i === idx ? savedGuest : g)));
+    } else {
+      setError("Failed to save guest. Please try again.");
+    }
+
+  } catch (error) {
+    setError("Failed to save guest. Please try again.");
+  } finally {
+    setSaving(false);
+  }
+};
 
   // Modal exit (X button)
   const handleExit = () => onClose();
 
  // Check if guest is editable - FIXED: Only editable on actual start day
   // Check if guest is editable - FIXED: Only editable on actual start day
-  const isGuestEditable = (guest) => {
-    return guest._editing || !guest._saved || (guest._saved && guest._isStartDay && !guest._editing);
-  };
+const isGuestEditable = (guest) => {
+  // Allow editing if:
+  // - Guest is unsaved (new)
+  // - Guest is in edit mode
+  // - Guest is on their actual start day (regardless of other guests)
+  return guest._editing || !guest._saved || (guest._saved && guest._isStartDay);
+};
 
   // Check if guest can be deleted - FIXED: Only deletable on actual start day
   const canDeleteGuest = (guest) => {
@@ -267,14 +331,16 @@ const GuestModal = ({
   };
 
   // Check if guest can be edited - FIXED: Only editable on actual start day
-  const canEditGuest = (guest) => {
-    return guest._saved && guest._isStartDay && !guest._editing;
-  };
+const canEditGuest = (guest) => {
+  // Only allow editing from the start day for saved guests
+  return guest._saved && guest._isStartDay && !guest._editing;
+};
 
   // Check if guest shows action buttons - FIXED: Only show on actual start day
-  const showActionButtons = (guest) => {
-    return !guest._saved || (guest._saved && guest._isStartDay);
-  };
+const showActionButtons = (guest) => {
+  // Show buttons for unsaved guests or guests on their start day
+  return !guest._saved || (guest._saved && guest._isStartDay);
+};
 
   // Format guest ID for display (shortened version)
   const formatGuestId = (stayId: string) => {
@@ -288,38 +354,56 @@ const GuestModal = ({
   // Check if there are any guests to remove
   const hasGuests = guests.length > 0;
 
-// Add this function to handle setting the length of stay to 1 day and deleting the guest
-const handleSetLengthOfStayToOneAndDelete = (idx: number) => {
+const [processingOneDay, setProcessingOneDay] = useState<number | null>(null);
+
+const handleSetLengthOfStayToOneAndDelete = async (idx: number) => {
   setConfirmOneDayModal({ show: true, guestIndex: idx });
 };
 
-  // Confirm Set Length of Stay to 1 Day and Delete Guest
-  const confirmSetLengthOfStayToOneAndDelete = () => {
-    if (confirmOneDayModal.guestIndex === null) return;
+// Update the confirmation function to handle the refresh
+const confirmSetLengthOfStayToOneAndDelete = async () => {
+  if (confirmOneDayModal.guestIndex === null) return;
 
-    const idx = confirmOneDayModal.guestIndex;
-    const guestToDelete = guests[idx];
+  const idx = confirmOneDayModal.guestIndex;
+  const guestToDelete = guests[idx];
+  
+  setProcessingOneDay(idx);
+  setConfirmOneDayModal({ show: false, guestIndex: null });
+
+  try {
+    // Notify parent that changes are being made
+    if (onChange) {
+      onChange(true);
+    }
 
     // Update the guest's length of stay to 1 day and remove the guest
     setGuests((prevGuests) => {
-      const updatedGuests = prevGuests.filter((_, i) => i !== idx); // Remove the guest from the list
-
-      // Automatically save the updated guest
-      onSave(day, room, {
-        guests: [],
-        removeGuest: {
-          ...guestToDelete,
-          _stayId: guestToDelete._stayId, // Ensure stay ID is passed for deletion
-        },
-        singleGuest: true,
-      });
-
-      return updatedGuests;
+      return prevGuests.filter((_, i) => i !== idx); // Remove the guest from the list
     });
 
-    // Close the confirmation modal
-    setConfirmOneDayModal({ show: false, guestIndex: null });
-  };
+    // Automatically save the updated guest with refresh
+    const success = await onSave(day, room, {
+      guests: [],
+      removeGuest: {
+        ...guestToDelete,
+        _stayId: guestToDelete._stayId, // Ensure stay ID is passed for deletion
+      },
+      singleGuest: true,
+    });
+
+    if (success) {
+      // Success - data will be automatically refreshed by onSave
+      console.log("✅ 1 Day operation completed successfully");
+    } else {
+      setError("Failed to update guest. Please try again.");
+    }
+
+  } catch (error) {
+    setError("Failed to update guest. Please try again.");
+  } finally {
+    setProcessingOneDay(null);
+  }
+};
 
   return (
     <div className="modal" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
@@ -528,10 +612,22 @@ const handleSetLengthOfStayToOneAndDelete = (idx: number) => {
                         <button
                           className="btn btn-success btn-sm d-flex align-items-center gap-1"
                           onClick={() => handleSaveGuest(idx)}
-                          disabled={disabled}
+                          disabled={disabled || saving}
+                          title="Save guest data"
                         >
-                          <Save size={14} />
-                          Save
+                          {saving ? (
+                            <>
+                              <div className="spinner-border spinner-border-sm" role="status">
+                                <span className="visually-hidden">Loading...</span>
+                              </div>
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <Save size={14} />
+                              Save
+                            </>
+                          )}
                         </button>
                         <button
                           className="btn btn-secondary btn-sm d-flex align-items-center gap-1"
@@ -544,15 +640,31 @@ const handleSetLengthOfStayToOneAndDelete = (idx: number) => {
                       </>
                     ) : (
                       <>
+                        {/* // Replace the current 1 Day button with this enhanced version: */}
                         {canEditGuest(guest) && (
                           <>
                             <button
                               className="btn btn-info btn-sm d-flex align-items-center gap-1"
                               onClick={() => handleSetLengthOfStayToOneAndDelete(idx)}
-                              disabled={disabled}
+                              disabled={disabled || processingOneDay === idx}
+                              title="Set length of stay to 1 day and refresh data"
                             >
-                              <Trash2 size={14} />
-                              1 Day
+                              {processingOneDay === idx ? (
+                                <>
+                                  <div className="spinner-border spinner-border-sm" role="status">
+                                    <span className="visually-hidden">Loading...</span>
+                                  </div>
+                                  Processing...
+                                </>
+                              ) : (
+                                <>
+                                  <Trash2 size={14} />
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                                  </svg>
+                                  1 Day
+                                </>
+                              )}
                             </button>
                             <button
                               className="btn btn-warning btn-sm d-flex align-items-center gap-1"
@@ -606,10 +718,25 @@ const handleSetLengthOfStayToOneAndDelete = (idx: number) => {
                 <button
                   className="btn btn-outline-danger d-flex align-items-center gap-2"
                   onClick={handleGlobalRemove}
-                  disabled={disabled}
+                  disabled={disabled || removingAllGuests}
+                  title="Remove all guests from this room and day, then refresh data"
                 >
-                  <Trash2 size={16} />
-                  Remove All Guests
+                  {removingAllGuests ? (
+                    <>
+                      <div className="spinner-border spinner-border-sm" role="status">
+                        <span className="visually-hidden">Loading...</span>
+                      </div>
+                      Removing...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={16} />
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                      </svg>
+                      Remove All Guests
+                    </>
+                  )}
                 </button>
               )}
               <button
@@ -639,20 +766,34 @@ const handleSetLengthOfStayToOneAndDelete = (idx: number) => {
             </p>
             <p className="mb-6 text-gray-700">
               You are about to remove <strong>all {guests.length} guest(s)</strong> from <strong>Room {room} on Day {day}</strong>. 
-              This will delete all guest data for this room and day.
+              This will delete all guest data for this room and day. The data will be automatically refreshed after this operation.
             </p>
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setGlobalRemoveModal(false)}
                 className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 transition-colors"
+                disabled={removingAllGuests}
               >
                 Cancel
               </button>
               <button
                 onClick={confirmGlobalRemove}
-                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors flex items-center gap-2"
+                disabled={removingAllGuests}
               >
-                Remove All Guests
+                {removingAllGuests ? (
+                  <>
+                    <div className="spinner-border spinner-border-sm" role="status">
+                      <span className="visually-hidden">Loading...</span>
+                    </div>
+                    Removing...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={16} />
+                    Remove All Guests
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -698,9 +839,15 @@ const handleSetLengthOfStayToOneAndDelete = (idx: number) => {
       {confirmOneDayModal.show && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full">
-            <h3 className="text-xl font-semibold text-sky-900 mb-4">Confirm Action</h3>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-blue-100 p-2 rounded-full">
+                <Clock size={24} className="text-blue-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-blue-700">Set to 1 Day</h3>
+            </div>
             <p className="mb-6 text-gray-700">
-              Are you sure you want to change the length of stay to 1 day? This will automatically remove the guest record.
+              This will set the guest's length of stay to <strong>1 day only</strong> and remove them from all future days. 
+              The data will be automatically refreshed after this operation.
             </p>
             <div className="flex justify-end gap-2">
               <button
@@ -711,9 +858,9 @@ const handleSetLengthOfStayToOneAndDelete = (idx: number) => {
               </button>
               <button
                 onClick={confirmSetLengthOfStayToOneAndDelete}
-                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
               >
-                Confirm
+                Set to 1 Day
               </button>
             </div>
           </div>

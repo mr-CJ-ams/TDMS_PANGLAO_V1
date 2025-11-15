@@ -1,3 +1,5 @@
+// client/src/user/pages/SubmissionForm.tsx
+
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import MonthYearSelector from "../components/MonthYearSelector";
@@ -8,7 +10,7 @@ import SaveButton from "../components/SubmitButton";
 import RoomSearchBar from "../components/RoomSearchBar";
 import DolphinSpinner from "../components/DolphinSpinner";
 import { FixedSizeGrid as VirtualizedGrid } from "react-window";
-import { ArrowBigLeft, ArrowBigRight, ChevronDown, ChevronUp, Edit2, Save, X } from "lucide-react"; // Add icons for toggle/edit/save/cancel
+import { ArrowBigLeft, ArrowBigRight, ChevronDown, ChevronUp, Edit2, Save, X } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
@@ -40,17 +42,19 @@ const SubmissionForm = () => {
   // Modal state
   const [modal, setModal] = useState<{ show: boolean; title: string; message: string; onClose?: () => void }>({ show: false, title: "", message: "" });
   const [confirmModal, setConfirmModal] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+const [lastSaveTime, setLastSaveTime] = useState(Date.now());
 
-// Generate a unique stay ID for each guest - ENHANCED for better readability
-const generateStayId = (day: number, room: number, guest: any, startMonth: number, startYear: number) => {
-  const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase(); // Shorter, uppercase random suffix
-  
-  // Create a more readable ID format: G-YYYY-MM-DD-RR-GENDER-AGE-RANDOM
-  const genderCode = guest.gender.substring(0, 1).toUpperCase();
-  const age = guest.age || 'NA';
-  
-  return `G-${startYear}${startMonth.toString().padStart(2, '0')}${day.toString().padStart(2, '0')}-R${room.toString().padStart(2, '0')}-${genderCode}-${age}-${randomSuffix}`;
-};
+
+  // Generate a unique stay ID for each guest
+  const generateStayId = (day: number, room: number, guest: any, startMonth: number, startYear: number) => {
+    const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const genderCode = guest.gender.substring(0, 1).toUpperCase();
+    const age = guest.age || 'NA';
+    
+    return `G-${startYear}${startMonth.toString().padStart(2, '0')}${day.toString().padStart(2, '0')}-R${room.toString().padStart(2, '0')}-${genderCode}-${age}-${randomSuffix}`;
+  };
+
   // Fetch user profile
   useEffect(() => {
     (async () => {
@@ -85,11 +89,10 @@ const generateStayId = (day: number, room: number, guest: any, startMonth: numbe
     })();
   }, [user, selectedMonth, selectedYear]);
 
-  // Load data for selected month/year - Simplified cross-month handling
+  // Load draft stays for selected month/year
   useEffect(() => {
     if (!user) return;
     setIsLoading(true);
-    const key = `${selectedYear}-${selectedMonth}`;
     
     (async () => {
       try {
@@ -98,35 +101,52 @@ const generateStayId = (day: number, room: number, guest: any, startMonth: numbe
           throw new Error("No authentication token found");
         }
 
-        // Load current month data
-        const [serverRes, localData] = await Promise.all([
-          axios.get(`${API_BASE_URL}/api/submissions/draft/${user.user_id}/${selectedMonth}/${selectedYear}`, { 
+        // Load draft stays for the selected month
+        const [staysRes, localData] = await Promise.all([
+          axios.get(`${API_BASE_URL}/api/submissions/draft-stays/${user.user_id}/${selectedMonth}/${selectedYear}`, {
             headers: { Authorization: `Bearer ${token}` },
             timeout: 10000
           }),
           loadDataFromLocalStorage(user.user_id)
         ]);
-        
-        const serverData = Array.isArray(serverRes.data?.days) ? serverRes.data.days : [];
-        const localMonthData = Array.isArray(localData[key]) ? localData[key] : [];
-        
-        // Merge server and local data for current month
-        const getRoomKey = (r: any) => `${r.day}-${r.room}-${r.stayId}`;
-        const uniqueRooms = new Map<string, any>();
-        localMonthData.forEach(r => uniqueRooms.set(getRoomKey(r), r));
-        serverData.forEach(r => uniqueRooms.set(getRoomKey(r), r));
-        
-        let mergedRooms = Array.from(uniqueRooms.values());
 
-        // Clean up any duplicate entries before setting the data
-        const cleanedRooms = removeDuplicateEntries(mergedRooms);
-        const mergedData = { ...localData, [key]: cleanedRooms };
+        const serverStays = Array.isArray(staysRes.data) ? staysRes.data : [];
+        const currentKey = `${selectedYear}-${selectedMonth}`;
+        const localMonthData = Array.isArray(localData[currentKey]) ? localData[currentKey] : [];
+        
+        // Convert draft stays to monthly data format
+        const staysToMonthlyData = (stays: any[]) => {
+          const monthlyData: any = {};
+          stays.forEach(stay => {
+            const monthKey = `${stay.year}-${stay.month}`;
+            if (!monthlyData[monthKey]) {
+              monthlyData[monthKey] = [];
+            }
+            
+            monthlyData[monthKey].push({
+              day: stay.day,
+              room: stay.room_number,
+              guests: stay.guests || [],
+              isCheckIn: stay.is_check_in,
+              isStartDay: stay.is_start_day,
+              stayId: stay.stay_id,
+              startDay: stay.start_day,
+              startMonth: stay.start_month,
+              startYear: stay.start_year,
+              lengthOfStay: stay.length_of_stay
+            });
+          });
+          return monthlyData;
+        };
+
+        const serverData = staysToMonthlyData(serverStays);
+        const mergedData = { ...localData, ...serverData };
         
         setMonthlyData(mergedData);
-        setOccupiedRooms(cleanedRooms);
+        setOccupiedRooms(mergedData[currentKey] || []);
 
-        // If no draft, check for submitted data
-        if (cleanedRooms.length === 0) {
+        // If no draft stays, check for submitted data
+        if (serverStays.length === 0 && mergedData[currentKey]?.length === 0) {
           try {
             const subRes = await axios.get(`${API_BASE_URL}/api/submissions/${user.user_id}/${selectedMonth}/${selectedYear}`, { 
               headers: { Authorization: `Bearer ${token}` },
@@ -134,7 +154,7 @@ const generateStayId = (day: number, room: number, guest: any, startMonth: numbe
             });
             if (subRes.data) {
               const submittedData = Array.isArray(subRes.data.days) ? subRes.data.days : [];
-              const updatedDataWithSubmission = { ...mergedData, [key]: submittedData };
+              const updatedDataWithSubmission = { ...mergedData, [currentKey]: submittedData };
               setMonthlyData(updatedDataWithSubmission);
               setOccupiedRooms(submittedData);
               saveDataToLocalStorage(user.user_id, updatedDataWithSubmission);
@@ -144,10 +164,11 @@ const generateStayId = (day: number, room: number, guest: any, startMonth: numbe
           }
         }
       } catch (err) {
-        console.error("Error loading data:", err);
+        console.error("Error loading draft stays:", err);
         const cachedData = loadDataFromLocalStorage(user.user_id);
-        const fallbackData = Array.isArray(cachedData[key]) ? cachedData[key] : [];
-        setMonthlyData({ ...cachedData, [key]: fallbackData });
+        const currentKey = `${selectedYear}-${selectedMonth}`;
+        const fallbackData = Array.isArray(cachedData[currentKey]) ? cachedData[currentKey] : [];
+        setMonthlyData({ ...cachedData, [currentKey]: fallbackData });
         setOccupiedRooms(fallbackData);
       } finally { 
         setIsLoading(false); 
@@ -155,102 +176,16 @@ const generateStayId = (day: number, room: number, guest: any, startMonth: numbe
     })();
   }, [user, selectedMonth, selectedYear]);
 
-  // Load all data for all months from the server on app start
-useEffect(() => {
-  if (!user) return;
-
-  const loadData = async () => {
-    try {
-      const token = sessionStorage.getItem("token");
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-
-      const { data } = await axios.get(`${API_BASE_URL}/api/submissions/all-drafts/${user.user_id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: 10000,
-      });
-
-      // Merge server data with local data
-      const serverData = data || {};
-      const localData = loadDataFromLocalStorage(user.user_id);
-      const mergedData = { ...serverData, ...localData };
-
-      setMonthlyData(mergedData);
-
-      // Set occupied rooms for the current month
-      const currentKey = `${selectedYear}-${selectedMonth}`;
-      setOccupiedRooms(mergedData[currentKey] || []);
-    } catch (err) {
-      console.error("Error loading data from server:", err);
-    }
-  };
-
-  loadData();
-}, [user, selectedMonth, selectedYear]);
-
-  // Save to localStorage and server on monthlyData change
+  // Save to localStorage on monthlyData change (remove server auto-save for drafts)
   useEffect(() => {
     if (!user || isLoading) return;
 
-    const saveData = async () => {
+    const saveData = () => {
       try {
-        // Save to localStorage
+        // Save to localStorage only
         saveDataToLocalStorage(user.user_id, monthlyData);
-
-        const token = sessionStorage.getItem("token");
-        if (!token) {
-          console.warn("No authentication token found for saving data");
-          return;
-        }
-
-        // Save data for all months that have data
-        const allMonthKeys = Object.keys(monthlyData);
-        for (const monthKey of allMonthKeys) {
-          const [year, month] = monthKey.split('-').map(Number);
-          const monthData = monthlyData[monthKey] || [];
-
-          // Only save if there's actual data
-          if (monthData.length > 0) {
-            const cleanMonthData = monthData.map(item => ({
-              ...item,
-              guests: item.guests.map(g => ({
-                ...g,
-                age: Number(g.age) || 0,
-                isCheckIn: Boolean(g.isCheckIn),
-                gender: g.gender,
-                status: g.status,
-                nationality: g.nationality,
-                lengthOfStay: Number(g.lengthOfStay) || 0,
-                _isStartDay: g._isStartDay,
-                _stayId: g._stayId,
-                _startDay: g._startDay,
-                _startMonth: g._startMonth,
-                _startYear: g._startYear,
-              })),
-            }));
-
-            try {
-              await axios.post(
-                `${API_BASE_URL}/api/submissions/draft`,
-                {
-                  userId: user.user_id,
-                  month,
-                  year,
-                  data: cleanMonthData,
-                },
-                {
-                  headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-                  timeout: 10000,
-                }
-              );
-            } catch (err) {
-              console.error(`Background save failed for ${month}/${year}:`, err);
-            }
-          }
-        }
       } catch (err) {
-        console.error("Background save failed:", err);
+        console.error("Background save to localStorage failed:", err);
       }
     };
 
@@ -285,178 +220,179 @@ useEffect(() => {
     setIsModalOpen(true);
   };
 
-  // Save guest data for a day/room - Fixed cross-month propagation and deletion
-  const handleSaveGuests = async (day: number, room: number, guestData: any) => {
-    const { guests, removeGuest, isEdit } = guestData;
+  // Save guest data for a day/room using draft stays
+const handleSaveGuests = async (day: number, room: number, guestData: any): Promise<boolean> => {
+  const { guests, removeGuest, isEdit } = guestData;
 
-  // --- REMOVAL LOGIC ---
+  console.log(`🚀 START handleSaveGuests: Day ${day}, Room ${room}`, {
+    guestsCount: guests?.length,
+    removeGuest: removeGuest ? 'YES' : 'NO',
+    isEdit: isEdit ? 'YES' : 'NO'
+  });
+
+  // REMOVAL LOGIC
   if (removeGuest && removeGuest._stayId) {
-    let updatedMonthlyData = { ...monthlyData };
-    const guestStayId = removeGuest._stayId;
-
-    // Remove guest from ALL months and ALL days by stayId
-    Object.keys(updatedMonthlyData).forEach(monthKey => {
-      if (updatedMonthlyData[monthKey]) {
-        updatedMonthlyData[monthKey] = updatedMonthlyData[monthKey]
-          .map((entry: any) => {
-            if (entry.guests && Array.isArray(entry.guests)) {
-              // Remove only guests with matching stayId
-              entry.guests = entry.guests.filter((g: any) => g._stayId !== guestStayId);
-            }
-            // Remove entry if no guests left
-            if (!entry.guests || entry.guests.length === 0) return null;
-            return entry;
-          })
-          .filter((entry: any) => entry !== null);
-      }
-    });
-
-    // Clean up any empty months
-    Object.keys(updatedMonthlyData).forEach(monthKey => {
-      if (updatedMonthlyData[monthKey] && updatedMonthlyData[monthKey].length === 0) {
-        delete updatedMonthlyData[monthKey];
-      }
-    });
-
-    setMonthlyData(updatedMonthlyData);
-    setOccupiedRooms(updatedMonthlyData[`${selectedYear}-${selectedMonth}`] || []);
-    return;
+    console.log(`🗑️ REMOVING SINGLE GUEST: StayId ${removeGuest._stayId}`);
+    try {
+      const token = sessionStorage.getItem("token");
+      await axios.delete(
+        `${API_BASE_URL}/api/submissions/draft-stays/${user.user_id}/${removeGuest._stayId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      // Reset unsaved changes state
+      setHasUnsavedChanges(false);
+      setLastSaveTime(Date.now());
+      
+      // Auto-refresh after removal
+      await reloadData(true);
+      return true;
+    } catch (err) {
+      console.error("Error removing stay:", err);
+      return false;
+    }
   }
 
-  // --- EDIT LOGIC ---
-  let updatedMonthlyData = { ...monthlyData };
+  // SAVE LOGIC
+  try {
+    const token = sessionStorage.getItem("token");
+    
+    for (const guest of guests) {
+      const guestStayLength = parseInt(guest.lengthOfStay);
+      const stayId = isEdit ? guest._originalStayId : (guest._stayId || generateStayId(day, room, guest, selectedMonth, selectedYear));
+      const originalStayId = guest._originalStayId;
 
-  guests.forEach(guest => {
-    const guestStayLength = parseInt(guest.lengthOfStay);
-    const newStayId = guest._stayId || generateStayId(day, room, guest, selectedMonth, selectedYear);
-
-    // If editing, remove all old entries with the original stayId
-    if (isEdit && guest._originalStayId) {
-      Object.keys(updatedMonthlyData).forEach(monthKey => {
-        if (updatedMonthlyData[monthKey]) {
-          updatedMonthlyData[monthKey] = updatedMonthlyData[monthKey]
-            .map((entry: any) => {
-              if (entry.guests && Array.isArray(entry.guests)) {
-                entry.guests = entry.guests.filter((g: any) => g._stayId !== guest._originalStayId);
-              }
-              if (!entry.guests || entry.guests.length === 0) return null;
-              return entry;
-            })
-            .filter((entry: any) => entry !== null);
-        }
+      console.log(`👤 PROCESSING GUEST:`, {
+        originalStayId,
+        newStayId: stayId,
+        oldLength: guest._originalLengthOfStay,
+        newLength: guestStayLength,
+        isEdit: !!isEdit
       });
-    }
 
-    // Propagate the new/edited guest across all months
-    let currentDay = day;
-    let currentMonth = selectedMonth;
-    let currentYear = selectedYear;
-    let remainingDays = guestStayLength;
-    let isFirstDay = true;
-
-    while (remainingDays > 0) {
-      const daysInCurrentMonth = getDaysInMonth(currentMonth, currentYear);
-      const daysToAdd = Math.min(remainingDays, daysInCurrentMonth - currentDay + 1);
-      const monthKey = `${currentYear}-${currentMonth}`;
-
-      if (!updatedMonthlyData[monthKey]) {
-        updatedMonthlyData[monthKey] = [];
-      }
-
-      for (let i = 0; i < daysToAdd; i++) {
-        const targetDay = currentDay + i;
-        // Create new guest entry
-        const guestEntry = {
-          ...guest,
-          age: parseInt(guest.age),
-          lengthOfStay: guestStayLength,
-          roomNumber: room,
-          isCheckIn: isFirstDay ? !!guest.isCheckIn : false,
-          _isStartDay: isFirstDay,
-          _startDay: day,
-          _stayId: newStayId,
-          _startMonth: selectedMonth,
-          _startYear: selectedYear
-        };
-
-        // Find or create entry for this day/room
-        const existingEntryIndex = updatedMonthlyData[monthKey].findIndex(
-          (e: any) => e.day === targetDay && e.room === room
+      // If editing, remove ALL old stay entries first
+      if (isEdit && originalStayId) {
+        console.log(`🔄 EDIT MODE: Removing OLD stay ${originalStayId}`);
+        
+        await axios.delete(
+          `${API_BASE_URL}/api/submissions/draft-stays/${user.user_id}/${originalStayId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
-
-        if (existingEntryIndex !== -1) {
-          // Remove any guest with the same stayId before adding
-          updatedMonthlyData[monthKey][existingEntryIndex].guests = updatedMonthlyData[monthKey][existingEntryIndex].guests.filter(
-            (g: any) => g._stayId !== newStayId
-          );
-          updatedMonthlyData[monthKey][existingEntryIndex].guests.push(guestEntry);
-        } else {
-          updatedMonthlyData[monthKey].push({
-            day: targetDay,
-            room,
-            guests: [guestEntry],
-            isCheckIn: isFirstDay ? !!guest.isCheckIn : false,
-            isStartDay: isFirstDay,
-            stayId: newStayId,
-            startDay: day,
-            startMonth: selectedMonth,
-            startYear: selectedYear,
-            lengthOfStay: guestStayLength,
-            month: currentMonth,
-            year: currentYear,
-          });
-        }
-        isFirstDay = false;
       }
 
-      remainingDays -= daysToAdd;
-      currentDay = 1;
-      if (++currentMonth > 12) {
-        currentMonth = 1;
-        currentYear++;
+      // Only create new stay entries if length is > 0
+      if (guestStayLength > 0) {
+        const guestStartDay = guest._startDay || day;
+        const guestStartMonth = guest._startMonth || selectedMonth;
+        const guestStartYear = guest._startYear || selectedYear;
+
+        console.log(`📝 CREATING STAY: ${stayId} for ${guestStayLength} days`);
+
+        // Create stay entries
+        let currentDay = guestStartDay;
+        let currentMonth = guestStartMonth;
+        let currentYear = guestStartYear;
+        let remainingDays = guestStayLength;
+        let isFirstDay = true;
+
+        while (remainingDays > 0) {
+          const daysInCurrentMonth = getDaysInMonth(currentMonth, currentYear);
+          const daysToAdd = Math.min(remainingDays, daysInCurrentMonth - currentDay + 1);
+
+          for (let i = 0; i < daysToAdd; i++) {
+            const targetDay = currentDay + i;
+            
+            const stayData = {
+              userId: user.user_id,
+              day: targetDay,
+              month: currentMonth,
+              year: currentYear,
+              roomNumber: room,
+              stayId: stayId,
+              isCheckIn: isFirstDay ? !!guest.isCheckIn : false,
+              isStartDay: isFirstDay,
+              lengthOfStay: guestStayLength,
+              startDay: guestStartDay,
+              startMonth: guestStartMonth,
+              startYear: guestStartYear,
+              guests: [{
+                gender: guest.gender,
+                age: parseInt(guest.age),
+                status: guest.status,
+                nationality: guest.nationality,
+                isCheckIn: isFirstDay ? !!guest.isCheckIn : false,
+                _isStartDay: isFirstDay,
+                _stayId: stayId,
+                _startDay: guestStartDay,
+                _startMonth: guestStartMonth,
+                _startYear: guestStartYear,
+                lengthOfStay: guestStayLength
+              }]
+            };
+
+            await axios.post(
+              `${API_BASE_URL}/api/submissions/draft-stays`,
+              stayData,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            isFirstDay = false;
+          }
+
+          remainingDays -= daysToAdd;
+          currentDay = 1;
+          if (++currentMonth > 12) {
+            currentMonth = 1;
+            currentYear++;
+          }
+        }
       }
     }
-  });
 
-  // Clean up any empty entries and remove duplicates
-  Object.keys(updatedMonthlyData).forEach(monthKey => {
-    if (updatedMonthlyData[monthKey]) {
-      updatedMonthlyData[monthKey] = updatedMonthlyData[monthKey].filter((entry: any) =>
-        entry.guests && entry.guests.length > 0
-      );
-      // Remove duplicate entries (same day, room, and guest combination)
-      const uniqueEntries = [];
-      const entryMap = new Map();
-      updatedMonthlyData[monthKey].forEach((entry: any) => {
-        const key = `${entry.day}-${entry.room}-${entry.stayId}`;
-        if (!entryMap.has(key)) {
-          entryMap.set(key, entry);
-          uniqueEntries.push(entry);
-        }
-      });
-      updatedMonthlyData[monthKey] = uniqueEntries;
-    }
-  });
+    // Reset unsaved changes state
+    setHasUnsavedChanges(false);
+    setLastSaveTime(Date.now());
 
-  const currentKey = `${selectedYear}-${selectedMonth}`;
-  setMonthlyData(updatedMonthlyData);
-  setOccupiedRooms(updatedMonthlyData[currentKey] || []);
+    // Wait a bit before refreshing to ensure backend processed everything
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Auto-refresh after save
+    console.log(`🔄 Auto-refreshing data after save...`);
+    await reloadData(true);
+    
+    return true;
+
+  } catch (err) {
+    console.error("❌ SAVE ERROR:", err);
+    setModal({
+      show: true,
+      title: "Error",
+      message: "Failed to save guest data. Please try again.",
+    });
+    return false;
+  }
 };
 
-  // Room color - FIXED: Properly handles multiple guests and updates after deletions
+  // Room color
   const getRoomColor = (day: number, room: number) => {
   // Find all entries for this day/room
   const roomEntries = occupiedRooms.filter((entry) => entry.day === day && entry.room === room);
   if (!roomEntries.length) return "white";
 
-  // Check if any guest in this room/day is on their start day AND has check-in
-  const hasStartDayWithCheckIn = roomEntries.some((entry) =>
-    entry.guests.some((guest) => guest._isStartDay && guest.isCheckIn)
+  // Check all guests in this room/day
+  const allGuests = roomEntries.flatMap(entry => entry.guests);
+
+  // Priority rules for multiple guests:
+  // 1. Any guest on start day WITH check-in → YELLOW
+  // 2. Any guest on start day WITHOUT check-in → BLUE  
+  // 3. All guests are on following days → GREEN
+
+  const hasStartDayWithCheckIn = allGuests.some(guest => 
+    guest._isStartDay && guest.isCheckIn
   );
 
-  // Check if any guest in this room/day is on their start day but has no check-in
-  const hasStartDayWithoutCheckIn = roomEntries.some((entry) =>
-    entry.guests.some((guest) => guest._isStartDay && !guest.isCheckIn)
+  const hasStartDayWithoutCheckIn = allGuests.some(guest => 
+    guest._isStartDay && !guest.isCheckIn
   );
 
   // Priority: Check-in > No check-in > Following days
@@ -469,141 +405,57 @@ useEffect(() => {
   }
 };
 
-  // Guest data for modal - FIXED start day detection
-  const getGuestData = (day: number, room: number) => {
-    if (!Array.isArray(occupiedRooms)) return null;
+  // Guest data for modal
+ const getGuestData = (day: number, room: number) => {
+  if (!Array.isArray(occupiedRooms)) return null;
+  
+  // Find all entries for this day/room
+  const entries = occupiedRooms.filter(r => r.day === day && r.room === room);
+  if (!entries.length) return null;
+  
+  // Flatten all guests from all entries for this day/room
+  const allGuests = entries.flatMap(entry => entry.guests);
+  
+  // Create a map to avoid duplicates (same stayId)
+  const guestMap = new Map();
+  
+  allGuests.forEach(guest => {
+    const guestKey = guest._stayId || `${guest.gender}-${guest.age}-${guest.status}-${guest.nationality}`;
     
-    // Find all entries for this day/room
-    const entries = occupiedRooms.filter(r => r.day === day && r.room === room);
-    if (!entries.length) return null;
-    
-    // Build comprehensive guest stay information from ALL monthly data
-    const guestStayInfo = new Map();
-    
-    // First pass: Find the ACTUAL start day for each guest across ALL months
-    Object.keys(monthlyData).forEach(monthKey => {
-      const monthData = monthlyData[monthKey] || [];
-      monthData.forEach((entry: any) => {
-        if (entry.room === room && entry.guests && entry.isStartDay) {
-          // This is a start day entry - use it as authoritative source
-          entry.guests.forEach((guest: any) => {
-            const guestKey = `${guest.gender}-${guest.age}-${guest.status}-${guest.nationality}`;
-            const [entryYear, entryMonth] = monthKey.split('-').map(Number);
-            
-            const guestInfo = {
-              startDay: entry.startDay || entry.day,
-              stayId: entry.stayId,
-              lengthOfStay: entry.lengthOfStay || guest.lengthOfStay,
-              startMonth: entry.startMonth || entryMonth,
-              startYear: entry.startYear || entryYear,
-              isCheckIn: entry.isCheckIn,
-              // Mark this as the authoritative start day information
-              _isAuthoritative: true
-            };
-            
-            // Only set if this is the earliest start day we've found for this guest
-            const currentInfo = guestStayInfo.get(guestKey);
-            if (!currentInfo || guestInfo.startDay < currentInfo.startDay) {
-              guestStayInfo.set(guestKey, guestInfo);
-            }
-          });
-        }
+    if (!guestMap.has(guestKey)) {
+      guestMap.set(guestKey, {
+        ...guest,
+        _saved: true,
+        // Determine if this is the actual start day for this guest
+        _isStartDay: guest._isStartDay || 
+                    (guest._startDay === day && 
+                     guest._startMonth === selectedMonth && 
+                     guest._startYear === selectedYear),
+        _stayId: guest._stayId,
+        _startDay: guest._startDay,
+        _startMonth: guest._startMonth,
+        _startYear: guest._startYear,
+        // Store original data for editing
+        _originalGender: guest.gender,
+        _originalAge: guest.age,
+        _originalStatus: guest.status,
+        _originalNationality: guest.nationality,
+        _originalStayId: guest._stayId,
+        _originalLengthOfStay: guest.lengthOfStay
       });
-    });
-    
-    // Second pass: For guests without start day entries, try to find their stay info
-    Object.keys(monthlyData).forEach(monthKey => {
-      const monthData = monthlyData[monthKey] || [];
-      monthData.forEach((entry: any) => {
-        if (entry.room === room && entry.guests) {
-          entry.guests.forEach((guest: any) => {
-            const guestKey = `${guest.gender}-${guest.age}-${guest.status}-${guest.nationality}`;
-            if (!guestStayInfo.has(guestKey)) {
-              // Use guest's own stored start day information
-              if (guest._startDay) {
-                const [entryYear, entryMonth] = monthKey.split('-').map(Number);
-                guestStayInfo.set(guestKey, {
-                  startDay: guest._startDay,
-                  stayId: guest._stayId || entry.stayId,
-                  lengthOfStay: guest.lengthOfStay || entry.lengthOfStay,
-                  startMonth: guest._startMonth || entryMonth,
-                  startYear: guest._startYear || entryYear,
-                  isCheckIn: guest.isCheckIn,
-                  _isAuthoritative: false
-                });
-              }
-            }
-          });
-        }
-      });
-    });
-    
-    // Third pass: Aggregate guests for the current day/room with correct start day flags
-    const guestMap = new Map();
-    
-    entries.forEach(entry => {
-      entry.guests.forEach(guest => {
-        const guestKey = `${guest.gender}-${guest.age}-${guest.status}-${guest.nationality}`;
-        const guestStayData = guestStayInfo.get(guestKey);
-        
-        if (guestStayData) {
-          // Determine if this is the ACTUAL start day for this guest
-          const isActualStartDay = 
-            guestStayData.startDay === day && 
-            guestStayData.startMonth === selectedMonth && 
-            guestStayData.startYear === selectedYear;
-          
-         // In getGuestData function, update the guest mapping:
-          if (!guestMap.has(guestKey)) {
-            guestMap.set(guestKey, {
-              ...guest,
-              lengthOfStay: guestStayData?.lengthOfStay || guest.lengthOfStay || "",
-              _saved: true,
-              _isStartDay: isActualStartDay,
-              _stayId: guestStayData.stayId,
-              _startDay: guestStayData.startDay,
-              _startMonth: guestStayData.startMonth,
-              _startYear: guestStayData.startYear,
-              // Store original data for editing including length of stay
-              _originalGender: guest.gender,
-              _originalAge: guest.age,
-              _originalStatus: guest.status,
-              _originalNationality: guest.nationality,
-              _originalStayId: guestStayData.stayId,
-              _originalLengthOfStay: guestStayData.lengthOfStay || guest.lengthOfStay // Track original length
-            });
-          }
-        } else {
-          // Fallback for guests without stay information
-          if (!guestMap.has(guestKey)) {
-            guestMap.set(guestKey, {
-              ...guest,
-              _saved: true,
-              _isStartDay: false, // Assume not start day if we can't find info
-              _startDay: day,
-              _stayId: entry.stayId,
-              _startMonth: selectedMonth,
-              _startYear: selectedYear,
-              _originalGender: guest.gender,
-              _originalAge: guest.age,
-              _originalStatus: guest.status,
-              _originalNationality: guest.nationality,
-              _originalStayId: entry.stayId
-            });
-          }
-        }
-      });
-    });
-    
-    const guests = Array.from(guestMap.values());
-    
-    return {
-      day,
-      room,
-      guests,
-      isCheckIn: entries[0]?.isCheckIn ?? true,
-    };
+    }
+  });
+  
+  const guests = Array.from(guestMap.values());
+  
+  return {
+    day,
+    room,
+    guests,
+    // For multiple guests, isCheckIn is true if ANY guest is checking in
+    isCheckIn: entries.some(entry => entry.isCheckIn) ?? true,
   };
+};
 
   // Daily totals
   const calculateDailyTotals = (day: number) => {
@@ -653,7 +505,7 @@ useEffect(() => {
     setConfirmModal(true);
   };
 
-  // The actual submission logic, previously inside handleSaveForm
+  // The actual submission logic
   const doSubmitForm = async () => {
     if (hasSubmitted) {
       setModal({
@@ -681,7 +533,12 @@ useEffect(() => {
         })),
       };
       await axios.post(`${API_BASE_URL}/api/submissions/submit`, submissionData, { headers: { Authorization: `Bearer ${token}` } });
-      await axios.delete(`${API_BASE_URL}/api/submissions/draft/${user.user_id}/${selectedMonth}/${selectedYear}`, { headers: { Authorization: `Bearer ${token}` } });
+      
+      // Delete draft stays after successful submission
+      await axios.delete(`${API_BASE_URL}/api/submissions/draft-stays/${user.user_id}/${selectedMonth}/${selectedYear}`, { 
+        headers: { Authorization: `Bearer ${token}` } 
+      });
+      
       const metrics = calculateOverallTotals();
       setAverageGuestNights(metrics.averageGuestNights);
       setAverageRoomOccupancyRate(metrics.averageRoomOccupancyRate);
@@ -703,62 +560,44 @@ useEffect(() => {
     }
   };
 
-// Remove all guests for a day/room - ONLY for the specific day, not entire stays
-const handleRemoveAllGuests = async (day: number, room: number) => {
+ // Simplified frontend using the new endpoint
+const handleRemoveAllGuests = async (day: number, room: number): Promise<void> => {
   console.log(`🔥 GLOBAL REMOVE: Removing all guests from Room ${room}, Day ${day} ONLY`);
   
-  const roomEntries = occupiedRooms.filter(r => r.day === day && r.room === room);
-  if (!roomEntries.length) {
-    console.log(`ℹ️ No guests found in Room ${room}, Day ${day}`);
-    return;
-  }
-
-  console.log(`📋 Found ${roomEntries.length} entries with guests to remove from Day ${day}`);
-  
-  let updatedMonthlyData = { ...monthlyData };
-  const currentKey = `${selectedYear}-${selectedMonth}`;
-  
-  // Remove guests ONLY from the specific day and room
-  if (updatedMonthlyData[currentKey]) {
-    const beforeCount = updatedMonthlyData[currentKey].length;
+  try {
+    const token = sessionStorage.getItem("token");
     
-    updatedMonthlyData[currentKey] = updatedMonthlyData[currentKey]
-      .map((entry: any) => {
-        // Only process entries for the specific day and room
-        if (entry.day === day && entry.room === room) {
-          console.log(`🗑️ Removing all ${entry.guests?.length || 0} guests from Room ${room}, Day ${day}`);
-          
-          // Return null to remove the entire entry for this day/room
-          return null;
-        }
-        return entry;
-      })
-      .filter((entry: any) => entry !== null);
+    // Use the dedicated endpoint
+    await axios.delete(
+      `${API_BASE_URL}/api/submissions/draft-stays/${user.user_id}/${day}/${selectedMonth}/${selectedYear}/${room}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
     
-    const afterCount = updatedMonthlyData[currentKey].length;
-    console.log(`✅ Removed ${beforeCount - afterCount} entries from Room ${room}, Day ${day}`);
-  }
-
-  // Also clean up any empty entries in other months for this specific day/room combination
-  Object.keys(updatedMonthlyData).forEach(monthKey => {
-    if (monthKey !== currentKey && updatedMonthlyData[monthKey]) {
-      updatedMonthlyData[monthKey] = updatedMonthlyData[monthKey]
-        .map((entry: any) => {
-          // Only remove if it's the exact same day/room combination in other months
-          if (entry.day === day && entry.room === room) {
-            console.log(`🗑️ Also removing from ${monthKey}: Room ${room}, Day ${day}`);
-            return null;
-          }
-          return entry;
-        })
-        .filter((entry: any) => entry !== null);
+    // Update frontend state
+    let updatedMonthlyData = { ...monthlyData };
+    const currentKey = `${selectedYear}-${selectedMonth}`;
+    
+    if (updatedMonthlyData[currentKey]) {
+      const beforeCount = updatedMonthlyData[currentKey].length;
+      updatedMonthlyData[currentKey] = updatedMonthlyData[currentKey].filter(
+        (entry: any) => !(entry.day === day && entry.room === room)
+      );
+      const afterCount = updatedMonthlyData[currentKey].length;
+      console.log(`✅ Removed ${beforeCount - afterCount} entries from frontend`);
     }
-  });
 
-  setMonthlyData(updatedMonthlyData);
-  setOccupiedRooms(updatedMonthlyData[currentKey] || []);
-  
-  console.log(`✅ GLOBAL REMOVE COMPLETE: All guests removed from Room ${room}, Day ${day} ONLY`);
+    setMonthlyData(updatedMonthlyData);
+    setOccupiedRooms(updatedMonthlyData[currentKey] || []);
+    
+    console.log(`✅ GLOBAL REMOVE COMPLETE`);
+    
+    // Final refresh
+    await reloadData(true);
+    
+  } catch (error) {
+    console.error("❌ Error removing all guests:", error);
+    throw new Error("Failed to remove all guests");
+  }
 };
 
   // Days in month
@@ -880,6 +719,167 @@ const handleRemoveAllGuests = async (day: number, room: number) => {
       })
       .finally(() => setRoomNamesLoading(false));
   }, [user, numberOfRooms]);
+
+  // Add these to your SubmissionForm.tsx
+
+// Add to your state
+const [lastDataUpdate, setLastDataUpdate] = useState(Date.now());
+const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+// 1. Network status detection
+useEffect(() => {
+  const handleOnline = () => {
+    console.log('🌐 App came online, reloading data...');
+    setIsOnline(true);
+    reloadData();
+  };
+
+  const handleOffline = () => {
+    console.log('🌐 App went offline');
+    setIsOnline(false);
+  };
+
+  window.addEventListener('online', handleOnline);
+  window.addEventListener('offline', handleOffline);
+
+  return () => {
+    window.removeEventListener('online', handleOnline);
+    window.removeEventListener('offline', handleOffline);
+  };
+}, [user]);
+
+// 2. Enhanced focus/visibility reload with timestamp checking
+// // Keep only the focus/visibility reload (much less intrusive)
+// useEffect(() => {
+//   if (!user) return;
+
+//   const handleFocusOrVisibility = async () => {
+//     console.log('🔄 Focus/visibility changed, reloading data...');
+//     await reloadData();
+//   };
+
+//   const events = ['focus', 'visibilitychange'];
+//   events.forEach(event => {
+//     window.addEventListener(event, handleFocusOrVisibility);
+//   });
+
+//   return () => {
+//     events.forEach(event => {
+//       window.removeEventListener(event, handleFocusOrVisibility);
+//     });
+//   };
+// }, [user]);
+
+// 4. Update your reloadData function to set the timestamp
+const reloadData = async (forceReload = false) => {
+  // Don't reload if user has unsaved changes (unless forced)
+  if (hasUnsavedChanges && !forceReload) {
+    console.log('⏸️ Skipping reload - user has unsaved changes');
+    return false;
+  }
+
+  try {
+    const token = sessionStorage.getItem("token");
+    const allStaysRes = await axios.get(
+      `${API_BASE_URL}/api/submissions/draft-stays/${user.user_id}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    
+    const staysToMonthlyData = (stays: any[]) => {
+      const monthlyData: any = {};
+      stays.forEach(stay => {
+        const monthKey = `${stay.year}-${stay.month}`;
+        if (!monthlyData[monthKey]) monthlyData[monthKey] = [];
+        
+        monthlyData[monthKey].push({
+          day: stay.day,
+          room: stay.room_number,
+          guests: stay.guests || [],
+          isCheckIn: stay.is_check_in,
+          isStartDay: stay.is_start_day,
+          stayId: stay.stay_id,
+          startDay: stay.start_day,
+          startMonth: stay.start_month,
+          startYear: stay.start_year,
+          lengthOfStay: stay.length_of_stay
+        });
+      });
+      return monthlyData;
+    };
+
+    const serverData = staysToMonthlyData(allStaysRes.data);
+    
+    // Only update if the data is actually different
+    const currentDataString = JSON.stringify(monthlyData);
+    const newDataString = JSON.stringify(serverData);
+    
+    if (currentDataString !== newDataString) {
+      console.log('🔄 Data changed, updating state...');
+      setMonthlyData(serverData);
+      setOccupiedRooms(serverData[`${selectedYear}-${selectedMonth}`] || []);
+      return true;
+    } else {
+      console.log('✅ Data is the same, no update needed');
+      return false;
+    }
+  } catch (error) {
+    console.error('❌ Failed to reload data:', error);
+    return false;
+  }
+};
+
+// 5. Also reload when month/year changes
+useEffect(() => {
+  if (user && !hasUnsavedChanges) {
+    console.log('📅 Month/Year changed, reloading data...');
+    reloadData(true); // Force reload on navigation
+  } else if (user && hasUnsavedChanges) {
+    console.log('⏸️ Skipping month/year reload - user has unsaved changes');
+  }
+}, [selectedMonth, selectedYear, user]);
+
+// 6. Add a manual refresh button for users
+const handleManualRefresh = async () => {
+  if (hasUnsavedChanges) {
+    setModal({
+      show: true,
+      title: "Unsaved Changes",
+      message: "You have unsaved changes. Please save your changes before refreshing to avoid data loss."
+    });
+    return;
+  }
+
+  console.log('🔄 Manual refresh requested...');
+  
+  // Show loading state
+  setIsLoading(true);
+  
+  try {
+    const success = await reloadData(true);
+    
+    if (success) {
+      setModal({
+        show: true,
+        title: "Success",
+        message: "Data refreshed successfully from the server!"
+      });
+    } else {
+      setModal({
+        show: true,
+        title: "Info", 
+        message: "Your data is already up to date with the server."
+      });
+    }
+  } catch (error) {
+    setModal({
+      show: true,
+      title: "Error",
+      message: "Failed to refresh data. Please check your connection and try again."
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="container mt-5" style={{ position: 'relative' }}>
@@ -1084,6 +1084,7 @@ const handleRemoveAllGuests = async (day: number, room: number) => {
           occupiedRooms={occupiedRooms}
           selectedYear={selectedYear}
           selectedMonth={selectedMonth}
+          onChange={(hasChanges) => setHasUnsavedChanges(hasChanges)} // Add this line
         />
       )}
       {isFormSaved && (
