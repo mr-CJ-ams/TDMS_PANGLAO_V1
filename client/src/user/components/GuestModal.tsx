@@ -495,14 +495,14 @@ const confirmSetLengthOfStayToOneAndDelete = async () => {
 
                 {/* Per-guest check-in toggle - only editable in edit mode */}
                 <div className="form-group mb-2">
-                 <label className="form-label fw-bold">Is the Guest checking in this day?</label>
+                 <label className="form-label fw-bold">Is the Guest checking in today?</label>
                 <div className="d-flex gap-2">
                   <button
                     type="button"
                     className={`btn ${guest.isCheckIn ? "btn-warning" : "btn-outline-warning"} flex-fill`}
                     onClick={() => handleUpdateGuest(idx, "isCheckIn", "true")}
                     disabled={disabled || !isGuestEditable(guest)}
-                    style={{ color: guest.isCheckIn ? "black" : "black" }} // always black
+                    style={{ color: guest.isCheckIn ? "black" : "black" }}
                   >
                     Yes, checking in today
                   </button>
