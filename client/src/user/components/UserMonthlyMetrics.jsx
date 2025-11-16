@@ -68,14 +68,23 @@ const UserMonthlyMetrics = ({ monthlyMetrics, selectedYear, formatMonth, toNumbe
       [""], // Empty row for spacing
       [""], // Empty row for spacing
       // Headers for monthly metrics
-      ["Month", "Total No. Guest Check-Ins", "Total No. of Guest Staying Overnight", "Total No. Rooms Occupied", "Ave. Guest-Nights", "Ave. Room Occupancy Rate", "Ave. Guests per Room", "Total Rooms"],
+      [
+        "Month",
+        "Total No. Guest Check-Ins",
+        "Total No. of Guest Staying Overnight",
+        "Total No. Rooms Occupied",
+        "Avg. Length of Stay", // <-- changed label
+        "Avg. Room Occupancy Rate",
+        "Avg. Guests per Room",
+        "Total Rooms"
+      ],
       // Monthly metrics data
       ...monthlyMetrics.map(m => [
         formatMonth(m.month),
         toNumber(m.total_check_ins),
         toNumber(m.total_overnight),
         toNumber(m.total_occupied),
-        toNumber(m.average_guest_nights).toFixed(2),
+        toNumber(m.average_guest_nights).toFixed(2), // <-- this is Avg. Length of Stay
         `${toNumber(m.average_room_occupancy_rate).toFixed(2)}%`,
         toNumber(m.average_guests_per_room).toFixed(2),
         toNumber(m.total_rooms),
@@ -150,9 +159,9 @@ const UserMonthlyMetrics = ({ monthlyMetrics, selectedYear, formatMonth, toNumbe
                 "Total No. Guest Check-Ins",
                 "Total No. Guests Staying Overnight",
                 "Total No. Rooms Occupied",
-                "Ave. Guest-Nights",
-                "Ave. Room Occupancy Rate",
-                "Ave. Guests per Room",
+                "Avg. Length of Stay", // <-- changed label
+                "Avg. Room Occupancy Rate",
+                "Avg. Guests per Room",
                 "Total Rooms",
               ].map(label => (
                 <th key={label} style={{ padding: 12, textAlign: "left", fontSize: "14px", fontWeight: "600" }}>{label}</th>
@@ -161,18 +170,15 @@ const UserMonthlyMetrics = ({ monthlyMetrics, selectedYear, formatMonth, toNumbe
           </thead>
           <tbody>
             {monthlyMetrics.map(m => (
-              <tr
-                key={m.month}
-                style={{
-                  borderBottom: "1px solid #E0E0E0",
-                  backgroundColor: m.month % 2 === 0 ? "#F8F9FA" : "#FFF",
-                }}
-              >
+              <tr key={m.month} style={{
+                borderBottom: "1px solid #E0E0E0",
+                backgroundColor: m.month % 2 === 0 ? "#F8F9FA" : "#FFF",
+              }}>
                 <td style={{ padding: 12, color: "#37474F", fontWeight: "500" }}>{formatMonth(m.month)}</td>
                 <td style={{ padding: 12, color: "#37474F" }}>{safeToNumber(m.total_check_ins)}</td>
                 <td style={{ padding: 12, color: "#37474F" }}>{safeToNumber(m.total_overnight)}</td>
                 <td style={{ padding: 12, color: "#37474F" }}>{safeToNumber(m.total_occupied)}</td>
-                <td style={{ padding: 12, color: "#37474F" }}>{safeToNumber(m.average_guest_nights).toFixed(2)}</td>
+                <td style={{ padding: 12, color: "#37474F" }}>{safeToNumber(m.average_guest_nights).toFixed(2)}</td> {/* <-- Avg. Length of Stay */}
                 <td style={{ padding: 12, color: "#37474F" }}>{safeToNumber(m.average_room_occupancy_rate).toFixed(2)}%</td>
                 <td style={{ padding: 12, color: "#37474F" }}>{safeToNumber(m.average_guests_per_room).toFixed(2)}</td>
                 <td style={{ padding: 12, color: "#37474F" }}>{safeToNumber(m.total_rooms)}</td>
@@ -185,4 +191,4 @@ const UserMonthlyMetrics = ({ monthlyMetrics, selectedYear, formatMonth, toNumbe
   );
 };
 
-export default UserMonthlyMetrics; 
+export default UserMonthlyMetrics;

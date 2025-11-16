@@ -1054,7 +1054,7 @@ useEffect(() => {
       )}
       {isFormSaved && (
         <MetricsDisplay
-          averageGuestNights={averageGuestNights}
+          averageLengthOfStay={averageGuestNights}
           averageRoomOccupancyRate={averageRoomOccupancyRate}
           averageGuestsPerRoom={averageGuestsPerRoom}
         />

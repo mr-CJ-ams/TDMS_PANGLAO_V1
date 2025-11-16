@@ -164,48 +164,72 @@ const SubmissionDetails = ({ submissionId }) => {
     setHighlightedRoom(null);
   };
 
-  const handleRoomSearch = () => {
-    const roomNumber = parseInt(roomSearchTerm);
-    if (
-      roomNumber &&
-      roomNumber >= 1 &&
-      roomNumber <= submission?.number_of_rooms
-    ) {
-      setHighlightedRoom(roomNumber);
 
-      // Calculate which page the room is on
-      const targetPage = Math.ceil(roomNumber / roomsPerPage);
-      setRoomPage(targetPage);
+const handleRoomSearch = () => {
+  if (!roomSearchTerm.trim()) {
+    setHighlightedRoom(null);
+    return;
+  }
 
-      // Wait for page update, then scroll to the room column
-      setTimeout(() => {
-        const roomElement = document.getElementById(`room-${roomNumber}`);
-        if (roomElement) {
-          roomElement.scrollIntoView({
-            behavior: "smooth",
-            block: "nearest",
-            inline: "center",
-          });
+  // Try to parse as room number first
+  const roomNumber = parseInt(roomSearchTerm, 10);
+  
+  // Check if search matches a room name
+  let foundRoomNumber = null;
+  
+  if (roomNumber && roomNumber >= 1 && roomNumber <= submission?.number_of_rooms) {
+    // Search by room number
+    foundRoomNumber = roomNumber;
+  } else {
+    // Search by room name (case-insensitive)
+    const searchLower = roomSearchTerm.toLowerCase().trim();
+    for (let i = 0; i < submission.room_names?.length; i++) {
+      const roomName = submission.room_names[i];
+      if (roomName && roomName.toLowerCase().includes(searchLower)) {
+        foundRoomNumber = i + 1; // Room numbers are 1-indexed
+        break;
+      }
+    }
+  }
 
-          // Add a temporary highlight effect
-          roomElement.classList.add(
+  if (foundRoomNumber) {
+    setHighlightedRoom(foundRoomNumber);
+
+    // Calculate which page the room is on
+    const targetPage = Math.ceil(foundRoomNumber / roomsPerPage);
+    setRoomPage(targetPage);
+
+    // Wait for page update, then scroll to the room column
+    setTimeout(() => {
+      const roomElement = document.getElementById(`room-${foundRoomNumber}`);
+      if (roomElement) {
+        roomElement.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: "center",
+        });
+
+        // Add a temporary highlight effect
+        roomElement.classList.add(
+          "bg-yellow-100",
+          "border-2",
+          "border-yellow-400"
+        );
+        setTimeout(() => {
+          roomElement.classList.remove(
             "bg-yellow-100",
             "border-2",
             "border-yellow-400"
           );
-          setTimeout(() => {
-            roomElement.classList.remove(
-              "bg-yellow-100",
-              "border-2",
-              "border-yellow-400"
-            );
-          }, 3000);
-        }
-      }, 200);
-    } else {
-      setHighlightedRoom(null);
-    }
-  };
+        }, 3000);
+      }
+    }, 200);
+  } else {
+    setHighlightedRoom(null);
+    // Optional: Show a message that no room was found
+    alert(`No room found matching "${roomSearchTerm}". Please enter a valid room number or room name.`);
+  }
+};
 
   const handleRoomSearchKeyPress = (e) => {
     if (e.key === 'Enter') {
@@ -239,6 +263,7 @@ const SubmissionDetails = ({ submissionId }) => {
         totalCheckIns: 0,
         totalOvernight: 0,
         totalOccupied: 0,
+        averageLengthOfStay: 0,
         averageGuestNights: 0,
         averageRoomOccupancyRate: 0,
         averageGuestsPerRoom: 0,
@@ -248,10 +273,11 @@ const SubmissionDetails = ({ submissionId }) => {
       totalCheckIns = days.reduce((a, d) => a + (d.check_ins || 0), 0),
       totalOvernight = days.reduce((a, d) => a + (d.overnight || 0), 0),
       totalOccupied = days.reduce((a, d) => a + (d.occupied || 0), 0),
-      averageGuestNights = totalCheckIns > 0 ? (totalOvernight / totalCheckIns).toFixed(2) : 0,
+      averageLengthOfStay = totalCheckIns > 0 ? (totalOvernight / totalCheckIns).toFixed(2) : 0,
+      averageGuestNights = averageLengthOfStay, // (optional: keep for compatibility)
       averageRoomOccupancyRate = numberOfRooms > 0 ? ((totalOccupied / (numberOfRooms * days.length)) * 100).toFixed(2) : 0,
       averageGuestsPerRoom = totalOccupied > 0 ? (totalOvernight / totalOccupied).toFixed(2) : 0;
-    return { totalCheckIns, totalOvernight, totalOccupied, averageGuestNights, averageRoomOccupancyRate, averageGuestsPerRoom };
+    return { totalCheckIns, totalOvernight, totalOccupied, averageLengthOfStay, averageGuestNights, averageRoomOccupancyRate, averageGuestsPerRoom };
   };
 
   const nationalityCounts = React.useMemo(() => {
@@ -278,10 +304,10 @@ const SubmissionDetails = ({ submissionId }) => {
     };
     const daysInMonth = getDaysInMonth(submission.month, submission.year);
     
-    // Use current room names or fallback to defaults
-    const currentRoomNames = roomNames.length > 0 
-      ? roomNames 
-      : Array.from({ length: submission.number_of_rooms || 1 }, (_, i) => `Room ${i + 1}`);
+    // Use the room names from submission data (historical)
+    const currentRoomNames = submission.room_names || 
+      Array.from({ length: submission.number_of_rooms || 1 }, (_, i) => `Room ${i + 1}`);
+    
     
     // Create workbook with multiple sheets
     const wb = XLSX.utils.book_new();
@@ -299,12 +325,11 @@ const SubmissionDetails = ({ submissionId }) => {
       [""],
       ["TOTALS"],
       ["Total No. of Guest Check-Ins", totalCheckIns],
-      ["Total No. Guest Staying Overnight", totalOvernight],
+      ["Total No. Guest-Nights", totalOvernight],
       ["Total No. of Occupied Rooms", totalOccupied],
       [""],
       ["AVERAGES"],
       ["Avg. Length of Stay", totalCheckIns > 0 ? (totalOvernight / totalCheckIns).toFixed(2) : "0"],
-      ["Avg. Guest-Nights", averageGuestNights],
       ["Avg. Room Occupancy Rate", `${averageRoomOccupancyRate}%`],
       ["Avg. Guests per Room", averageGuestsPerRoom],
     ];
@@ -320,7 +345,7 @@ const SubmissionDetails = ({ submissionId }) => {
     // Sheet 2: Daily Metrics
     const headers = ["Day"];
     for (let i = 1; i <= submission.number_of_rooms; i++) {
-      headers.push(currentRoomNames[i - 1] || `Room ${i}`);
+      headers.push(currentRoomNames[i - 1] || `Room ${i}`); // Use historical names
     }
     headers.push("Check-ins", "Overnight", "Occupied");
     
@@ -543,6 +568,7 @@ const SubmissionDetails = ({ submissionId }) => {
     totalCheckIns,
     totalOvernight,
     totalOccupied,
+    averageLengthOfStay,
     averageGuestNights,
     averageRoomOccupancyRate,
     averageGuestsPerRoom,
@@ -602,7 +628,7 @@ const SubmissionDetails = ({ submissionId }) => {
                 <p className="text-2xl font-semibold text-slate-800">{totalCheckIns}</p>
               </div>
               <div>
-                <p className="text-sm text-slate-500">Total No. Guest Staying Overnight</p>
+                <p className="text-sm text-slate-500">Total No. of Guest-Nights</p>
                 <p className="text-2xl font-semibold text-slate-800">{totalOvernight}</p>
               </div>
               <div>
@@ -619,12 +645,8 @@ const SubmissionDetails = ({ submissionId }) => {
               <div>
                 <p className="text-sm text-green-600">Avg. Length of Stay</p>
                 <p className="text-2xl font-semibold text-slate-800">
-                  {totalCheckIns > 0 ? (totalOvernight / totalCheckIns).toFixed(2) : "0"}
+                  {averageLengthOfStay}
                 </p>
-              </div>
-              <div>
-                <p className="text-sm text-green-600">Avg. Guest-Nights</p>
-                <p className="text-2xl font-semibold text-slate-800">{averageGuestNights}</p>
               </div>
               <div>
                 <p className="text-sm text-green-600">Avg. Room Occupancy Rate</p>
@@ -659,14 +681,12 @@ const SubmissionDetails = ({ submissionId }) => {
               {/* Room Quick Search */}
               <div className="flex items-center gap-2">
                 <input
-                  type="number"
-                  placeholder="Room #"
+                  type="text" // Changed from "number" to "text"
+                  placeholder="Room Name"
                   value={roomSearchTerm}
                   onChange={(e) => setRoomSearchTerm(e.target.value)}
                   onKeyPress={handleRoomSearchKeyPress}
-                  min="1"
-                  max={submission?.number_of_rooms || 1}
-                  className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 w-20"
+                  className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 w-32" // Slightly wider
                 />
                 <button
                   onClick={handleRoomSearch}
