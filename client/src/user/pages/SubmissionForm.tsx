@@ -204,24 +204,51 @@ useEffect(() => {
   }, [monthlyData, user, isLoading]);
 
   // Room search
-  const handleSearch = (roomNumber: number) => {
-    if (roomNumber > 0 && roomNumber <= numberOfRooms) {
-      // Calculate the column index (0-based)
-      const columnIndex = roomNumber - 1;
-      if (mainGridRef.current) {
-        mainGridRef.current.scrollToItem({
-          columnIndex,
-          align: "center"
-        });
-      }
+  const handleSearch = (searchValue: string | number) => {
+  let roomNumber: number;
+
+  if (typeof searchValue === 'number') {
+    roomNumber = searchValue;
+  } else {
+    // This case should be handled by RoomSearchBar, but keep as fallback
+    const num = parseInt(searchValue, 10);
+    if (num > 0) {
+      roomNumber = num;
     } else {
-      setModal({
-        show: true,
-        title: "Invalid Room",
-        message: "Invalid room number",
+      // Try to find by room name
+      const matchedIndex = roomNames.findIndex(name => 
+        name.toLowerCase().includes(searchValue.toLowerCase())
+      );
+      if (matchedIndex !== -1) {
+        roomNumber = matchedIndex + 1;
+      } else {
+        setModal({
+          show: true,
+          title: "Room Not Found",
+          message: `No room found matching "${searchValue}". Please enter a valid room number or room name.`,
+        });
+        return;
+      }
+    }
+  }
+
+  if (roomNumber > 0 && roomNumber <= numberOfRooms) {
+    // Calculate the column index (0-based)
+    const columnIndex = roomNumber - 1;
+    if (mainGridRef.current) {
+      mainGridRef.current.scrollToItem({
+        columnIndex,
+        align: "center"
       });
     }
-  };
+  } else {
+    setModal({
+      show: true,
+      title: "Invalid Room",
+      message: `Room ${roomNumber} is invalid. Please enter a room number between 1 and ${numberOfRooms}.`,
+    });
+  }
+};
 
   // Cell click
   const handleCellClick = (day: number, room: number) => {
@@ -943,7 +970,11 @@ const handleManualRefresh = async () => {
         disabled={isLoading}
       />
       <div className="d-flex align-items-center gap-2 mb-3">
-        <RoomSearchBar onSearch={handleSearch} disabled={isLoading} />
+        <RoomSearchBar 
+          onSearch={handleSearch} 
+          disabled={isLoading}
+          roomNames={roomNames} // Pass room names for search functionality
+        />
         {/* Go to Room 1 Button */}
         <button
           onClick={() => handleSearch(1)}
@@ -1102,7 +1133,8 @@ const handleManualRefresh = async () => {
           occupiedRooms={occupiedRooms}
           selectedYear={selectedYear}
           selectedMonth={selectedMonth}
-          onChange={(hasChanges) => setHasUnsavedChanges(hasChanges)} // Add this line
+          onChange={(hasChanges) => setHasUnsavedChanges(hasChanges)}
+          roomNames={roomNames}
         />
       )}
       {isFormSaved && (

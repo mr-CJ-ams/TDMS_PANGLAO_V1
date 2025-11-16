@@ -15,6 +15,7 @@ interface GuestModalProps {
   selectedYear: number;
   selectedMonth: number;
   onChange?: (hasChanges: boolean) => void;
+  roomNames?: string[];
 }
 
 const GuestModal = ({
@@ -25,9 +26,11 @@ const GuestModal = ({
   onRemoveAllGuests,
   initialData,
   disabled,
-  onChange
+  onChange,
+  roomNames = []
 }: GuestModalProps) => {
   const MAX_LENGTH_OF_STAY = 183;
+   const roomName = roomNames[room - 1] || `Room ${room}`;
 
   const [guests, setGuests] = useState(
     initialData?.guests?.map(g => ({
@@ -411,7 +414,7 @@ const confirmSetLengthOfStayToOneAndDelete = async () => {
         <div className="modal-content">
           <div className="modal-header d-flex justify-between align-items-center">
             <h5 className="modal-title">
-              Day {day} - Room {room}
+              Day {day} - {roomName}
             </h5>
             <div className="d-flex align-items-center gap-2">
               <button
