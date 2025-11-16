@@ -70,111 +70,121 @@ const [lastSaveTime, setLastSaveTime] = useState(Date.now());
     })();
   }, []);
 
+
   // Check if already submitted for month/year
-  useEffect(() => {
-    if (!user) return;
-    
-    // Reset form saved state when switching months
-    setIsFormSaved(false);
-    
-    (async () => {
-      try {
-        const token = sessionStorage.getItem("token");
-        const { data } = await axios.get(`${API_BASE_URL}/api/submissions/check-submission`, {
+useEffect(() => {
+  if (!user) return;
+  
+  // Reset form saved state when switching months
+  setIsFormSaved(false);
+  
+  (async () => {
+    try {
+      const token = sessionStorage.getItem("token");
+      const { data } = await axios.get(`${API_BASE_URL}/api/submissions/check-submission`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { user_id: user.user_id, month: selectedMonth, year: selectedYear }
+      });
+      setHasSubmitted(data.hasSubmitted);
+      
+      // ✅ Even if submitted, we still show draft data for display
+      // The form will be disabled but data remains visible
+      
+    } catch (err) { 
+      console.error("Error checking submission:", err); 
+    }
+  })();
+}, [user, selectedMonth, selectedYear]);
+
+
+
+// Load draft stays for selected month/year
+useEffect(() => {
+  if (!user) return;
+  setIsLoading(true);
+  
+  (async () => {
+    try {
+      const token = sessionStorage.getItem("token");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      // Always load draft stays first for display
+      const [staysRes, localData] = await Promise.all([
+        axios.get(`${API_BASE_URL}/api/submissions/draft-stays/${user.user_id}/${selectedMonth}/${selectedYear}`, {
           headers: { Authorization: `Bearer ${token}` },
-          params: { user_id: user.user_id, month: selectedMonth, year: selectedYear }
+          timeout: 10000
+        }),
+        loadDataFromLocalStorage(user.user_id)
+      ]);
+
+      const serverStays = Array.isArray(staysRes.data) ? staysRes.data : [];
+      const currentKey = `${selectedYear}-${selectedMonth}`;
+      
+      // Convert draft stays to monthly data format
+      const staysToMonthlyData = (stays: any[]) => {
+        const monthlyData: any = {};
+        stays.forEach(stay => {
+          const monthKey = `${stay.year}-${stay.month}`;
+          if (!monthlyData[monthKey]) {
+            monthlyData[monthKey] = [];
+          }
+          
+          monthlyData[monthKey].push({
+            day: stay.day,
+            room: stay.room_number,
+            guests: stay.guests || [],
+            isCheckIn: stay.is_check_in,
+            isStartDay: stay.is_start_day,
+            stayId: stay.stay_id,
+            startDay: stay.start_day,
+            startMonth: stay.start_month,
+            startYear: stay.start_year,
+            lengthOfStay: stay.length_of_stay
+          });
         });
-        setHasSubmitted(data.hasSubmitted);
-      } catch (err) { console.error("Error checking submission:", err); }
-    })();
-  }, [user, selectedMonth, selectedYear]);
+        return monthlyData;
+      };
 
-  // Load draft stays for selected month/year
-  useEffect(() => {
-    if (!user) return;
-    setIsLoading(true);
-    
-    (async () => {
-      try {
-        const token = sessionStorage.getItem("token");
-        if (!token) {
-          throw new Error("No authentication token found");
-        }
+      const serverData = staysToMonthlyData(serverStays);
+      const mergedData = { ...localData, ...serverData };
+      
+      // ✅ ALWAYS use draft data for display, even if submitted data exists
+      setMonthlyData(mergedData);
+      setOccupiedRooms(mergedData[currentKey] || []);
 
-        // Load draft stays for the selected month
-        const [staysRes, localData] = await Promise.all([
-          axios.get(`${API_BASE_URL}/api/submissions/draft-stays/${user.user_id}/${selectedMonth}/${selectedYear}`, {
+      // Only check for submission status, but don't replace the display data
+      if (serverStays.length === 0 && mergedData[currentKey]?.length === 0) {
+        try {
+          const subRes = await axios.get(`${API_BASE_URL}/api/submissions/${user.user_id}/${selectedMonth}/${selectedYear}`, { 
             headers: { Authorization: `Bearer ${token}` },
             timeout: 10000
-          }),
-          loadDataFromLocalStorage(user.user_id)
-        ]);
-
-        const serverStays = Array.isArray(staysRes.data) ? staysRes.data : [];
-        const currentKey = `${selectedYear}-${selectedMonth}`;
-        const localMonthData = Array.isArray(localData[currentKey]) ? localData[currentKey] : [];
-        
-        // Convert draft stays to monthly data format
-        const staysToMonthlyData = (stays: any[]) => {
-          const monthlyData: any = {};
-          stays.forEach(stay => {
-            const monthKey = `${stay.year}-${stay.month}`;
-            if (!monthlyData[monthKey]) {
-              monthlyData[monthKey] = [];
-            }
-            
-            monthlyData[monthKey].push({
-              day: stay.day,
-              room: stay.room_number,
-              guests: stay.guests || [],
-              isCheckIn: stay.is_check_in,
-              isStartDay: stay.is_start_day,
-              stayId: stay.stay_id,
-              startDay: stay.start_day,
-              startMonth: stay.start_month,
-              startYear: stay.start_year,
-              lengthOfStay: stay.length_of_stay
-            });
           });
-          return monthlyData;
-        };
-
-        const serverData = staysToMonthlyData(serverStays);
-        const mergedData = { ...localData, ...serverData };
-        
-        setMonthlyData(mergedData);
-        setOccupiedRooms(mergedData[currentKey] || []);
-
-        // If no draft stays, check for submitted data
-        if (serverStays.length === 0 && mergedData[currentKey]?.length === 0) {
-          try {
-            const subRes = await axios.get(`${API_BASE_URL}/api/submissions/${user.user_id}/${selectedMonth}/${selectedYear}`, { 
-              headers: { Authorization: `Bearer ${token}` },
-              timeout: 10000
-            });
-            if (subRes.data) {
-              const submittedData = Array.isArray(subRes.data.days) ? subRes.data.days : [];
-              const updatedDataWithSubmission = { ...mergedData, [currentKey]: submittedData };
-              setMonthlyData(updatedDataWithSubmission);
-              setOccupiedRooms(submittedData);
-              saveDataToLocalStorage(user.user_id, updatedDataWithSubmission);
-            }
-          } catch (subErr) {
-            console.warn("Could not load submitted data:", subErr);
+          if (subRes.data) {
+            // We found submitted data but no drafts - user can view but not edit
+            const submittedData = Array.isArray(subRes.data.days) ? subRes.data.days : [];
+            const updatedDataWithSubmission = { ...mergedData, [currentKey]: submittedData };
+            setMonthlyData(updatedDataWithSubmission);
+            setOccupiedRooms(submittedData);
+            saveDataToLocalStorage(user.user_id, updatedDataWithSubmission);
           }
+        } catch (subErr) {
+          console.warn("Could not load submitted data:", subErr);
         }
-      } catch (err) {
-        console.error("Error loading draft stays:", err);
-        const cachedData = loadDataFromLocalStorage(user.user_id);
-        const currentKey = `${selectedYear}-${selectedMonth}`;
-        const fallbackData = Array.isArray(cachedData[currentKey]) ? cachedData[currentKey] : [];
-        setMonthlyData({ ...cachedData, [currentKey]: fallbackData });
-        setOccupiedRooms(fallbackData);
-      } finally { 
-        setIsLoading(false); 
       }
-    })();
-  }, [user, selectedMonth, selectedYear]);
+    } catch (err) {
+      console.error("Error loading draft stays:", err);
+      const cachedData = loadDataFromLocalStorage(user.user_id);
+      const currentKey = `${selectedYear}-${selectedMonth}`;
+      const fallbackData = Array.isArray(cachedData[currentKey]) ? cachedData[currentKey] : [];
+      setMonthlyData({ ...cachedData, [currentKey]: fallbackData });
+      setOccupiedRooms(fallbackData);
+    } finally { 
+      setIsLoading(false); 
+    }
+  })();
+}, [user, selectedMonth, selectedYear]);
 
   // Save to localStorage on monthlyData change (remove server auto-save for drafts)
   useEffect(() => {
@@ -505,60 +515,67 @@ const handleSaveGuests = async (day: number, room: number, guestData: any): Prom
     setConfirmModal(true);
   };
 
-  // The actual submission logic
-  const doSubmitForm = async () => {
-    if (hasSubmitted) {
-      setModal({
-        show: true,
-        title: "Already Submitted",
-        message: "You have already submitted for this month and year.",
-      });
-      return;
-    }
-    try {
-      const token = sessionStorage.getItem("token");
-      const user = JSON.parse(sessionStorage.getItem("user"));
-      const submissionData = {
-        user_id: user.user_id,
-        month: selectedMonth,
-        year: selectedYear,
-        days: Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => ({
-          day,
-          checkIns: calculateDailyTotals(day).checkIns,
-          overnight: calculateDailyTotals(day).overnight,
-          occupied: calculateDailyTotals(day).occupied,
-          guests: occupiedRooms.filter(r => r.day === day).flatMap(room =>
-            room.guests.map(guest => ({ roomNumber: room.room, ...guest }))
-          ),
-        })),
-      };
-      await axios.post(`${API_BASE_URL}/api/submissions/submit`, submissionData, { headers: { Authorization: `Bearer ${token}` } });
-      
-      // Delete draft stays after successful submission
-      await axios.delete(`${API_BASE_URL}/api/submissions/draft-stays/${user.user_id}/${selectedMonth}/${selectedYear}`, { 
-        headers: { Authorization: `Bearer ${token}` } 
-      });
-      
-      const metrics = calculateOverallTotals();
-      setAverageGuestNights(metrics.averageGuestNights);
-      setAverageRoomOccupancyRate(metrics.averageRoomOccupancyRate);
-      setAverageGuestsPerRoom(metrics.averageGuestsPerRoom);
-      setIsFormSaved(true);
-      setHasSubmitted(true);
-      setModal({
-        show: true,
-        title: "Success",
-        message: "Submission saved successfully!",
-      });
-    } catch (err) {
-      console.error("Submission failed:", err);
-      setModal({
-        show: true,
-        title: "Error",
-        message: "Failed to save submission. Please try again.",
-      });
-    }
-  };
+ // In SubmissionForm.tsx - Update the doSubmitForm function
+const doSubmitForm = async () => {
+  if (hasSubmitted) {
+    setModal({
+      show: true,
+      title: "Already Submitted",
+      message: "You have already submitted for this month and year.",
+    });
+    return;
+  }
+  
+  try {
+    const token = sessionStorage.getItem("token");
+    const user = JSON.parse(sessionStorage.getItem("user"));
+    const submissionData = {
+      user_id: user.user_id,
+      month: selectedMonth,
+      year: selectedYear,
+      days: Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => ({
+        day,
+        checkIns: calculateDailyTotals(day).checkIns,
+        overnight: calculateDailyTotals(day).overnight,
+        occupied: calculateDailyTotals(day).occupied,
+        guests: occupiedRooms.filter(r => r.day === day).flatMap(room =>
+          room.guests.map(guest => ({ roomNumber: room.room, ...guest }))
+        ),
+      })),
+    };
+    
+    await axios.post(`${API_BASE_URL}/api/submissions/submit`, submissionData, { 
+      headers: { Authorization: `Bearer ${token}` } 
+    });
+    
+    // ❌ REMOVE THIS: Don't delete draft stays after submission
+    // await axios.delete(`${API_BASE_URL}/api/submissions/draft-stays/${user.user_id}/${selectedMonth}/${selectedYear}`);
+    
+    // ✅ KEEP the draft stays for display purposes
+    // The data will remain in occupiedRooms and monthlyData states
+    
+    const metrics = calculateOverallTotals();
+    setAverageGuestNights(metrics.averageGuestNights);
+    setAverageRoomOccupancyRate(metrics.averageRoomOccupancyRate);
+    setAverageGuestsPerRoom(metrics.averageGuestsPerRoom);
+    setIsFormSaved(true);
+    setHasSubmitted(true);
+    
+    setModal({
+      show: true,
+      title: "Success", 
+      message: "Submission saved successfully! Your data is preserved and will remain visible.",
+    });
+    
+  } catch (err) {
+    console.error("Submission failed:", err);
+    setModal({
+      show: true,
+      title: "Error",
+      message: "Failed to save submission. Please try again.",
+    });
+  }
+};
 
  // Simplified frontend using the new endpoint
 const handleRemoveAllGuests = async (day: number, room: number): Promise<void> => {
@@ -1067,9 +1084,10 @@ const handleManualRefresh = async () => {
           onCellClick={handleCellClick}
           getRoomColor={getRoomColor}
           calculateDailyTotals={calculateDailyTotals}
-          disabled={hasSubmitted || isFutureMonthValue || isLoading}
+          disabled={hasSubmitted || isFutureMonthValue || isLoading} // Still disabled but data visible
           gridRef={mainGridRef}
         />
+
       </div>
       {isModalOpen && (
         <GuestModal
