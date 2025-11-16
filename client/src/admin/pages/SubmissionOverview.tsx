@@ -102,9 +102,10 @@ interface Metrics {
   totalCheckIns: number;
   totalOvernight: number;
   totalOccupied: number;
-  averageGuestNights: number;  // Changed from string to number
-  averageRoomOccupancyRate: number;  // Changed from string to number
-  averageGuestsPerRoom: number;  // Changed from string to number
+  averageLengthOfStay: number; // <-- Add this line
+  averageGuestNights: number;
+  averageRoomOccupancyRate: number;
+  averageGuestsPerRoom: number;
 }
 
 interface SubmissionOverviewProps {
@@ -357,13 +358,13 @@ const SubmissionOverview: React.FC<SubmissionOverviewProps> = ({
       [""],
       ["TOTALS"],
       ["Total No. of Guest Check-Ins", calculateMetrics(selectedSubmission).totalCheckIns],
-      ["Total No. Guest Staying Overnight", calculateMetrics(selectedSubmission).totalOvernight],
+      ["Total No. Guest-Night", calculateMetrics(selectedSubmission).totalOvernight],
       ["Total No. of Occupied Rooms", calculateMetrics(selectedSubmission).totalOccupied],
       [""],
       ["AVERAGES"],
-      ["Ave. Guest-Nights", calculateMetrics(selectedSubmission).averageGuestNights],
-      ["Ave. Room Occupancy Rate", `${calculateMetrics(selectedSubmission).averageRoomOccupancyRate}%`],
-      ["Ave. Guests per Room", calculateMetrics(selectedSubmission).averageGuestsPerRoom],
+      ["Avg. Length of Stay", calculateMetrics(selectedSubmission).averageLengthOfStay],
+      ["Avg. Room Occupancy Rate", `${calculateMetrics(selectedSubmission).averageRoomOccupancyRate}%`],
+      ["Avg. Guests per Room", calculateMetrics(selectedSubmission).averageGuestsPerRoom],
     ];
     
     const submissionWs = XLSX.utils.aoa_to_sheet(submissionDetailsData);
@@ -784,16 +785,18 @@ const SubmissionOverview: React.FC<SubmissionOverviewProps> = ({
                   <h3 className="text-lg font-semibold text-slate-800 mb-4">Averages</h3>
                   <div className="space-y-4">
                     <div>
-                      <p className="text-sm text-green-600">Ave. Guest-Nights</p>
-                      <p className="text-2xl font-semibold text-slate-800">{calculateMetrics(selectedSubmission).averageGuestNights}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-green-600">Ave. Room Occupancy Rate</p>
+                      <p className="text-sm text-green-600">Avg. Room Occupancy Rate</p>
                       <p className="text-2xl font-semibold text-slate-800">{calculateMetrics(selectedSubmission).averageRoomOccupancyRate}%</p>
                     </div>
                     <div>
-                      <p className="text-sm text-green-600">Ave. Guests per Room</p>
+                      <p className="text-sm text-green-600">Avg. Guests per Room</p>
                       <p className="text-2xl font-semibold text-slate-800">{calculateMetrics(selectedSubmission).averageGuestsPerRoom}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-green-600">Avg. Length of Stay</p>
+                      <p className="text-2xl font-semibold text-slate-800">
+                        {calculateMetrics(selectedSubmission).averageLengthOfStay}
+                      </p>
                     </div>
                   </div>
                 </div>

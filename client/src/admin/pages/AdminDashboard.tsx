@@ -231,36 +231,32 @@ const AdminDashboard = () => {
 
 
   // Calculate metrics and totals for submissions
-  const calculateMetrics = (submission: Submission | null): Metrics => {
+  const calculateMetrics = (submission: Submission | null): Metrics & { averageLengthOfStay: number } => {
     if (!submission || !submission.days) return { 
       totalCheckIns: 0, 
       totalOvernight: 0, 
       totalOccupied: 0, 
+      averageLengthOfStay: 0,
       averageGuestNights: 0, 
       averageRoomOccupancyRate: 0, 
       averageGuestsPerRoom: 0 
     };
 
-    
- const { days, number_of_rooms } = submission;
-  const totalCheckIns = days.reduce((a, d) => a + (d.check_ins || 0), 0);
-  const totalOvernight = days.reduce((a, d) => a + (d.overnight || 0), 0);
-  const totalOccupied = days.reduce((a, d) => a + (d.occupied || 0), 0);
-  
-  // Convert string averages to numbers using parseFloat
-  const averageGuestNights = totalCheckIns > 0 ? 
-    parseFloat((totalOvernight / totalCheckIns).toFixed(2)) : 0;
-  
-  const averageRoomOccupancyRate = number_of_rooms > 0 ? 
-    parseFloat(((totalOccupied / (number_of_rooms * days.length)) * 100).toFixed(2)) : 0;
-  
-  const averageGuestsPerRoom = totalOccupied > 0 ? 
-    parseFloat((totalOvernight / totalOccupied).toFixed(2)) : 0;
-    
+    const { days, number_of_rooms } = submission;
+    const totalCheckIns = days.reduce((a, d) => a + (d.check_ins || 0), 0);
+    const totalOvernight = days.reduce((a, d) => a + (d.overnight || 0), 0);
+    const totalOccupied = days.reduce((a, d) => a + (d.occupied || 0), 0);
+
+    const averageLengthOfStay = totalCheckIns > 0 ? parseFloat((totalOvernight / totalCheckIns).toFixed(2)) : 0;
+    const averageGuestNights = averageLengthOfStay; // for compatibility
+    const averageRoomOccupancyRate = number_of_rooms > 0 ? parseFloat(((totalOccupied / (number_of_rooms * days.length)) * 100).toFixed(2)) : 0;
+    const averageGuestsPerRoom = totalOccupied > 0 ? parseFloat((totalOvernight / totalOccupied).toFixed(2)) : 0;
+
     return { 
       totalCheckIns, 
       totalOvernight, 
       totalOccupied, 
+      averageLengthOfStay,
       averageGuestNights, 
       averageRoomOccupancyRate, 
       averageGuestsPerRoom 

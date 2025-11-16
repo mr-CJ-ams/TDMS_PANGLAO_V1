@@ -89,9 +89,9 @@ const MonthlyMetrics: React.FC<MonthlyMetricsProps> = ({
         "Total No. Guest Check-Ins": toNumber(m.total_check_ins),
         "Total No. of Guest Staying Overnight": toNumber(m.total_overnight),
         "Total No. Rooms Occupied": toNumber(m.total_occupied),
-        "Ave. Guest-Nights": toNumber(m.average_guest_nights).toFixed(2),
-        "Ave. Room Occupancy Rate": `${toNumber(m.average_room_occupancy_rate).toFixed(2)}%`,
-        "Ave. Guests per Room": toNumber(m.average_guests_per_room).toFixed(2),
+        "Avg. Length of Stay": toNumber(m.average_guest_nights).toFixed(2), // <-- changed label and value
+        "Avg. Room Occupancy Rate": `${toNumber(m.average_room_occupancy_rate).toFixed(2)}%`,
+        "Avg. Guests per Room": toNumber(m.average_guests_per_room).toFixed(2),
         "Total Rooms": toNumber(m.total_rooms),
         "Total Submissions": toNumber(m.total_submissions),
         "Submission Rate": `${toNumber(m.submission_rate).toFixed(2)}%`,
@@ -140,11 +140,11 @@ const MonthlyMetrics: React.FC<MonthlyMetricsProps> = ({
               {[
                 "Month",
                 "Total No. of Guests Check-In",
-                "Total No. Guests Staying Overnight",
+                "Total No. of Guest-Nights",
                 "Total Occupied",
-                "Ave. Guest-Nights",
-                "Ave. Room Occupancy Rate",
-                "Ave. Guests per Room",
+                "Avg. Length of Stay", // <-- changed label
+                "Avg. Room Occupancy Rate",
+                "Avg. Guests per Room",
                 "Total Rooms",
                 "Total Submissions",
                 "Submission Rate",
@@ -166,7 +166,7 @@ const MonthlyMetrics: React.FC<MonthlyMetricsProps> = ({
                 <td style={{ padding: 12, color: "#37474F" }}>{toNumber(m.total_check_ins)}</td>
                 <td style={{ padding: 12, color: "#37474F" }}>{toNumber(m.total_overnight)}</td>
                 <td style={{ padding: 12, color: "#37474F" }}>{toNumber(m.total_occupied)}</td>
-                <td style={{ padding: 12, color: "#37474F" }}>{toNumber(m.average_guest_nights).toFixed(2)}</td>
+                <td style={{ padding: 12, color: "#37474F" }}>{toNumber(m.average_guest_nights).toFixed(2)}</td> {/* <-- Avg. Length of Stay */}
                 <td style={{ padding: 12, color: "#37474F" }}>{toNumber(m.average_room_occupancy_rate).toFixed(2)}%</td>
                 <td style={{ padding: 12, color: "#37474F" }}>{toNumber(m.average_guests_per_room).toFixed(2)}</td>
                 <td style={{ padding: 12, color: "#37474F" }}>{toNumber(m.total_rooms)}</td>
