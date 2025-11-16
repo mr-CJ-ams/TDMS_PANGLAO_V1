@@ -676,25 +676,6 @@ const handleRemoveAllGuests = async (day: number, room: number): Promise<void> =
     return y > cy || (y === cy && m > cm);
   };
 
-  // Helper function to remove duplicate entries
-  const removeDuplicateEntries = (rooms: any[]) => {
-    const uniqueEntries = new Map();
-    
-    rooms.forEach(room => {
-      const key = `${room.day}-${room.room}-${room.stayId || 'no-stay-id'}`;
-      if (!uniqueEntries.has(key)) {
-        uniqueEntries.set(key, room);
-      } else {
-        // If duplicate found, prefer the one with isStartDay = true or isCheckIn = true
-        const existing = uniqueEntries.get(key);
-        if ((room.isStartDay && !existing.isStartDay) || (room.isCheckIn && !existing.isCheckIn)) {
-          uniqueEntries.set(key, room);
-        }
-      }
-    });
-    
-    return Array.from(uniqueEntries.values());
-  };
 
   const isFutureMonthValue = isFutureMonth(selectedMonth, selectedYear);
   const isCurrentMonthValue = isCurrentMonth(selectedMonth, selectedYear);
@@ -766,8 +747,6 @@ const handleRemoveAllGuests = async (day: number, room: number): Promise<void> =
 
   // Add these to your SubmissionForm.tsx
 
-// Add to your state
-const [lastDataUpdate, setLastDataUpdate] = useState(Date.now());
 const [isOnline, setIsOnline] = useState(navigator.onLine);
 
 // 1. Network status detection
@@ -791,28 +770,6 @@ useEffect(() => {
     window.removeEventListener('offline', handleOffline);
   };
 }, [user]);
-
-// 2. Enhanced focus/visibility reload with timestamp checking
-// // Keep only the focus/visibility reload (much less intrusive)
-// useEffect(() => {
-//   if (!user) return;
-
-//   const handleFocusOrVisibility = async () => {
-//     console.log('🔄 Focus/visibility changed, reloading data...');
-//     await reloadData();
-//   };
-
-//   const events = ['focus', 'visibilitychange'];
-//   events.forEach(event => {
-//     window.addEventListener(event, handleFocusOrVisibility);
-//   });
-
-//   return () => {
-//     events.forEach(event => {
-//       window.removeEventListener(event, handleFocusOrVisibility);
-//     });
-//   };
-// }, [user]);
 
 // 4. Update your reloadData function to set the timestamp
 const reloadData = async (forceReload = false) => {
@@ -881,49 +838,6 @@ useEffect(() => {
     console.log('⏸️ Skipping month/year reload - user has unsaved changes');
   }
 }, [selectedMonth, selectedYear, user]);
-
-// 6. Add a manual refresh button for users
-const handleManualRefresh = async () => {
-  if (hasUnsavedChanges) {
-    setModal({
-      show: true,
-      title: "Unsaved Changes",
-      message: "You have unsaved changes. Please save your changes before refreshing to avoid data loss."
-    });
-    return;
-  }
-
-  console.log('🔄 Manual refresh requested...');
-  
-  // Show loading state
-  setIsLoading(true);
-  
-  try {
-    const success = await reloadData(true);
-    
-    if (success) {
-      setModal({
-        show: true,
-        title: "Success",
-        message: "Data refreshed successfully from the server!"
-      });
-    } else {
-      setModal({
-        show: true,
-        title: "Info", 
-        message: "Your data is already up to date with the server."
-      });
-    }
-  } catch (error) {
-    setModal({
-      show: true,
-      title: "Error",
-      message: "Failed to refresh data. Please check your connection and try again."
-    });
-  } finally {
-    setIsLoading(false);
-  }
-};
 
   return (
     <div className="container mt-5" style={{ position: 'relative' }}>

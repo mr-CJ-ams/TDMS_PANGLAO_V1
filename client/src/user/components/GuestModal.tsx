@@ -1,6 +1,6 @@
 import { useState } from "react";
 import nationalities from "./Nationality";
-import { Trash2, PlusIcon, X, Edit, Save, X as CancelIcon, Copy, Clock, Trash } from "lucide-react"; // Add Clock icon
+import { Trash2, PlusIcon, X, Edit, Save, X as CancelIcon, Copy, Trash } from "lucide-react"; // Add Clock icon
 
 interface GuestModalProps {
   day: number;
@@ -56,7 +56,6 @@ const GuestModal = ({
 
   // Add state for global remove confirmation
   const [globalRemoveModal, setGlobalRemoveModal] = useState(false);
-  const [savingGuestIndex, setSavingGuestIndex] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [removingAllGuests, setRemovingAllGuests] = useState(false);
   // New state for confirming removal of a guest and setting length of stay to 1 day
@@ -129,50 +128,8 @@ const confirmGlobalRemove = async () => {
     },
   ]);
 };
-  // In GuestModal.tsx - Update the handleRemoveGuest function
-  const handleRemoveGuest = idx => {
-    const guestToRemove = guests[idx];
 
-     if (onChange) {
-    onChange(true);
-  }
-    
-    // Only allow removal for start day guests
-    if (guestToRemove._saved && !guestToRemove._isStartDay) {
-      setConfirmModal({
-        show: true,
-        message: "Cannot remove guest from following days. Please remove the guest from their start day to delete the entire stay.",
-        onConfirm: () => {
-          setConfirmModal({ ...confirmModal, show: false });
-        }
-      });
-      return;
-  }
 
-    // If removing a saved guest that's on start day, show confirmation
-    if (guestToRemove._saved && guestToRemove._isStartDay) {
-      setConfirmModal({
-        show: true,
-        message: "This will remove the guest from ALL days of their stay. This action cannot be undone. Continue?",
-        onConfirm: () => {
-          setGuests(guests.filter((_, i) => i !== idx));
-          // Call onSave with the guest to be removed - PASS THE STAY ID
-          onSave(day, room, {
-            guests: [],
-            removeGuest: {
-              ...guestToRemove,
-              _stayId: guestToRemove._stayId // Ensure stay ID is passed
-            },
-            singleGuest: true
-          });
-          setConfirmModal({ ...confirmModal, show: false });
-        }
-      });
-    } else {
-      // For unsaved guests, just remove from local state
-      setGuests(guests.filter((_, i) => i !== idx));
-    }
-  };
 
   // Update guest field - only allowed for start day guests in edit mode
   const handleUpdateGuest = (idx, field, value) => {
@@ -327,11 +284,6 @@ const isGuestEditable = (guest) => {
   // - Guest is on their actual start day (regardless of other guests)
   return guest._editing || !guest._saved || (guest._saved && guest._isStartDay);
 };
-
-  // Check if guest can be deleted - FIXED: Only deletable on actual start day
-  const canDeleteGuest = (guest) => {
-    return guest._saved && guest._isStartDay && !guest._editing;
-  };
 
   // Check if guest can be edited - FIXED: Only editable on actual start day
 const canEditGuest = (guest) => {
