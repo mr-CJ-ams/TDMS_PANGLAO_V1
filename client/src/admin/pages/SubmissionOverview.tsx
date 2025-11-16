@@ -95,6 +95,7 @@ interface Submission {
   number_of_rooms: number;
   days: DayData[];
   nationalityCounts?: Record<string, number>;
+  room_names?: string[];
 }
 
 interface Metrics {
@@ -164,6 +165,9 @@ const SubmissionOverview: React.FC<SubmissionOverviewProps> = ({
   // Pagination states for rooms
   const [roomPage, setRoomPage] = useState(1);
   const roomsPerPage = 20;
+  const getRoomName = (roomNum: number) => {
+    return selectedSubmission?.room_names?.[roomNum - 1] || `Room ${roomNum}`;
+  };
 
   useEffect(() => {
     if (activeSection !== "submission-overview") return;
@@ -250,19 +254,42 @@ const SubmissionOverview: React.FC<SubmissionOverviewProps> = ({
   };
 
   const handleRoomSearch = () => {
-    if (!selectedSubmission) return;
+    if (!selectedSubmission || !roomSearchTerm.trim()) {
+      setHighlightedRoom(null);
+      return;
+    }
+
+    // Try to parse as room number first
+    const roomNumber = parseInt(roomSearchTerm, 10);
     
-    const roomNumber = parseInt(roomSearchTerm);
+    // Check if search matches a room name
+    let foundRoomNumber = null;
+    
     if (roomNumber && roomNumber >= 1 && roomNumber <= selectedSubmission.number_of_rooms) {
-      setHighlightedRoom(roomNumber);
+      // Search by room number
+      foundRoomNumber = roomNumber;
+    } else {
+      // Search by room name (case-insensitive)
+      const searchLower = roomSearchTerm.toLowerCase().trim();
+      for (let i = 0; i < selectedSubmission.room_names?.length; i++) {
+        const roomName = selectedSubmission.room_names[i];
+        if (roomName && roomName.toLowerCase().includes(searchLower)) {
+          foundRoomNumber = i + 1; // Room numbers are 1-indexed
+          break;
+        }
+      }
+    }
+
+    if (foundRoomNumber) {
+      setHighlightedRoom(foundRoomNumber);
 
       // Calculate which page the room is on
-      const targetPage = Math.ceil(roomNumber / roomsPerPage);
+      const targetPage = Math.ceil(foundRoomNumber / roomsPerPage);
       setRoomPage(targetPage);
 
       // Wait for page update, then scroll to the room column
       setTimeout(() => {
-        const roomElement = document.getElementById(`admin-room-${roomNumber}`);
+        const roomElement = document.getElementById(`admin-room-${foundRoomNumber}`);
         if (roomElement) {
           roomElement.scrollIntoView({
             behavior: "smooth",
@@ -287,6 +314,7 @@ const SubmissionOverview: React.FC<SubmissionOverviewProps> = ({
       }, 200);
     } else {
       setHighlightedRoom(null);
+      alert(`No room found matching "${roomSearchTerm}". Please enter a valid room number or room name.`);
     }
   };
 
@@ -309,25 +337,29 @@ const SubmissionOverview: React.FC<SubmissionOverviewProps> = ({
     };
     const daysInMonth = getDaysInMonth(selectedSubmission.month, selectedSubmission.year);
     
+    // Use historical room names from submission data
+    const currentRoomNames = selectedSubmission.room_names || 
+      Array.from({ length: selectedSubmission.number_of_rooms || 1 }, (_, i) => `Room ${i + 1}`);
+    
     // Create workbook with multiple sheets
     const wb = XLSX.utils.book_new();
     
-    // Sheet 1: Submission Details
+    // Sheet 1: Submission Details (unchanged)
     const submissionDetailsData = [
       ["SUBMISSION DETAILS"],
-      [""], // Empty row for spacing
+      [""],
       ["Month", getMonthName(selectedSubmission.month)],
       ["Year", selectedSubmission.year],
       ["Company Name", selectedSubmission.company_name || "N/A"],
       ["Accommodation Type", selectedSubmission.accommodation_type || "N/A"],
       ["Submitted At", new Date(selectedSubmission.submitted_at).toLocaleString()],
       ["Total Rooms", selectedSubmission.number_of_rooms],
-      [""], // Empty row for spacing
+      [""],
       ["TOTALS"],
       ["Total No. of Guest Check-Ins", calculateMetrics(selectedSubmission).totalCheckIns],
       ["Total No. Guest Staying Overnight", calculateMetrics(selectedSubmission).totalOvernight],
       ["Total No. of Occupied Rooms", calculateMetrics(selectedSubmission).totalOccupied],
-      [""], // Empty row for spacing
+      [""],
       ["AVERAGES"],
       ["Ave. Guest-Nights", calculateMetrics(selectedSubmission).averageGuestNights],
       ["Ave. Room Occupancy Rate", `${calculateMetrics(selectedSubmission).averageRoomOccupancyRate}%`],
@@ -337,17 +369,15 @@ const SubmissionOverview: React.FC<SubmissionOverviewProps> = ({
     const submissionWs = XLSX.utils.aoa_to_sheet(submissionDetailsData);
     XLSX.utils.book_append_sheet(wb, submissionWs, "Submission Details");
     
-    // Auto-size columns for submission details
     submissionWs['!cols'] = [
-      { width: 25 }, // Label column
-      { width: 20 }  // Value column
+      { width: 25 },
+      { width: 20 }
     ];
     
-    // Sheet 2: Daily Metrics
-    // Create headers: Day, Room 1, Room 2, ..., Room N, Summary
+    // Sheet 2: Daily Metrics - Use historical room names
     const headers = ["Day"];
     for (let i = 1; i <= selectedSubmission.number_of_rooms; i++) {
-      headers.push(`Room ${i}`);
+      headers.push(currentRoomNames[i - 1] || `Room ${i}`); // Use historical names
     }
     headers.push("Check-ins", "Overnight", "Occupied");
     
@@ -377,7 +407,7 @@ const SubmissionOverview: React.FC<SubmissionOverviewProps> = ({
         if (roomGuests.length > 0) {
           const guestDetails = roomGuests.map(guest => 
             `${guest.isCheckIn ? '✓' : '●'} ${guest.gender}, ${guest.age}, ${guest.status}, ${guest.nationality}`
-          ).join('\n'); // Use line breaks instead of semicolons
+          ).join('\n');
           row.push(guestDetails);
         } else {
           row.push("Empty");
@@ -403,12 +433,11 @@ const SubmissionOverview: React.FC<SubmissionOverviewProps> = ({
     dailyMetricsWs['!cols'] = colWidths.map(width => ({ width }));
     
     // Auto-fit rows for multi-line content
-    const maxRowHeight = 15; // Base row height
+    const maxRowHeight = 15;
     for (let rowIndex = 1; rowIndex < data.length; rowIndex++) {
       const row = data[rowIndex];
       let maxLines = 1;
       
-      // Check each room column for number of lines
       for (let colIndex = 1; colIndex <= selectedSubmission.number_of_rooms; colIndex++) {
         const cellValue = row[colIndex];
         if (cellValue && cellValue !== "Empty") {
@@ -417,163 +446,162 @@ const SubmissionOverview: React.FC<SubmissionOverviewProps> = ({
         }
       }
       
-      // Set row height based on content
       const rowHeight = Math.max(maxRowHeight, maxLines * 15);
       if (!dailyMetricsWs['!rows']) dailyMetricsWs['!rows'] = [];
       dailyMetricsWs['!rows'][rowIndex] = { hpt: rowHeight };
     }
     
-    // Sheet 3: Nationality Counts
+    // Sheet 3: Nationality Counts (unchanged)
     const nationalityCounts: Record<string, number> = {};
-    selectedSubmission.days?.forEach((day) =>
-      day.guests?.forEach((g) => {
-        if (g.isCheckIn) nationalityCounts[g.nationality] = (nationalityCounts[g.nationality] || 0) + 1;
-      })
-    );
-    
-    const nationalityData = [
-      ["Year", "=", selectedSubmission.year],
-      ["Month", "=", getMonthName(selectedSubmission.month)],
-      ["(PANGLAO REPORT)", selectedSubmission.company_name || "Resort"],
-      [""], // Empty row for spacing
-      ["COUNTRY OF RESIDENCE"],
-      ["TOTAL PHILIPPINE RESIDENTS", "=", nationalityCounts["Philippines"] || 0],
-      ["NON-PHILIPPINE RESIDENTS", "=", Object.entries(nationalityCounts).filter(([country]) => country !== "Philippines").reduce((sum, [, count]) => sum + count, 0)],
-      [""], // Empty row for spacing
+      selectedSubmission.days?.forEach((day) =>
+        day.guests?.forEach((g) => {
+          if (g.isCheckIn) nationalityCounts[g.nationality] = (nationalityCounts[g.nationality] || 0) + 1;
+        })
+      );
       
-      // ASIA - ASEAN
-      ["ASIA - ASEAN"],
-      ["   Brunei", "=", nationalityCounts["Brunei"] || 0],
-      ["   Cambodia", "=", nationalityCounts["Cambodia"] || 0],
-      ["   Indonesia", "=", nationalityCounts["Indonesia"] || 0],
-      ["   Laos", "=", nationalityCounts["Laos"] || 0],
-      ["   Malaysia", "=", nationalityCounts["Malaysia"] || 0],
-      ["   Myanmar", "=", nationalityCounts["Myanmar"] || 0],
-      ["   Singapore", "=", nationalityCounts["Singapore"] || 0],
-      ["   Thailand", "=", nationalityCounts["Thailand"] || 0],
-      ["   Vietnam", "=", nationalityCounts["Vietnam"] || 0],
-      [""], // Empty row for spacing
+      const nationalityData = [
+        ["Year", "=", selectedSubmission.year],
+        ["Month", "=", getMonthName(selectedSubmission.month)],
+        ["(PANGLAO REPORT)", selectedSubmission.company_name || "Resort"],
+        [""], // Empty row for spacing
+        ["COUNTRY OF RESIDENCE"],
+        ["TOTAL PHILIPPINE RESIDENTS", "=", nationalityCounts["Philippines"] || 0],
+        ["NON-PHILIPPINE RESIDENTS", "=", Object.entries(nationalityCounts).filter(([country]) => country !== "Philippines").reduce((sum, [, count]) => sum + count, 0)],
+        [""], // Empty row for spacing
+        
+        // ASIA - ASEAN
+        ["ASIA - ASEAN"],
+        ["   Brunei", "=", nationalityCounts["Brunei"] || 0],
+        ["   Cambodia", "=", nationalityCounts["Cambodia"] || 0],
+        ["   Indonesia", "=", nationalityCounts["Indonesia"] || 0],
+        ["   Laos", "=", nationalityCounts["Laos"] || 0],
+        ["   Malaysia", "=", nationalityCounts["Malaysia"] || 0],
+        ["   Myanmar", "=", nationalityCounts["Myanmar"] || 0],
+        ["   Singapore", "=", nationalityCounts["Singapore"] || 0],
+        ["   Thailand", "=", nationalityCounts["Thailand"] || 0],
+        ["   Vietnam", "=", nationalityCounts["Vietnam"] || 0],
+        [""], // Empty row for spacing
+        
+        // ASIA - EAST ASIA
+        ["ASIA - EAST ASIA"],
+        ["   China", "=", nationalityCounts["China"] || 0],
+        ["   Hong Kong", "=", nationalityCounts["Hong Kong"] || 0],
+        ["   Japan", "=", nationalityCounts["Japan"] || 0],
+        ["   Korea", "=", nationalityCounts["Korea"] || 0],
+        ["   Taiwan", "=", nationalityCounts["Taiwan"] || 0],
+        [""], // Empty row for spacing
+        
+        // ASIA - SOUTH ASIA
+        ["ASIA - SOUTH ASIA"],
+        ["   Bangladesh", "=", nationalityCounts["Bangladesh"] || 0],
+        ["   India", "=", nationalityCounts["India"] || 0],
+        ["   Iran", "=", nationalityCounts["Iran"] || 0],
+        ["   Nepal", "=", nationalityCounts["Nepal"] || 0],
+        ["   Pakistan", "=", nationalityCounts["Pakistan"] || 0],
+        ["   Sri Lanka", "=", nationalityCounts["Sri Lanka"] || 0],
+        [""], // Empty row for spacing
+        
+        // MIDDLE EAST
+        ["MIDDLE EAST"],
+        ["   Bahrain", "=", nationalityCounts["Bahrain"] || 0],
+        ["   Egypt", "=", nationalityCounts["Egypt"] || 0],
+        ["   Israel", "=", nationalityCounts["Israel"] || 0],
+        ["   Jordan", "=", nationalityCounts["Jordan"] || 0],
+        ["   Kuwait", "=", nationalityCounts["Kuwait"] || 0],
+        ["   Saudi Arabia", "=", nationalityCounts["Saudi Arabia"] || 0],
+        ["   United Arab Emirates", "=", nationalityCounts["United Arab Emirates"] || 0],
+        [""], // Empty row for spacing
+        
+        // AMERICA - NORTH AMERICA
+        ["AMERICA - NORTH AMERICA"],
+        ["   Canada", "=", nationalityCounts["Canada"] || 0],
+        ["   Mexico", "=", nationalityCounts["Mexico"] || 0],
+        ["   USA", "=", nationalityCounts["USA"] || 0],
+        [""], // Empty row for spacing
+        
+        // AMERICA - SOUTH AMERICA
+        ["AMERICA - SOUTH AMERICA"],
+        ["   Argentina", "=", nationalityCounts["Argentina"] || 0],
+        ["   Brazil", "=", nationalityCounts["Brazil"] || 0],
+        ["   Colombia", "=", nationalityCounts["Colombia"] || 0],
+        ["   Peru", "=", nationalityCounts["Peru"] || 0],
+        ["   Venezuela", "=", nationalityCounts["Venezuela"] || 0],
+        [""], // Empty row for spacing
+        
+        // EUROPE - WESTERN EUROPE
+        ["EUROPE - WESTERN EUROPE"],
+        ["   Austria", "=", nationalityCounts["Austria"] || 0],
+        ["   Belgium", "=", nationalityCounts["Belgium"] || 0],
+        ["   France", "=", nationalityCounts["France"] || 0],
+        ["   Germany", "=", nationalityCounts["Germany"] || 0],
+        ["   Luxembourg", "=", nationalityCounts["Luxembourg"] || 0],
+        ["   Netherlands", "=", nationalityCounts["Netherlands"] || 0],
+        ["   Switzerland", "=", nationalityCounts["Switzerland"] || 0],
+        [""], // Empty row for spacing
+        
+        // EUROPE - NORTHERN EUROPE
+        ["EUROPE - NORTHERN EUROPE"],
+        ["   Denmark", "=", nationalityCounts["Denmark"] || 0],
+        ["   Finland", "=", nationalityCounts["Finland"] || 0],
+        ["   Ireland", "=", nationalityCounts["Ireland"] || 0],
+        ["   Norway", "=", nationalityCounts["Norway"] || 0],
+        ["   Sweden", "=", nationalityCounts["Sweden"] || 0],
+        ["   United Kingdom", "=", nationalityCounts["United Kingdom"] || 0],
+        [""], // Empty row for spacing
+        
+        // EUROPE - SOUTHERN EUROPE
+        ["EUROPE - SOUTHERN EUROPE"],
+        ["   Greece", "=", nationalityCounts["Greece"] || 0],
+        ["   Italy", "=", nationalityCounts["Italy"] || 0],
+        ["   Portugal", "=", nationalityCounts["Portugal"] || 0],
+        ["   Spain", "=", nationalityCounts["Spain"] || 0],
+        ["   Union of Serbia and Montenegro", "=", nationalityCounts["Union of Serbia and Montenegro"] || 0],
+        [""], // Empty row for spacing
+        
+        // EUROPE - EASTERN EUROPE
+        ["EUROPE - EASTERN EUROPE"],
+        ["   Poland", "=", nationalityCounts["Poland"] || 0],
+        ["   Russia", "=", nationalityCounts["Russia"] || 0],
+        [""], // Empty row for spacing
+        
+        // AUSTRALASIA/PACIFIC
+        ["AUSTRALASIA/PACIFIC"],
+        ["   Australia", "=", nationalityCounts["Australia"] || 0],
+        ["   Guam", "=", nationalityCounts["Guam"] || 0],
+        ["   Nauru", "=", nationalityCounts["Nauru"] || 0],
+        ["   New Zealand", "=", nationalityCounts["New Zealand"] || 0],
+        ["   Papua New Guinea", "=", nationalityCounts["Papua New Guinea"] || 0],
+        [""], // Empty row for spacing
+        
+        // AFRICA
+        ["AFRICA"],
+        ["   Nigeria", "=", nationalityCounts["Nigeria"] || 0],
+        ["   South Africa", "=", nationalityCounts["South Africa"] || 0],
+        [""], // Empty row for spacing
+        
+        // OTHERS AND UNSPECIFIED RESIDENCES
+        ["OTHERS AND UNSPECIFIED RESIDENCES"],
+        ["   Others and Unspecified Residences", "=", nationalityCounts["Others and Unspecified Residences"] || 0],
+        [""], // Empty row for spacing
+        
+        // Summary totals
+        ["TOTAL NON-PHILIPPINE RESIDENTS", "=", Object.entries(nationalityCounts).filter(([country]) => country !== "Philippines").reduce((sum, [, count]) => sum + count, 0)],
+        [""], // Empty row for spacing
+        ["GRAND TOTAL GUEST ARRIVALS", "=", Object.values(nationalityCounts).reduce((sum, count) => sum + count, 0)],
+        ["   Total Philippine Residents", "=", nationalityCounts["Philippines"] || 0],
+        ["   Total Non-Philippine Residents", "=", Object.entries(nationalityCounts).filter(([country]) => country !== "Philippines").reduce((sum, [, count]) => sum + count, 0)],
+        ["   Total Overseas Filipinos", "=", nationalityCounts["Overseas Filipinos"] || 0],
+      ];
       
-      // ASIA - EAST ASIA
-      ["ASIA - EAST ASIA"],
-      ["   China", "=", nationalityCounts["China"] || 0],
-      ["   Hong Kong", "=", nationalityCounts["Hong Kong"] || 0],
-      ["   Japan", "=", nationalityCounts["Japan"] || 0],
-      ["   Korea", "=", nationalityCounts["Korea"] || 0],
-      ["   Taiwan", "=", nationalityCounts["Taiwan"] || 0],
-      [""], // Empty row for spacing
+      const nationalityWs = XLSX.utils.aoa_to_sheet(nationalityData);
+      XLSX.utils.book_append_sheet(wb, nationalityWs, "Nationality Counts");
       
-      // ASIA - SOUTH ASIA
-      ["ASIA - SOUTH ASIA"],
-      ["   Bangladesh", "=", nationalityCounts["Bangladesh"] || 0],
-      ["   India", "=", nationalityCounts["India"] || 0],
-      ["   Iran", "=", nationalityCounts["Iran"] || 0],
-      ["   Nepal", "=", nationalityCounts["Nepal"] || 0],
-      ["   Pakistan", "=", nationalityCounts["Pakistan"] || 0],
-      ["   Sri Lanka", "=", nationalityCounts["Sri Lanka"] || 0],
-      [""], // Empty row for spacing
-      
-      // MIDDLE EAST
-      ["MIDDLE EAST"],
-      ["   Bahrain", "=", nationalityCounts["Bahrain"] || 0],
-      ["   Egypt", "=", nationalityCounts["Egypt"] || 0],
-      ["   Israel", "=", nationalityCounts["Israel"] || 0],
-      ["   Jordan", "=", nationalityCounts["Jordan"] || 0],
-      ["   Kuwait", "=", nationalityCounts["Kuwait"] || 0],
-      ["   Saudi Arabia", "=", nationalityCounts["Saudi Arabia"] || 0],
-      ["   United Arab Emirates", "=", nationalityCounts["United Arab Emirates"] || 0],
-      [""], // Empty row for spacing
-      
-      // AMERICA - NORTH AMERICA
-      ["AMERICA - NORTH AMERICA"],
-      ["   Canada", "=", nationalityCounts["Canada"] || 0],
-      ["   Mexico", "=", nationalityCounts["Mexico"] || 0],
-      ["   USA", "=", nationalityCounts["USA"] || 0],
-      [""], // Empty row for spacing
-      
-      // AMERICA - SOUTH AMERICA
-      ["AMERICA - SOUTH AMERICA"],
-      ["   Argentina", "=", nationalityCounts["Argentina"] || 0],
-      ["   Brazil", "=", nationalityCounts["Brazil"] || 0],
-      ["   Colombia", "=", nationalityCounts["Colombia"] || 0],
-      ["   Peru", "=", nationalityCounts["Peru"] || 0],
-      ["   Venezuela", "=", nationalityCounts["Venezuela"] || 0],
-      [""], // Empty row for spacing
-      
-      // EUROPE - WESTERN EUROPE
-      ["EUROPE - WESTERN EUROPE"],
-      ["   Austria", "=", nationalityCounts["Austria"] || 0],
-      ["   Belgium", "=", nationalityCounts["Belgium"] || 0],
-      ["   France", "=", nationalityCounts["France"] || 0],
-      ["   Germany", "=", nationalityCounts["Germany"] || 0],
-      ["   Luxembourg", "=", nationalityCounts["Luxembourg"] || 0],
-      ["   Netherlands", "=", nationalityCounts["Netherlands"] || 0],
-      ["   Switzerland", "=", nationalityCounts["Switzerland"] || 0],
-      [""], // Empty row for spacing
-      
-      // EUROPE - NORTHERN EUROPE
-      ["EUROPE - NORTHERN EUROPE"],
-      ["   Denmark", "=", nationalityCounts["Denmark"] || 0],
-      ["   Finland", "=", nationalityCounts["Finland"] || 0],
-      ["   Ireland", "=", nationalityCounts["Ireland"] || 0],
-      ["   Norway", "=", nationalityCounts["Norway"] || 0],
-      ["   Sweden", "=", nationalityCounts["Sweden"] || 0],
-      ["   United Kingdom", "=", nationalityCounts["United Kingdom"] || 0],
-      [""], // Empty row for spacing
-      
-      // EUROPE - SOUTHERN EUROPE
-      ["EUROPE - SOUTHERN EUROPE"],
-      ["   Greece", "=", nationalityCounts["Greece"] || 0],
-      ["   Italy", "=", nationalityCounts["Italy"] || 0],
-      ["   Portugal", "=", nationalityCounts["Portugal"] || 0],
-      ["   Spain", "=", nationalityCounts["Spain"] || 0],
-      ["   Union of Serbia and Montenegro", "=", nationalityCounts["Union of Serbia and Montenegro"] || 0],
-      [""], // Empty row for spacing
-      
-      // EUROPE - EASTERN EUROPE
-      ["EUROPE - EASTERN EUROPE"],
-      ["   Poland", "=", nationalityCounts["Poland"] || 0],
-      ["   Russia", "=", nationalityCounts["Russia"] || 0],
-      [""], // Empty row for spacing
-      
-      // AUSTRALASIA/PACIFIC
-      ["AUSTRALASIA/PACIFIC"],
-      ["   Australia", "=", nationalityCounts["Australia"] || 0],
-      ["   Guam", "=", nationalityCounts["Guam"] || 0],
-      ["   Nauru", "=", nationalityCounts["Nauru"] || 0],
-      ["   New Zealand", "=", nationalityCounts["New Zealand"] || 0],
-      ["   Papua New Guinea", "=", nationalityCounts["Papua New Guinea"] || 0],
-      [""], // Empty row for spacing
-      
-      // AFRICA
-      ["AFRICA"],
-      ["   Nigeria", "=", nationalityCounts["Nigeria"] || 0],
-      ["   South Africa", "=", nationalityCounts["South Africa"] || 0],
-      [""], // Empty row for spacing
-      
-      // OTHERS AND UNSPECIFIED RESIDENCES
-      ["OTHERS AND UNSPECIFIED RESIDENCES"],
-      ["   Others and Unspecified Residences", "=", nationalityCounts["Others and Unspecified Residences"] || 0],
-      [""], // Empty row for spacing
-      
-      // Summary totals
-      ["TOTAL NON-PHILIPPINE RESIDENTS", "=", Object.entries(nationalityCounts).filter(([country]) => country !== "Philippines").reduce((sum, [, count]) => sum + count, 0)],
-      [""], // Empty row for spacing
-      ["GRAND TOTAL GUEST ARRIVALS", "=", Object.values(nationalityCounts).reduce((sum, count) => sum + count, 0)],
-      ["   Total Philippine Residents", "=", nationalityCounts["Philippines"] || 0],
-      ["   Total Non-Philippine Residents", "=", Object.entries(nationalityCounts).filter(([country]) => country !== "Philippines").reduce((sum, [, count]) => sum + count, 0)],
-      ["   Total Overseas Filipinos", "=", nationalityCounts["Overseas Filipinos"] || 0],
-    ];
-    
-    const nationalityWs = XLSX.utils.aoa_to_sheet(nationalityData);
-    XLSX.utils.book_append_sheet(wb, nationalityWs, "Nationality Counts");
-    
-    // Auto-size columns for nationality counts
-    nationalityWs['!cols'] = [
-      { width: 35 }, // Country/Region column
-      { width: 5 },  // Equals sign column
-      { width: 15 }  // Count column
-    ];
+      // Auto-size columns for nationality counts
+      nationalityWs['!cols'] = [
+        { width: 35 }, // Country/Region column
+        { width: 5 },  // Equals sign column
+        { width: 15 }  // Count column
+      ];
     
     saveAs(
       new Blob([XLSX.write(wb, { bookType: "xlsx", type: "array" })], { type: "application/octet-stream" }),
@@ -788,20 +816,18 @@ const SubmissionOverview: React.FC<SubmissionOverviewProps> = ({
                   {/* Room Quick Search and Pagination Controls */}
                   <div className="flex items-center gap-2 flex-wrap">
                     <input
-                      type="number"
-                      placeholder="Room #"
+                      type="text" // Changed from "number" to "text"
+                      placeholder="Room Name"
                       value={roomSearchTerm}
                       onChange={(e) => setRoomSearchTerm(e.target.value)}
                       onKeyPress={handleRoomSearchKeyPress}
-                      min="1"
-                      max={selectedSubmission?.number_of_rooms || 1}
-                      className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 w-20"
+                      className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 w-32" // Slightly wider
                     />
                     <button
                       onClick={handleRoomSearch}
                       className="px-3 py-2 bg-sky-500 text-white rounded-md hover:bg-sky-600 transition-colors text-sm font-medium"
                     >
-                      Go to Room
+                      Search Room
                     </button>
                     <button
                       onClick={resetRoomSearch}
@@ -835,25 +861,26 @@ const SubmissionOverview: React.FC<SubmissionOverviewProps> = ({
                 {selectedSubmission.days?.length > 0 ? (
                   <div className="overflow-x-auto rounded-lg border border-gray-200">
                     <table className="w-full">
-                      <thead>
-                        <tr className="bg-sky-50">
-                          <th className="p-3 text-left text-sm font-medium text-sky-900 border-r sticky left-0 bg-sky-50 z-10" style={{ minWidth: 80, maxWidth: 120 }}>
-                            Day
+                     {/* In the Daily Metrics table header, update the room headers: */}
+                    <thead>
+                      <tr className="bg-sky-50">
+                        <th className="p-3 text-left text-sm font-medium text-sky-900 border-r sticky left-0 bg-sky-50 z-10" style={{ minWidth: 80, maxWidth: 120 }}>
+                          Day
+                        </th>
+                        {visibleRooms.map((roomNum) => (
+                          <th
+                            key={roomNum}
+                            id={`admin-room-${roomNum}`}
+                            className={`p-3 text-left text-sm font-medium text-sky-900 border-r ${
+                              highlightedRoom === roomNum ? "bg-yellow-100 border-yellow-400" : ""
+                            }`}
+                          >
+                            {getRoomName(roomNum)} {/* Use the helper function here */}
                           </th>
-                          {visibleRooms.map((roomNum) => (
-                            <th
-                              key={roomNum}
-                              id={`admin-room-${roomNum}`}
-                              className={`p-3 text-left text-sm font-medium text-sky-900 border-r ${
-                                highlightedRoom === roomNum ? "bg-yellow-100 border-yellow-400" : ""
-                              }`}
-                            >
-                              Room {roomNum}
-                            </th>
-                          ))}
-                          <th className="p-3 text-left text-sm font-medium text-sky-900">Summary</th>
-                        </tr>
-                      </thead>
+                        ))}
+                        <th className="p-3 text-left text-sm font-medium text-sky-900">Summary</th>
+                      </tr>
+                    </thead>
                       <tbody className="divide-y divide-gray-200">
                         {(() => {
                           const getDaysInMonth = (month: number, year: number) => new Date(year, month, 0).getDate();
