@@ -79,22 +79,25 @@ class SubmissionModel {
     return result.rows[0].number_of_rooms;
   }
 
+  // In server/models/submissionModel.js - update createSubmission method
   static async createSubmission(client, submissionData) {
     const {
       user_id, month, year, deadline, currentTime, isLate, penaltyAmount,
-      averageGuestNights, averageRoomOccupancyRate, averageGuestsPerRoom, numberOfRooms
+      averageGuestNights, averageRoomOccupancyRate, averageGuestsPerRoom, numberOfRooms,
+      roomNames // Add roomNames to parameters
     } = submissionData;
 
     const result = await client.query(
       `INSERT INTO submissions 
-       (user_id, month, year, deadline, submitted_at, is_late, penalty_amount,
-        average_guest_nights, average_room_occupancy_rate, average_guests_per_room, number_of_rooms)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-       RETURNING submission_id`,
+      (user_id, month, year, deadline, submitted_at, is_late, penalty_amount,
+        average_guest_nights, average_room_occupancy_rate, average_guests_per_room, 
+        number_of_rooms, room_names)  -- Add room_names column
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      RETURNING submission_id`,
       [
         user_id, month, year, deadline.toISOString(), currentTime.toISOString(),
         isLate, penaltyAmount, averageGuestNights, averageRoomOccupancyRate,
-        averageGuestsPerRoom, numberOfRooms
+        averageGuestsPerRoom, numberOfRooms, JSON.stringify(roomNames) // Store as JSON
       ]
     );
     return result.rows[0].submission_id;
@@ -184,7 +187,7 @@ class SubmissionModel {
     const result = await pool.query(
       `SELECT s.submission_id, s.month, s.year, s.submitted_at, s.is_late, s.penalty,
               s.average_guest_nights, s.average_room_occupancy_rate, s.average_guests_per_room,
-              s.number_of_rooms, u.company_name, u.accommodation_type,
+              s.number_of_rooms, s.room_names, u.company_name, u.accommodation_type,  -- Add room_names
               COALESCE(json_agg(json_build_object(
                 'day', dm.day,
                 'check_ins', dm.check_ins,
@@ -199,11 +202,11 @@ class SubmissionModel {
                   'isCheckIn', g.is_check_in
                 )) FROM guests g WHERE g.metric_id = dm.metric_id), '[]'::json)
               )) FILTER (WHERE dm.metric_id IS NOT NULL), '[]'::json) AS days
-       FROM submissions s
-       LEFT JOIN users u ON s.user_id = u.user_id
-       LEFT JOIN daily_metrics dm ON s.submission_id = dm.submission_id
-       WHERE s.submission_id = $1
-       GROUP BY s.submission_id, u.company_name, u.accommodation_type`,
+      FROM submissions s
+      LEFT JOIN users u ON s.user_id = u.user_id
+      LEFT JOIN daily_metrics dm ON s.submission_id = dm.submission_id
+      WHERE s.submission_id = $1
+      GROUP BY s.submission_id, u.company_name, u.accommodation_type`,
       [submissionId]
     );
     return result.rows[0];
@@ -250,82 +253,6 @@ class SubmissionModel {
     return result.rows[0] || null;
   }
 
-  // Draft related methods
-  // static async saveDraft(client, userId, month, year, data) {
-  //   const cleanData = data.map(item => ({
-  //     day: Number(item.day) || 0,
-  //     room: Number(item.room) || 0,
-  //     guests: Array.isArray(item.guests) ? item.guests.map(guest => ({
-  //       gender: String(guest.gender || ''),
-  //       age: Number(guest.age) || 0,
-  //       status: String(guest.status || ''),
-  //       nationality: String(guest.nationality || ''),
-  //       isCheckIn: Boolean(guest.isCheckIn),
-  //       _isStartDay: guest._isStartDay ?? false,
-  //       _stayId: guest._stayId ?? '',
-  //       _startDay: guest._startDay ?? 0,
-  //       _startMonth: guest._startMonth ?? 0,
-  //       _startYear: guest._startYear ?? 0,
-  //     })) : [],
-  //     lengthOfStay: Number(item.lengthOfStay) || 0,
-  //     isCheckIn: Boolean(item.isCheckIn),
-  //     stayId: String(item.stayId || ''),
-  //     startDay: Number(item.startDay) || 0,
-  //     startMonth: Number(item.startMonth) || 0,
-  //     startYear: Number(item.startYear) || 0,
-  //     isStartDay: Boolean(item.isStartDay)
-  //   }));
-
-  //   await client.query(
-  //     `INSERT INTO draft_submissions (user_id, month, year, data)
-  //      VALUES ($1, $2, $3, $4::jsonb)
-  //      ON CONFLICT (user_id, month, year) 
-  //      DO UPDATE SET data = $4::jsonb, last_updated = CURRENT_TIMESTAMP`,
-  //     [userId, month, year, JSON.stringify(cleanData)]
-  //   );
-  // }
-
-  // static async getDraft(userId, month, year) {
-  //   const result = await pool.query(
-  //     `SELECT data FROM draft_submissions 
-  //      WHERE user_id = $1 AND month = $2 AND year = $3`,
-  //     [userId, month, year]
-  //   );
-  //   return result.rows[0]?.data || [];
-  // }
-
-  // static async deleteDraft(userId, month, year) {
-  //   await pool.query(
-  //     `DELETE FROM draft_submissions 
-  //      WHERE user_id = $1 AND month = $2 AND year = $3`,
-  //     [userId, month, year]
-  //   );
-  // }
-
-  // static async getAllDrafts() {
-  //   const result = await pool.query(
-  //     `SELECT 
-  //        ds.draft_id, ds.user_id, ds.month, ds.year, 
-  //        ds.last_updated, u.company_name
-  //      FROM draft_submissions ds
-  //      JOIN users u ON ds.user_id = u.user_id
-  //      ORDER BY ds.last_updated DESC`
-  //   );
-  //   return result.rows;
-  // }
-
-  // static async getDraftDetails(draftId) {
-  //   const result = await pool.query(
-  //     `SELECT 
-  //        ds.data, ds.month, ds.year,
-  //        u.company_name, u.number_of_rooms
-  //      FROM draft_submissions ds
-  //      JOIN users u ON ds.user_id = u.user_id
-  //      WHERE ds.draft_id = $1`,
-  //     [draftId]
-  //   );
-  //   return result.rows[0];
-  // }
 
   // Add migration method if you want to migrate existing data
 static async migrateDraftSubmissionsToStays() {
@@ -428,21 +355,6 @@ static async migrateDraftSubmissionsToStays() {
     return result.rows;
   }
 
-  // static async getAllDraftsForUser(userId) {
-  //   const result = await pool.query(
-  //     `SELECT month, year, data 
-  //      FROM draft_submissions 
-  //      WHERE user_id = $1
-  //      ORDER BY year ASC, month ASC`,
-  //     [userId]
-  //   );
-
-  //   return result.rows.map(row => ({
-  //     month: row.month,
-  //     year: row.year,
-  //     data: row.data,
-  //   }));
-  // }
 }
 // Export the pool along with the class
 module.exports = {

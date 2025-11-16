@@ -66,6 +66,15 @@ exports.submit = async (req, res) => {
     }
 
     const numberOfRooms = await SubmissionModel.getUserRoomCount(user_id);
+    
+    // Fetch current room names to store with submission
+    const roomNamesResult = await pool.query(
+      "SELECT room_names FROM users WHERE user_id = $1", 
+      [user_id]
+    );
+    const roomNames = roomNamesResult.rows[0]?.room_names || 
+      Array.from({ length: numberOfRooms }, (_, i) => `Room ${i + 1}`);
+
     const deadline = SubmissionModel.calculateDeadline(month, year);
     const currentTime = SubmissionModel.getPhilippinesTime();
     const isLate = currentTime > deadline;
@@ -86,7 +95,8 @@ exports.submit = async (req, res) => {
     await client.query("BEGIN");
     const submissionId = await SubmissionModel.createSubmission(client, {
       user_id, month, year, deadline, currentTime, isLate, penaltyAmount,
-      averageGuestNights, averageRoomOccupancyRate, averageGuestsPerRoom, numberOfRooms
+      averageGuestNights, averageRoomOccupancyRate, averageGuestsPerRoom, 
+      numberOfRooms, roomNames // Pass roomNames
     });
 
     for (const dayData of days) {

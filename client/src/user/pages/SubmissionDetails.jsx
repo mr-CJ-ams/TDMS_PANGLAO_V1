@@ -68,10 +68,11 @@ import Nationality from "../components/Nationality";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 const SubmissionDetails = ({ submissionId }) => {
-  const [submission, setSubmission] = useState({ days: [] }),
-    [loading, setLoading] = useState(true),
-    [error, setError] = useState(null),
-    [showNationalityModal, setShowNationalityModal] = useState(false);
+  const [submission, setSubmission] = useState({ days: [] });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showNationalityModal, setShowNationalityModal] = useState(false);
+  const [roomNames, setRoomNames] = useState([]);
 
   // Pagination and search state
   const [searchTerm, setSearchTerm] = useState("");
@@ -80,19 +81,39 @@ const SubmissionDetails = ({ submissionId }) => {
   const [roomSearchTerm, setRoomSearchTerm] = useState("");
   const [highlightedRoom, setHighlightedRoom] = useState(null);
   const [roomPage, setRoomPage] = useState(1);
-  const roomsPerPage = 20; // You can adjust this number
+  const roomsPerPage = 20;
 
   useEffect(() => {
-    if (!submissionId) return;
-    setLoading(true);
-    axios
-      .get(`${API_BASE_URL}/api/submissions/details/${submissionId}`, {
+  if (!submissionId) return;
+  setLoading(true);
+  
+  const fetchSubmissionData = async () => {
+    try {
+      const submissionRes = await axios.get(`${API_BASE_URL}/api/submissions/details/${submissionId}`, {
         headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` },
-      })
-      .then((res) => setSubmission(res.data))
-      .catch(() => setError("Failed to fetch submission details. Please try again."))
-      .finally(() => setLoading(false));
-  }, [submissionId]);
+      });
+      
+      const submissionData = submissionRes.data;
+      setSubmission(submissionData);
+      
+      // Room names are now included in the submission data
+      // No need to fetch separately
+      
+    } catch (err) {
+      console.error("Error fetching submission:", err);
+      setError("Failed to fetch submission details. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchSubmissionData();
+}, [submissionId]);
+
+  // Get room name safely
+  const getRoomName = (roomNum) => {
+    return submission.room_names?.[roomNum - 1] || `Room ${roomNum}`;
+  };
 
   // Filter and pagination logic
   const getDaysInMonth = (month, year) => {
@@ -180,7 +201,7 @@ const SubmissionDetails = ({ submissionId }) => {
             );
           }, 3000);
         }
-      }, 200); // Wait for table to re-render
+      }, 200);
     } else {
       setHighlightedRoom(null);
     }
@@ -251,12 +272,16 @@ const SubmissionDetails = ({ submissionId }) => {
     [nationalityCounts]
   );
 
-
   const exportDailyMetricsToExcel = () => {
     const getDaysInMonth = (month, year) => {
       return new Date(year, month, 0).getDate();
     };
     const daysInMonth = getDaysInMonth(submission.month, submission.year);
+    
+    // Use current room names or fallback to defaults
+    const currentRoomNames = roomNames.length > 0 
+      ? roomNames 
+      : Array.from({ length: submission.number_of_rooms || 1 }, (_, i) => `Room ${i + 1}`);
     
     // Create workbook with multiple sheets
     const wb = XLSX.utils.book_new();
@@ -264,100 +289,89 @@ const SubmissionDetails = ({ submissionId }) => {
     // Sheet 1: Submission Details
     const submissionDetailsData = [
       ["SUBMISSION DETAILS"],
-      [""], // Empty row for spacing
+      [""],
       ["Month", new Date(0, submission.month - 1).toLocaleString("default", { month: "long" })],
       ["Year", submission.year],
       ["Company Name", submission.company_name || "N/A"],
       ["Accommodation Type", submission.accommodation_type || "N/A"],
       ["Submitted At", new Date(submission.submitted_at).toLocaleString()],
       ["Total Rooms", submission.number_of_rooms],
-      [""], // Empty row for spacing
+      [""],
       ["TOTALS"],
       ["Total No. of Guest Check-Ins", totalCheckIns],
       ["Total No. Guest Staying Overnight", totalOvernight],
       ["Total No. of Occupied Rooms", totalOccupied],
-      [""], // Empty row for spacing
+      [""],
       ["AVERAGES"],
-      ["Ave. Guest-Nights", averageGuestNights],
-      ["Ave. Room Occupancy Rate", `${averageRoomOccupancyRate}%`],
-      ["Ave. Guests per Room", averageGuestsPerRoom],
+      ["Avg. Length of Stay", totalCheckIns > 0 ? (totalOvernight / totalCheckIns).toFixed(2) : "0"],
+      ["Avg. Guest-Nights", averageGuestNights],
+      ["Avg. Room Occupancy Rate", `${averageRoomOccupancyRate}%`],
+      ["Avg. Guests per Room", averageGuestsPerRoom],
     ];
     
     const submissionWs = XLSX.utils.aoa_to_sheet(submissionDetailsData);
     XLSX.utils.book_append_sheet(wb, submissionWs, "Submission Details");
     
-    // Auto-size columns for submission details
     submissionWs['!cols'] = [
-      { width: 25 }, // Label column
-      { width: 20 }  // Value column
+      { width: 25 },
+      { width: 20 }
     ];
     
     // Sheet 2: Daily Metrics
-    // Create headers: Day, Room 1, Room 2, ..., Room N, Summary
     const headers = ["Day"];
     for (let i = 1; i <= submission.number_of_rooms; i++) {
-      headers.push(`Room ${i}`);
+      headers.push(currentRoomNames[i - 1] || `Room ${i}`);
     }
     headers.push("Check-ins", "Overnight", "Occupied");
     
     const data = [headers];
     
-    // Add data for each day
     for (let day = 1; day <= daysInMonth; day++) {
       const dayData = submission.days.find(d => d.day === day);
       const dayGuests = dayData?.guests || [];
       
-      // Group guests by room
       const guestsByRoom = {};
       for (let roomNum = 1; roomNum <= submission.number_of_rooms; roomNum++) {
         guestsByRoom[roomNum] = dayGuests.filter(g => g.room_number === roomNum);
       }
       
-      // Calculate summary
       const totalCheckIns = dayGuests.filter(g => g.isCheckIn).length;
       const totalOvernight = dayGuests.length;
       const totalOccupied = Object.values(guestsByRoom).filter(guests => guests.length > 0).length;
       
       const row = [day];
       
-      // Add room data
       for (let roomNum = 1; roomNum <= submission.number_of_rooms; roomNum++) {
         const roomGuests = guestsByRoom[roomNum] || [];
         if (roomGuests.length > 0) {
           const guestDetails = roomGuests.map(guest => 
             `${guest.isCheckIn ? '✓' : '●'} ${guest.gender}, ${guest.age}, ${guest.status}, ${guest.nationality}`
-          ).join('\n'); // Use line breaks instead of semicolons
+          ).join('\n');
           row.push(guestDetails);
         } else {
           row.push("Empty");
         }
       }
       
-      // Add summary data
       row.push(totalCheckIns, totalOvernight, totalOccupied);
-      
       data.push(row);
     }
     
     const dailyMetricsWs = XLSX.utils.aoa_to_sheet(data);
     XLSX.utils.book_append_sheet(wb, dailyMetricsWs, "Daily Metrics");
     
-    // Auto-size columns for daily metrics
-    const colWidths = [8]; // Day column
+    const colWidths = [8];
     for (let i = 1; i <= submission.number_of_rooms; i++) {
-      colWidths.push(30); // Room columns
+      colWidths.push(30);
     }
-    colWidths.push(12, 12, 12); // Summary columns
+    colWidths.push(12, 12, 12);
     
     dailyMetricsWs['!cols'] = colWidths.map(width => ({ width }));
     
-    // Auto-fit rows for multi-line content
-    const maxRowHeight = 15; // Base row height
     for (let rowIndex = 1; rowIndex < data.length; rowIndex++) {
       const row = data[rowIndex];
       let maxLines = 1;
       
-      // Check each room column for number of lines
       for (let colIndex = 1; colIndex <= submission.number_of_rooms; colIndex++) {
         const cellValue = row[colIndex];
         if (cellValue && cellValue !== "Empty") {
@@ -366,14 +380,13 @@ const SubmissionDetails = ({ submissionId }) => {
         }
       }
       
-      // Set row height based on content
-      const rowHeight = Math.max(maxRowHeight, maxLines * 15);
+      const rowHeight = Math.max(15, maxLines * 15);
       if (!dailyMetricsWs['!rows']) dailyMetricsWs['!rows'] = [];
       dailyMetricsWs['!rows'][rowIndex] = { hpt: rowHeight };
     }
     
-    // Sheet 3: Nationality Counts
-    const nationalityData = [
+    // Sheet 3: Nationality Counts (unchanged)
+      const nationalityData = [
       ["Year", "=", submission.year],
       ["Month", "=", new Date(0, submission.month - 1).toLocaleString("default", { month: "long" })],
       ["(PANGLAO REPORT)", submission.company_name || "Resort"],
@@ -510,11 +523,10 @@ const SubmissionDetails = ({ submissionId }) => {
     const nationalityWs = XLSX.utils.aoa_to_sheet(nationalityData);
     XLSX.utils.book_append_sheet(wb, nationalityWs, "Nationality Counts");
     
-    // Auto-size columns for nationality counts
     nationalityWs['!cols'] = [
-      { width: 35 }, // Country/Region column
-      { width: 5 },  // Equals sign column
-      { width: 15 }  // Count column
+      { width: 35 },
+      { width: 5 },
+      { width: 15 }
     ];
     
     saveAs(
@@ -605,15 +617,21 @@ const SubmissionDetails = ({ submissionId }) => {
             <h3 className="text-lg font-semibold text-slate-800 mb-4">Averages</h3>
             <div className="space-y-4">
               <div>
-                <p className="text-sm text-green-600">Ave. Guest-Nights</p>
+                <p className="text-sm text-green-600">Avg. Length of Stay</p>
+                <p className="text-2xl font-semibold text-slate-800">
+                  {totalCheckIns > 0 ? (totalOvernight / totalCheckIns).toFixed(2) : "0"}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-green-600">Avg. Guest-Nights</p>
                 <p className="text-2xl font-semibold text-slate-800">{averageGuestNights}</p>
               </div>
               <div>
-                <p className="text-sm text-green-600">Ave. Room Occupancy Rate</p>
+                <p className="text-sm text-green-600">Avg. Room Occupancy Rate</p>
                 <p className="text-2xl font-semibold text-slate-800">{averageRoomOccupancyRate}%</p>
               </div>
               <div>
-                <p className="text-sm text-green-600">Ave. Guests per Room</p>
+                <p className="text-sm text-green-600">Avg. Guests per Room</p>
                 <p className="text-2xl font-semibold text-slate-800">{averageGuestsPerRoom}</p>
               </div>
             </div>
@@ -628,7 +646,7 @@ const SubmissionDetails = ({ submissionId }) => {
             >
               View
             </button>
-        </div>
+          </div>
         </div>
         
         {/* Daily Metrics Table */}
@@ -638,32 +656,31 @@ const SubmissionDetails = ({ submissionId }) => {
             
             {/* Search and Filter Controls */}
             <div className="flex flex-wrap gap-4 items-center mb-4">
-              
               {/* Room Quick Search */}
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                placeholder="Room #"
-                value={roomSearchTerm}
-                onChange={(e) => setRoomSearchTerm(e.target.value)}
-                onKeyPress={handleRoomSearchKeyPress}
-                min="1"
-                max={submission?.number_of_rooms || 1}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 w-20"
-              />
-              <button
-                onClick={handleRoomSearch}
-                className="px-3 py-2 bg-cyan-500 text-white rounded-md hover:bg-cyan-600 transition-colors text-sm font-medium"
-              >
-                Search Room
-              </button>
-              <button
-                onClick={scrollToSummary}
-                className="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm font-medium"
-              >
-                View Summary
-              </button>
-            </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  placeholder="Room #"
+                  value={roomSearchTerm}
+                  onChange={(e) => setRoomSearchTerm(e.target.value)}
+                  onKeyPress={handleRoomSearchKeyPress}
+                  min="1"
+                  max={submission?.number_of_rooms || 1}
+                  className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 w-20"
+                />
+                <button
+                  onClick={handleRoomSearch}
+                  className="px-3 py-2 bg-cyan-500 text-white rounded-md hover:bg-cyan-600 transition-colors text-sm font-medium"
+                >
+                  Search Room
+                </button>
+                <button
+                  onClick={scrollToSummary}
+                  className="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm font-medium"
+                >
+                  View Summary
+                </button>
+              </div>
               
               <button
                 onClick={resetFilters}
@@ -673,25 +690,25 @@ const SubmissionDetails = ({ submissionId }) => {
               </button>
 
               {/* Pagination Controls */}
-          <div className="flex justify-end items-center gap-2 p-4">
-            <button
-              disabled={roomPage === 1}
-              onClick={() => setRoomPage(roomPage - 1)}
-              className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300"
-            >
-              Prev
-            </button>
-            <span>
-              Page {roomPage} of {totalRoomPages}
-            </span>
-            <button
-              disabled={roomPage === totalRoomPages}
-              onClick={() => setRoomPage(roomPage + 1)}
-              className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300"
-            >
-              Next
-            </button>
-          </div>
+              <div className="flex justify-end items-center gap-2 p-4">
+                <button
+                  disabled={roomPage === 1}
+                  onClick={() => setRoomPage(roomPage - 1)}
+                  className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                >
+                  Prev
+                </button>
+                <span>
+                  Page {roomPage} of {totalRoomPages}
+                </span>
+                <button
+                  disabled={roomPage === totalRoomPages}
+                  onClick={() => setRoomPage(roomPage + 1)}
+                  className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                >
+                  Next
+                </button>
+              </div>
             </div>
             
             {/* Results Summary */}
@@ -723,7 +740,7 @@ const SubmissionDetails = ({ submissionId }) => {
                         highlightedRoom === roomNum ? 'bg-yellow-100 border-yellow-400' : ''
                       }`}
                     >
-                      Room {roomNum}
+                      {getRoomName(roomNum)} {/* Use the helper function here */}
                     </th>
                   ))}
                   <th
@@ -799,15 +816,15 @@ const SubmissionDetails = ({ submissionId }) => {
                             <span className="font-medium">{totalOccupied}</span>
                           </div>
                         </div>
-                    </td>
-                  </tr>
+                      </td>
+                    </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
-          
         </div>
+        
         {/* Nationality Modal */}
         <Modal show={showNationalityModal} onHide={() => setShowNationalityModal(false)}>
           <Modal.Header closeButton>

@@ -102,9 +102,6 @@ const SubmissionHistory = ({ user }) => {
                   <th className="px-4 py-3 text-left font-medium">Year</th>
                   <th className="px-4 py-3 text-left font-medium">Submitted At</th>
                   <th className="px-4 py-3 text-left font-medium">Status</th>
-                  <th className="px-4 py-3 text-left font-medium">Ave. Guest-Nights</th>
-                  <th className="px-4 py-3 text-left font-medium">Ave. Room Occupancy Rate</th>
-                  <th className="px-4 py-3 text-left font-medium">Ave. Guests/Room</th>
                   <th className="px-4 py-3 text-left font-medium">Note</th>
                   <th className="px-4 py-3 text-left font-medium">Actions</th>
                 </tr>
@@ -128,9 +125,6 @@ const SubmissionHistory = ({ user }) => {
                         {sub.is_late ? "Late" : "On-Time"}
                       </span>
                     </td>
-                    <td className="px-4 py-3">{sub.average_guest_nights}</td>
-                    <td className="px-4 py-3">{sub.average_room_occupancy_rate}%</td>
-                    <td className="px-4 py-3">{sub.average_guests_per_room}</td>
                     <td className="px-4 py-3">
                       {sub.is_late ? (
                         sub.penalty ? (

@@ -569,6 +569,7 @@ const doSubmitForm = async () => {
           room.guests.map(guest => ({ roomNumber: room.room, ...guest }))
         ),
       })),
+      roomNames: roomNames // Add roomNames to submission data
     };
     
     await axios.post(`${API_BASE_URL}/api/submissions/submit`, submissionData, { 
