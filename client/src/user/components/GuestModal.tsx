@@ -474,14 +474,6 @@ const confirmSetLengthOfStayToOneAndDelete = async () => {
                         <code className="text-primary" style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>
                           {formatGuestId(guest._stayId)}
                         </code>
-                        {guest._startDay && (
-                          <small className="text-muted d-block mt-1">
-                            Start: Day {guest._startDay} • Length: {guest.lengthOfStay} days • 
-                            <span className={guest._isStartDay ? "text-success fw-bold" : "text-muted"}>
-                              {guest._isStartDay ? " Currently on Start Day" : " Following Day"}
-                            </span>
-                          </small>
-                        )}
                       </div>
                       <button
                         type="button"
@@ -495,7 +487,7 @@ const confirmSetLengthOfStayToOneAndDelete = async () => {
                     <small className="text-muted">
                       {guest._isStartDay 
                         ? "You can edit or delete this guest from their start day."
-                        : "This guest is read-only. Edit or delete from their start day (Day " + guest._startDay + ")."
+                        : "This guest is read-only. Edit or delete from their start day (" + guest._startMonth + "/"+ guest._startDay +"/"+ guest._startYear +")."
                       }
                     </small>
                   </div>
@@ -690,7 +682,7 @@ const confirmSetLengthOfStayToOneAndDelete = async () => {
                 {!showActionButtons(guest) && (
                   <div className="text-center mt-2 p-2 bg-light rounded">
                     <small className="text-muted">
-                      This guest is read-only. Edit or delete from their start day (Day {guest._startDay}).
+                      This guest is read-only. Edit or delete from their start day ({guest._startMonth}/{guest._startDay}/{guest._startYear}).
                     </small>
                   </div>
                 )}
