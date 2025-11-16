@@ -1,6 +1,6 @@
 import { useState } from "react";
 import nationalities from "./Nationality";
-import { Trash2, PlusIcon, X, Edit, Save, X as CancelIcon, Copy, Clock } from "lucide-react"; // Add Clock icon
+import { Trash2, PlusIcon, X, Edit, Save, X as CancelIcon, Copy, Clock, Trash } from "lucide-react"; // Add Clock icon
 
 interface GuestModalProps {
   day: number;
@@ -500,30 +500,35 @@ const confirmSetLengthOfStayToOneAndDelete = async () => {
 
                 {/* Per-guest check-in toggle - only editable in edit mode */}
                 <div className="form-group mb-2">
-                  <label className="form-label fw-bold">Guest check-in today?</label>
-                  <div className="d-flex gap-2">
-                    <button
-                      type="button"
-                      className={`btn ${guest.isCheckIn ? "btn-warning" : "btn-outline-warning"} flex-fill`}
-                      onClick={() => handleUpdateGuest(idx, "isCheckIn", "true")}
-                      disabled={disabled || !isGuestEditable(guest)}
-                    >
-                      Yes
-                    </button>
-                    <button
-                      type="button"
-                      className={`btn ${!guest.isCheckIn ? "btn-primary" : "btn-outline-primary"} flex-fill`}
-                      onClick={() => handleUpdateGuest(idx, "isCheckIn", "false")}
-                      disabled={disabled || !isGuestEditable(guest)}
-                    >
-                      No
-                    </button>
-                  </div>
-                  <small className="form-text text-muted">
-                    {guest.isCheckIn
-                      ? "✅ This will count as a check-in and the start day cell will be yellow"
-                      : "ℹ️ This will NOT count as a check-in and the start day cell will be blue"}
-                  </small>
+                 <label className="form-label fw-bold">Is the Guest checking in this day?</label>
+                <div className="d-flex gap-2">
+                  <button
+                    type="button"
+                    className={`btn ${guest.isCheckIn ? "btn-warning" : "btn-outline-warning"} flex-fill`}
+                    onClick={() => handleUpdateGuest(idx, "isCheckIn", "true")}
+                    disabled={disabled || !isGuestEditable(guest)}
+                    style={{ color: guest.isCheckIn ? "black" : "black" }} // always black
+                  >
+                    Yes, checking in today
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`btn ${!guest.isCheckIn ? "btn-primary" : "btn-outline-primary"} flex-fill`}
+                    onClick={() => handleUpdateGuest(idx, "isCheckIn", "false")}
+                    disabled={disabled || !isGuestEditable(guest)}
+                    style={{ color: !guest.isCheckIn ? "white" : "black" }} // white when active, black otherwise
+                  >
+                    No, staying from a previous day
+                  </button>
+                </div>
+
+                <small className="form-text text-muted">
+                  {guest.isCheckIn
+                    ? "✅ This will count as a check-in and the start day cell will be yellow"
+                    : "ℹ️ This will NOT count as a check-in and the start day cell will be blue"}
+                </small>
+
                 </div>
                 
                 <div className="row">
@@ -644,10 +649,18 @@ const confirmSetLengthOfStayToOneAndDelete = async () => {
                         {canEditGuest(guest) && (
                           <>
                             <button
-                              className="btn btn-info btn-sm d-flex align-items-center gap-1"
+                              className="btn btn-warning btn-sm d-flex align-items-center gap-1"
+                              onClick={() => handleEditGuest(idx)}
+                              disabled={disabled}
+                            >
+                              <Edit size={14} />
+                              Edit
+                            </button>
+                            <button
+                              className="btn btn-danger btn-sm d-flex align-items-center gap-1"
                               onClick={() => handleSetLengthOfStayToOneAndDelete(idx)}
                               disabled={disabled || processingOneDay === idx}
-                              title="Set length of stay to 1 day and refresh data"
+                              title="Remove Guest Entire Stay"
                             >
                               {processingOneDay === idx ? (
                                 <>
@@ -659,31 +672,12 @@ const confirmSetLengthOfStayToOneAndDelete = async () => {
                               ) : (
                                 <>
                                   <Trash2 size={14} />
-                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-                                  </svg>
-                                  1 Day
+                                  Delete
                                 </>
                               )}
                             </button>
-                            <button
-                              className="btn btn-warning btn-sm d-flex align-items-center gap-1"
-                              onClick={() => handleEditGuest(idx)}
-                              disabled={disabled}
-                            >
-                              <Edit size={14} />
-                              Edit
-                            </button>
                           </>
                         )}
-                        <button
-                          className="btn btn-danger btn-sm d-flex align-items-center gap-1"
-                          onClick={() => handleRemoveGuest(idx)}
-                          disabled={disabled || !canDeleteGuest(guest)}
-                          title={canDeleteGuest(guest) ? "Remove guest from all days" : "Cannot remove from following days"}
-                        >
-                          <Trash2 size={14} />
-                        </button>
                       </>
                     )}
                   </div>
@@ -701,15 +695,15 @@ const confirmSetLengthOfStayToOneAndDelete = async () => {
             ))}
 
             {/* Add Guest button - Always show at bottom */}
-            <div className="flex justify-end mt-3">
-              <button
-                className="btn btn-success d-flex align-items-center justify-center gap-2"
-                onClick={handleAddGuest}
-                disabled={disabled}
-              >
-                <PlusIcon size={16} /> Add Guest
-              </button>
-            </div>
+            <div className="flex justify-center mt-3 w-full">
+            <button
+              className="btn btn-success d-flex align-items-center justify-center gap-2 w-full"
+              onClick={handleAddGuest}
+              disabled={disabled}
+            >
+              <PlusIcon size={16} /> Add Guest
+            </button>
+          </div>
           </div>
           <div className="modal-footer">
             <div className="flex justify-between items-center w-full">
@@ -841,13 +835,12 @@ const confirmSetLengthOfStayToOneAndDelete = async () => {
           <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full">
             <div className="flex items-center gap-3 mb-4">
               <div className="bg-blue-100 p-2 rounded-full">
-                <Clock size={24} className="text-blue-600" />
+                <Trash size={24} className="text-red-600" />
               </div>
-              <h3 className="text-xl font-semibold text-blue-700">Set to 1 Day</h3>
+              <h3 className="text-xl font-semibold text-blue-700">Delete entire stay?</h3>
             </div>
             <p className="mb-6 text-gray-700">
-              This will set the guest's length of stay to <strong>1 day only</strong> and remove them from all future days. 
-              The data will be automatically refreshed after this operation.
+              This will remove all guest data for the entire duration of the stay. This action cannot be undone.
             </p>
             <div className="flex justify-end gap-2">
               <button
@@ -858,9 +851,9 @@ const confirmSetLengthOfStayToOneAndDelete = async () => {
               </button>
               <button
                 onClick={confirmSetLengthOfStayToOneAndDelete}
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
               >
-                Set to 1 Day
+                Confirm
               </button>
             </div>
           </div>
