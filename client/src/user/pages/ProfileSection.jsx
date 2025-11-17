@@ -54,9 +54,7 @@
 
 import React, { useState } from "react";
 import { Edit2, Save, X } from "lucide-react";
-import axios from "axios";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+import { authAPI } from "../../services/api";
 
 const ProfileSection = ({ user, onUpdateRooms, token }) => {
   const [editingRooms, setEditingRooms] = useState(false);
@@ -66,13 +64,14 @@ const ProfileSection = ({ user, onUpdateRooms, token }) => {
 
   const handleUpdateRooms = async (e) => {
     e.preventDefault();
-    await axios.put(
-      `${API_BASE_URL}/api/auth/update-rooms`,
-      { number_of_rooms: newNumberOfRooms },
-      { headers: { Authorization: `Bearer ${token}` } },
-    );
-    await onUpdateRooms(newNumberOfRooms);
-    setEditingRooms(false);
+    try {
+      await authAPI.updateRooms(parseInt(newNumberOfRooms));
+      await onUpdateRooms(newNumberOfRooms);
+      setEditingRooms(false);
+    } catch (error) {
+      console.error("Error updating rooms:", error);
+      // You might want to show an error message to the user here
+    }
   };
 
   const formatDate = (dateString) => {
@@ -108,7 +107,6 @@ const ProfileSection = ({ user, onUpdateRooms, token }) => {
             {/* Basic Info */}
             <Section title="Basic Information">
               <Grid2>
-
                 <Field label="Email" value={user.email} />
                 <Field label="Phone Number" value={user.phone_number} />
                 <Field label="Registered Owner" value={user.registered_owner} />

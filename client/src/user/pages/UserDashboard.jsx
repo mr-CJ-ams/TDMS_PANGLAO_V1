@@ -58,9 +58,10 @@
  * Date: [2025-08-21]
  */
 
+// FILE: client\src\user\pages\UserDashboard.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { authAPI } from "../../services/api"; // Import the API instance
 import Sidebar from "../components/Sidebar";
 import ProfileSection from "./ProfileSection";
 import SubmissionForm from "./SubmissionForm";
@@ -71,9 +72,6 @@ import Homepage from "../components/Homepage";
 import MainDashboard from "../../admin/pages/MainDashboard";
 import '../../components/MenuButton.css';
 
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
-
 const UserDashboard = () => {
   const [user, setUser] = useState(null),
     [activeSection, setActiveSection] = useState(() => {
@@ -82,29 +80,28 @@ const UserDashboard = () => {
     [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Add this line to define token
-  const token = sessionStorage.getItem("token");
-
   useEffect(() => {
     (async () => {
       try {
-        const { data } = await axios.get(`${API_BASE_URL}/api/auth/user`, { headers: { Authorization: `Bearer ${token}` } });
-        setUser(data);
+        // Use the API instance instead of direct axios call
+        const userData = await authAPI.getUser();
+        setUser(userData);
       } catch (err) {
         console.error("Error fetching user details:", err);
       }
     })();
-  }, [token]);
+  }, []); // Remove token dependency since it's handled by interceptor
 
   const handleLogout = () => {
     sessionStorage.removeItem("token");
+    sessionStorage.removeItem("user");
     navigate("/login");
   };
 
-  const handleUpdateRooms = async newNumberOfRooms => {
+  const handleUpdateRooms = async (newNumberOfRooms) => {
     try {
-      const token = sessionStorage.getItem("token");
-      await axios.put(`${API_BASE_URL}/api/auth/update-rooms`, { number_of_rooms: newNumberOfRooms }, { headers: { Authorization: `Bearer ${token}` } });
+      // Use the API instance instead of direct axios call
+      await authAPI.updateRooms(newNumberOfRooms);
       setUser(u => ({ ...u, number_of_rooms: newNumberOfRooms }));
     } catch (err) {
       console.error("Error updating number of rooms:", err);
@@ -150,7 +147,7 @@ const UserDashboard = () => {
               {activeSection === "submission-input" && <SubmissionForm />}
               {activeSection === "submission-history" && <SubmissionHistory user={user} />}
               {activeSection === "user-statistics" && <UserStatistics user={user} />}
-              {activeSection === "profile-management" && <ProfileSection user={user} onUpdateRooms={handleUpdateRooms} token={token}/>}
+              {activeSection === "profile-management" && <ProfileSection user={user} onUpdateRooms={handleUpdateRooms} />}
               {activeSection === "admin-dashboard" && <MainDashboard user={user} />}
               {activeSection === "help-support" && <HelpSupport />}
             </div>

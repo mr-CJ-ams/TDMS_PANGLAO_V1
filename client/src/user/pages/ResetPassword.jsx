@@ -53,11 +53,9 @@
  */
 
 import { useEffect, useState } from "react";
+import { authAPI } from "../../services/api";
 import { Check, X, Loader2 } from "lucide-react";
-import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 const ResetPassword = () => {
   const [password, setPassword] = useState(""),
@@ -88,8 +86,8 @@ const ResetPassword = () => {
     if (!isPasswordValid) return setMessage({ type: "error", text: "Password does not meet all requirements" });
     setIsLoading(true); setMessage(null);
     try {
-      const res = await axios.post(`${API_BASE_URL}/api/auth/reset-password`, { token, password });
-      setMessage({ type: "success", text: res.data.message });
+      const response = await authAPI.resetPassword(token, password);
+      setMessage({ type: "success", text: response.message });
       setTimeout(() => navigate("/login"), 3000);
     } catch (err) {
       setMessage({ type: "error", text: err.response?.data?.message || "Error: Could not reset password. Please try again." });

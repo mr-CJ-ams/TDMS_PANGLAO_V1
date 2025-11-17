@@ -55,8 +55,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+import { authAPI } from "../../services/api";
 
 const EmailVerification = () => {
   const [searchParams] = useSearchParams();
@@ -80,24 +79,20 @@ const EmailVerification = () => {
     // Verify the email
     const verifyEmail = async () => {
       try {
-        const response = await fetch(
-          `${API_BASE_URL}/api/auth/verify-email?token=${token}&email=${encodeURIComponent(emailParam)}`
-        );
-        const data = await response.json();
+        const response = await authAPI.verifyEmail(emailParam, token);
 
-        if (data.success) {
+        if (response.success) {
           setVerificationStatus("success");
-          setMessage(data.message);
+          setMessage(response.message);
         } else {
           // If verification failed, check if email is already verified
-          const statusRes = await fetch(`${API_BASE_URL}/api/auth/check-email-verification?email=${encodeURIComponent(emailParam)}`);
-          const statusData = await statusRes.json();
-          if (statusData.success && statusData.verified) {
+          const statusRes = await authAPI.checkEmailVerification(emailParam);
+          if (statusRes.success && statusRes.verified) {
             setVerificationStatus("success");
             setMessage("Your email is already verified! You can now complete your registration.");
           } else {
             setVerificationStatus("error");
-            setMessage(data.message || "Verification failed. Please try again.");
+            setMessage(response.message || "Verification failed. Please try again.");
           }
         }
       } catch (error) {

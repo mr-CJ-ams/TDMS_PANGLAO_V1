@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { adminAPI } from "../../services/api";
 import { X, Search, ChevronUp, ChevronDown } from "lucide-react";
 
 interface User {
@@ -51,7 +52,6 @@ const UserApproval = ({
     message: string;
     onClose?: () => void;
   }>({ show: false, title: "", message: "" });
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
   const filteredAndSortedUsers = useMemo(() => {
     return users
@@ -80,16 +80,9 @@ const UserApproval = ({
   const deactivateUser = async (userId: string | null) => {
     if (!userId) return;
     try {
-      const token = sessionStorage.getItem("token");
-      const res = await fetch(`${API_BASE_URL}/api/admin/deactivate/${userId}`, { 
-        method: "PUT", 
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        } 
-      });
-      const data = await res.json();
-      if (res.ok) {
+      const response = await adminAPI.deactivateUser(parseInt(userId));
+      
+      if (response.message) {
         setModal({
           show: true,
           title: "Success",
@@ -97,21 +90,23 @@ const UserApproval = ({
           onClose: () => {
             setShowDeactivateModal(false);
             setModal(m => ({ ...m, show: false }));
+            // Refresh the page to show updated user status
+            window.location.reload();
           }
         });
       } else {
         setModal({
           show: true,
           title: "Error",
-          message: `Failed to deactivate user: ${data.message || "Unknown error"}`,
+          message: `Failed to deactivate user: ${response.error || "Unknown error"}`,
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deactivating user:", error);
       setModal({
         show: true,
         title: "Error",
-        message: "An error occurred while deactivating the user",
+        message: error.response?.data?.message || "An error occurred while deactivating the user",
       });
     }
   };

@@ -55,10 +55,8 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Mail, ArrowLeft, CheckCircle } from "lucide-react";
-import TourismLogo from "../components/img/Tourism_logo.png";
+import { authAPI } from "../../services/api";
 import DolphinSpinner from "../components/DolphinSpinner";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 const EmailVerificationRequest = () => {
   const navigate = useNavigate();
@@ -96,19 +94,13 @@ const EmailVerificationRequest = () => {
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/request-email-verification`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
+      const response = await authAPI.requestEmailVerification(email);
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (response.success) {
         setSuccess(true);
-        setMessage(data.message);
+        setMessage(response.message);
       } else {
-        setError(data.message || "Failed to send verification email");
+        setError(response.message || "Failed to send verification email");
       }
     } catch (err) {
       console.error("Error requesting verification:", err);

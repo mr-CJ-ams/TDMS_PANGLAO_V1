@@ -50,11 +50,9 @@
  */
 
 import React, { useState } from "react";
-import axios from "axios";
+import { authAPI } from "../../services/api";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState(""),
@@ -66,8 +64,8 @@ const ForgotPassword = () => {
     e.preventDefault();
     setIsLoading(true); setMessage("");
     try {
-      const res = await axios.post(`${API_BASE_URL}/api/auth/forgot-password`, { email });
-      setMessage(res.data.message); setIsSuccess(true);
+      const response = await authAPI.forgotPassword(email);
+      setMessage(response.message); setIsSuccess(true);
     } catch (err) {
       setMessage("Error: Could not send reset link. Please try again."); setIsSuccess(false);
     } finally {

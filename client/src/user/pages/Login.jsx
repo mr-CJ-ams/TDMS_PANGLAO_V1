@@ -57,12 +57,11 @@
 
 
 import React, { useState } from "react";
-import axios from "axios";
+import { authAPI } from "../../services/api"; // Import the API instance
 import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff, HelpCircle } from "lucide-react";
 import DolphinSpinner from "../components/DolphinSpinner";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 const LOGIN_TIMEOUT = 30000;
 
 const Login = () => {
@@ -77,17 +76,22 @@ const Login = () => {
     e.preventDefault();
     if (isSubmitting) return;
     setIsSubmitting(true); setError(null);
+    
     const timeoutId = setTimeout(() => {
       setIsSubmitting(false);
       setError("Login is taking longer than expected. Please try again.");
     }, LOGIN_TIMEOUT);
+    
     try {
-      const { data } = await axios.post(`${API_BASE_URL}/api/auth/login`, { email, password });
+      // Use the API instance instead of direct axios call
+      const data = await authAPI.login({ email, password });
       clearTimeout(timeoutId);
+      
       if (data.message === "Account is deactivated") {
         setError("Your account has been deactivated. Please contact the administrator.");
         return;
       }
+      
       sessionStorage.setItem("token", data.token);
 
       // Only store safe fields
@@ -107,13 +111,19 @@ const Login = () => {
         // Add other non-sensitive fields as needed
       };
       sessionStorage.setItem("user", JSON.stringify(safeUser));
+      
       if (data.user.role === "admin") {
         navigate("/admin/dashboard");
       } else {
         navigate("/user/dashboard");
       }
-    } catch {
-      setError("Invalid credentials or account is deactivated");
+    } catch (err) {
+      // Handle different error types from the API instance
+      if (err.response?.data) {
+        setError(err.response.data.message || "Invalid credentials or account is deactivated");
+      } else {
+        setError("Invalid credentials or account is deactivated");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -179,7 +189,6 @@ const Login = () => {
           <p>
             <Link to="/forgot-password" className="text-cyan-600 hover:text-cyan-700">Forgot Password?</Link>
           </p>
-
         </div>
       </div>
       <button

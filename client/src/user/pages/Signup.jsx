@@ -56,15 +56,13 @@
  * Author: Carlojead Amaquin
  * Date: [2025-08-21]
  */ 
-
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import { authAPI } from "../../services/api";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Eye, EyeOff, Check, X, Mail } from "lucide-react";
 import places from "../../components/places.json";
 import DolphinSpinner from "../components/DolphinSpinner";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 const SIGNUP_TIMEOUT = 30000;
 const accommodationTypes = [
   { name: "Hotel", code: "HTL" }, { name: "Condotel", code: "CON" }, { name: "Serviced Residence", code: "SER" },
@@ -75,7 +73,6 @@ const accommodationTypes = [
 const Signup = () => {
   const location = useLocation();
   const [formData, setFormData] = useState({
-
     email: "", password: "", confirmPassword: "", phoneNumber: "",
     registeredOwner: "", tin: "", companyName: "", companyAddress: "",
     accommodationType: "", numberOfRooms: "", region: "", province: "", municipality: "", barangay: "", dateEstablished: "",
@@ -111,12 +108,11 @@ const Signup = () => {
     if (!email) return;
     
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/check-email-verification?email=${encodeURIComponent(email)}`);
-      const data = await response.json();
+      const response = await authAPI.checkEmailVerification(email);
       
-      if (data.success) {
-        setEmailVerified(data.verified);
-        setEmailVerificationStatus(data.verified ? "verified" : "unverified");
+      if (response.success) {
+        setEmailVerified(response.verified);
+        setEmailVerificationStatus(response.verified ? "verified" : "unverified");
       } else {
         setEmailVerified(false);
         setEmailVerificationStatus("unverified");
@@ -211,26 +207,22 @@ const Signup = () => {
         dateEstablished: formData.dateEstablished,
       };
 
-      const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      // Use API instance instead of direct fetch
+      const response = await authAPI.signup(payload);
       clearTimeout(timeoutId);
       
-      const data = await response.json();
-      if (data.success) {
+      if (response.success) {
         setModal({
           show: true,
           title: "Registration Successful",
-          message: data.message,
+          message: response.message,
           onClose: () => {
             setModal(m => ({ ...m, show: false }));
             navigate("/login");
           }
         });
       } else {
-        setSubmitError(data.message || "Signup failed. Please try again.");
+        setSubmitError(response.message || "Signup failed. Please try again.");
       }
     } catch (err) {
       setSubmitError(err.response?.data?.message || "Signup failed. Please try again.");

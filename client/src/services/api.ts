@@ -1,4 +1,4 @@
-// FILE: client\src\services\api.ts
+
 import axios, { AxiosResponse } from 'axios';
 import { 
   User, 
@@ -69,23 +69,51 @@ export const authAPI = {
   },
 
   getUser: async (): Promise<User> => {
-    const response: AxiosResponse<User> = await apiClient.get('/api/auth/user');  // ← Changed from '/auth/user'
+    const response: AxiosResponse<User> = await apiClient.get('/api/auth/user');
     return response.data;
   },
 
   updateRooms: async (numberOfRooms: number): Promise<ApiResponse<User>> => {
-    const response: AxiosResponse<ApiResponse<User>> = await apiClient.put('/api/auth/update-rooms', { number_of_rooms: numberOfRooms });  // ← Changed
+    const response: AxiosResponse<ApiResponse<User>> = await apiClient.put('/api/auth/update-rooms', { number_of_rooms: numberOfRooms });
     return response.data;
   },
 
   // Room names endpoints
   getRoomNames: async (userId: number): Promise<{ roomNames: string[] }> => {
-    const response: AxiosResponse<{ roomNames: string[] }> = await apiClient.get(`/api/auth/user/${userId}/room-names`);  // ← Changed
+    const response: AxiosResponse<{ roomNames: string[] }> = await apiClient.get(`/api/auth/user/${userId}/room-names`);
     return response.data;
   },
 
   updateRoomNames: async (userId: number, roomNames: string[]): Promise<ApiResponse<any>> => {
-    const response: AxiosResponse<ApiResponse<any>> = await apiClient.post(`/api/auth/user/${userId}/room-names`, { roomNames });  // ← Changed
+    const response: AxiosResponse<ApiResponse<any>> = await apiClient.post(`/api/auth/user/${userId}/room-names`, { roomNames });
+    return response.data;
+  },
+
+  // Email verification endpoints
+  requestEmailVerification: async (email: string): Promise<ApiResponse<{ message: string }>> => {
+    const response: AxiosResponse<ApiResponse<{ message: string }>> = await apiClient.post('/api/auth/request-email-verification', { email });
+    return response.data;
+  },
+
+  verifyEmail: async (email: string, token: string): Promise<ApiResponse<{ message: string }>> => {
+    const response: AxiosResponse<ApiResponse<{ message: string }>> = await apiClient.get('/api/auth/verify-email', {
+      params: { email, token }
+    });
+    return response.data;
+  },
+
+  checkEmailVerification: async (email: string): Promise<ApiResponse<{ verified: boolean }>> => {
+    const response: AxiosResponse<ApiResponse<{ verified: boolean }>> = await apiClient.get('/api/auth/check-email-verification', {
+      params: { email }
+    });
+    return response.data;
+  },
+
+  // Profile picture upload (if needed elsewhere)
+  uploadProfilePicture: async (formData: FormData): Promise<ApiResponse<{ profile_picture: string }>> => {
+    const response: AxiosResponse<ApiResponse<{ profile_picture: string }>> = await apiClient.post('/api/auth/upload-profile-picture', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
     return response.data;
   },
 };
@@ -158,7 +186,6 @@ export const submissionsAPI = {
     await apiClient.delete(`/api/submissions/draft-stays/${userId}/${day}/${month}/${year}/${room}`);
   },
 
-
   getAllDraftStaysForUser: async (userId: number): Promise<any[]> => {
     const response: AxiosResponse<any[]> = await apiClient.get(`/api/submissions/draft-stays/${userId}`);
     return response.data;
@@ -174,7 +201,7 @@ export const submissionsAPI = {
     return response.data;
   },
 
-   // Add these statistics endpoints
+  // Add these statistics endpoints
   getUserStatistics: async (userId: number): Promise<any[]> => {
     const response: AxiosResponse<any[]> = await apiClient.get(`/api/submissions/statistics/${userId}`);
     return response.data;
@@ -200,7 +227,6 @@ export const submissionsAPI = {
     });
     return response.data;
   },
-
 };
 
 // Admin API
@@ -231,11 +257,8 @@ export const adminAPI = {
   },
 
   deactivateUser: async (userId: number): Promise<ApiResponse<any>> => {
-    const response = await fetch(`${API_BASE_URL}/admin/deactivate/${userId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" }
-    });
-    return response.json();
+    const response: AxiosResponse<ApiResponse<any>> = await apiClient.put(`/admin/deactivate/${userId}`);
+    return response.data;
   },
 
   getMonthlyCheckIns: async (year: number): Promise<MonthlyMetrics[]> => {
