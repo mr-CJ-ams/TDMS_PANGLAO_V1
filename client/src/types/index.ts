@@ -19,10 +19,21 @@ export interface User {
 
 // Guest Types
 export interface Guest {
-  name: string;
-  age: number;
-  nationality: string;
+  room_number: number;
   isCheckIn: boolean;
+  gender: string;
+  age: string; // Changed from number to string to match your data
+  status: string;
+  nationality: string;
+  name?: string; // Optional since your data might not have names
+}
+
+export interface DayData {
+  day: number;
+  guests: Guest[];
+  check_ins?: number; // Added optional fields for calculated data
+  overnight?: number;
+  occupied?: number;
 }
 
 // Room Occupancy Types
@@ -38,16 +49,23 @@ export interface RoomOccupancy {
 
 // Submission Types
 export interface Submission {
-  submission_id: number;
-  user_id: number;
+  submission_id: string; // Changed from number to string
+  user_id: string; // Changed from number to string
+  company_name: string; // Added this missing property
   month: number;
   year: number;
-  days: RoomOccupancy[];
-  is_submitted: boolean;
-  is_approved: boolean;
-  penalty: boolean;
-  created_at: string;
-  updated_at: string;
+  submitted_at: string; // Added this missing property
+  penalty?: boolean;
+  receipt_number?: string;
+  accommodation_type?: string;
+  number_of_rooms: number; // Added this missing property
+  days: DayData[];
+  is_submitted?: boolean; // Made optional since your data might not have it
+  is_approved?: boolean; // Made optional
+  created_at?: string; // Made optional
+  updated_at?: string; // Made optional
+  nationalityCounts?: Record<string, number>; // Added for modal data
+  room_names?: string[]; // Added for room management
 }
 
 // API Response Types
@@ -144,3 +162,13 @@ export type RoomConflict = {
   year?: number;
   conflictingRoom?: number;
 }; 
+
+export interface Metrics {
+  totalCheckIns: number;
+  totalOvernight: number;
+  totalOccupied: number;
+  averageLengthOfStay: number;
+  averageGuestNights: number;
+  averageRoomOccupancyRate: number;
+  averageGuestsPerRoom: number;
+}

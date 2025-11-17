@@ -62,8 +62,6 @@ import React from "react";
 import regions from "../utils/regions";
 import { Download } from "lucide-react";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
-
 const RegionalDistribution = ({ nationalityCounts, selectedYear, selectedMonth, formatMonth, user }) => {
   const [establishmentData, setEstablishmentData] = React.useState([]);
   const [error, setError] = React.useState(null);

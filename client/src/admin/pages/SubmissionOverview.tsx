@@ -61,7 +61,7 @@
 
 import React, { useEffect, useState } from "react";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
-import axios from "axios";
+import { adminAPI, submissionsAPI } from "../../services/api";
 import NationalityCountsModal from "./NationalityCountsModal";
 import AccessCodePrompt from "../components/AccessCodePrompt";
 import * as XLSX from "xlsx";
@@ -120,6 +120,7 @@ interface SubmissionOverviewProps {
   setShowSubmissionModal: (show: boolean) => void;
   calculateMetrics: (submission: Submission) => Metrics;
   activeSection: string;
+  loading?: boolean; // Make it optional
 }
 
 interface Filters {
@@ -141,6 +142,7 @@ const SubmissionOverview: React.FC<SubmissionOverviewProps> = ({
   setShowSubmissionModal,
   calculateMetrics,
   activeSection,
+  loading = false, // Default to false
 }) => {
   const [filters, setFilters] = useState<Filters>({ 
     month: "", 
@@ -161,34 +163,39 @@ const SubmissionOverview: React.FC<SubmissionOverviewProps> = ({
   const [receiptNumbers, setReceiptNumbers] = useState<Record<string, string>>({});
   const [invalidAccessCodeModal, setInvalidAccessCodeModal] = useState(false);
   
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
-
   // Pagination states for rooms
   const [roomPage, setRoomPage] = useState(1);
   const roomsPerPage = 20;
+  
   const getRoomName = (roomNum: number) => {
     return selectedSubmission?.room_names?.[roomNum - 1] || `Room ${roomNum}`;
   };
 
+  // FIXED: Type-safe submissions fetch
   useEffect(() => {
     if (activeSection !== "submission-overview") return;
     
+    let isMounted = true;
+
     const fetchSubmissions = async () => {
       try {
-        const token = sessionStorage.getItem("token");
-        const { data } = await axios.get(`${API_BASE_URL}/api/admin/submissions`, {
-          headers: { Authorization: `Bearer ${token}` },
-          params: { ...filters, page, limit },
-        });
-        setSubmissions(data.submissions); 
-        setTotal(data.total);
+        const data = await adminAPI.getSubmissions();
+        
+        if (isMounted) {
+          setSubmissions(data.submissions); 
+          setTotal(data.total);
+        }
       } catch (err) { 
         console.error("Error fetching submissions:", err); 
       }
     };
     
     fetchSubmissions();
-  }, [filters, page, activeSection, API_BASE_URL, setSubmissions]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [filters, page, activeSection, setSubmissions]);
 
   useEffect(() => {
     if (showSubmissionModal) {
@@ -228,12 +235,8 @@ const SubmissionOverview: React.FC<SubmissionOverviewProps> = ({
     setLoadingPenalty(p => ({ ...p, [currentSubmissionId]: true }));
 
     try {
-      const token = sessionStorage.getItem("token");
-      await axios.put(
-        `${API_BASE_URL}/api/submissions/penalty/${currentSubmissionId}`,
-        { penalty: true, receipt_number: receiptNumber, access_code: accessCode },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await submissionsAPI.applyPenalty(currentSubmissionId, true, accessCode, receiptNumber);
+      
       setSubmissions(submissions.map(s =>
         s.submission_id === currentSubmissionId
           ? { ...s, penalty: true, receipt_number: receiptNumber }

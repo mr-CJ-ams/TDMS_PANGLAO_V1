@@ -1,4 +1,3 @@
-
 import axios, { AxiosResponse } from 'axios';
 import { 
   User, 
@@ -158,8 +157,12 @@ export const submissionsAPI = {
     return response.data;
   },
 
-  applyPenalty: async (submissionId: number, penalty: boolean): Promise<ApiResponse<any>> => {
-    const response: AxiosResponse<ApiResponse<any>> = await apiClient.put(`/api/submissions/penalty/${submissionId}`, { penalty });
+  applyPenalty: async (submissionId: string | number, penalty: boolean, accessCode?: string, receiptNumber?: string): Promise<ApiResponse<any>> => {
+    const response: AxiosResponse<ApiResponse<any>> = await apiClient.put(`/api/submissions/penalty/${submissionId}`, { 
+      penalty, 
+      receipt_number: receiptNumber, 
+      access_code: accessCode 
+    });
     return response.data;
   },
 
@@ -232,60 +235,77 @@ export const submissionsAPI = {
 // Admin API
 export const adminAPI = {
   getUsers: async (): Promise<User[]> => {
-    const response: AxiosResponse<User[]> = await apiClient.get('/admin/users');
+    const response: AxiosResponse<User[]> = await apiClient.get('/api/admin/users');
     return response.data;
   },
 
-  getSubmissions: async (): Promise<SubmissionResponse> => {
-    const response: AxiosResponse<SubmissionResponse> = await apiClient.get('/admin/submissions');
+  getSubmissions: async (filters?: any, pagination?: any): Promise<SubmissionResponse> => {
+    const response: AxiosResponse<SubmissionResponse> = await apiClient.get('/api/admin/submissions', {
+      params: { ...filters, ...pagination }
+    });
     return response.data;
   },
 
   approveUser: async (userId: number): Promise<ApiResponse<any>> => {
-    const response: AxiosResponse<ApiResponse<any>> = await apiClient.put(`/admin/approve/${userId}`);
+    const response: AxiosResponse<ApiResponse<any>> = await apiClient.put(`/api/admin/approve/${userId}`);
     return response.data;
   },
 
   declineUser: async (userId: number, message: string): Promise<ApiResponse<any>> => {
-    const response: AxiosResponse<ApiResponse<any>> = await apiClient.put(`/admin/decline/${userId}`, { message });
+    const response: AxiosResponse<ApiResponse<any>> = await apiClient.put(`/api/admin/decline/${userId}`, { message });
     return response.data;
   },
 
   deleteUser: async (userId: number): Promise<ApiResponse<any>> => {
-    const response: AxiosResponse<ApiResponse<any>> = await apiClient.delete(`/admin/delete/${userId}`);
+    const response: AxiosResponse<ApiResponse<any>> = await apiClient.delete(`/api/admin/delete/${userId}`);
     return response.data;
   },
 
   deactivateUser: async (userId: number): Promise<ApiResponse<any>> => {
-    const response: AxiosResponse<ApiResponse<any>> = await apiClient.put(`/admin/deactivate/${userId}`);
+    const response: AxiosResponse<ApiResponse<any>> = await apiClient.put(`/api/admin/deactivate/${userId}`);
     return response.data;
   },
 
   getMonthlyCheckIns: async (year: number): Promise<MonthlyMetrics[]> => {
-    const response: AxiosResponse<MonthlyMetrics[]> = await apiClient.get('/admin/monthly-checkins', {
+    const response: AxiosResponse<MonthlyMetrics[]> = await apiClient.get('/api/admin/monthly-checkins', {
       params: { year }
     });
     return response.data;
   },
 
   getMonthlyMetrics: async (year: number): Promise<MonthlyMetrics[]> => {
-    const response: AxiosResponse<MonthlyMetrics[]> = await apiClient.get('/admin/monthly-metrics', {
+    const response: AxiosResponse<MonthlyMetrics[]> = await apiClient.get('/api/admin/monthly-metrics', {
       params: { year }
     });
     return response.data;
   },
 
   getNationalityCounts: async (year: number, month: number): Promise<NationalityCount[]> => {
-    const response: AxiosResponse<NationalityCount[]> = await apiClient.get('/admin/nationality-counts', {
+    const response: AxiosResponse<NationalityCount[]> = await apiClient.get('/api/admin/nationality-counts', {
       params: { year, month }
     });
     return response.data;
   },
 
   getGuestDemographics: async (year: number, month: number): Promise<GuestDemographics[]> => {
-    const response: AxiosResponse<GuestDemographics[]> = await apiClient.get('/admin/guest-demographics', {
+    const response: AxiosResponse<GuestDemographics[]> = await apiClient.get('/api/admin/guest-demographics', {
       params: { year, month }
     });
+    return response.data;
+  },
+
+  getAutoApproval: async (): Promise<{ enabled: boolean }> => {
+    const response: AxiosResponse<{ enabled: boolean }> = await apiClient.get('/api/admin/auto-approval');
+    return response.data;
+  },
+
+  setAutoApproval: async (enabled: boolean): Promise<{ enabled: boolean }> => {
+    const response: AxiosResponse<{ enabled: boolean }> = await apiClient.post('/api/admin/auto-approval', { enabled });
+    return response.data;
+  },
+
+  updateAccommodation: async (userId: number, accommodationType: string): Promise<ApiResponse<any>> => {
+    const response: AxiosResponse<ApiResponse<any>> = await apiClient.put(`/api/admin/update-accommodation/${userId}`, { accommodation_type: accommodationType });
     return response.data;
   },
 };

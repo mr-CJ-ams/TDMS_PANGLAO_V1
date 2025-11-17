@@ -57,81 +57,43 @@
  * Date: [2025-08-21]
  */
 
+// FILE: client\src\admin\pages\AdminDashboard.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { adminAPI, submissionsAPI } from "../../services/api";
 import UserApproval from "./UserApproval";
 import SubmissionOverview from "./SubmissionOverview";
 import MainDashboard from "./MainDashboard";
 import AdminSidebar from "../components/AdminSidebar";
 import '../../components/MenuButton.css';
+import { User, Submission, DayData, Guest, Metrics } from "../../types";
 
-interface User {
-  user_id: string;
-  company_name: string | null;
-  email: string;
+// Use the base interfaces from types, extend only where necessary
+interface AdminUser extends Omit<User, 'user_id'> {
+  user_id: number; // Keep as number for API
   phone_number: string;
   registered_owner: string;
   tin: string;
-  region: string | null;
-  province: string | null;
-  municipality: string | null;
-  barangay: string | null;
-  date_established: string | null;
+  company_address: string;
   accommodation_type: string;
   accommodation_code: string;
-  number_of_rooms: number;
-  is_approved: boolean;
-  is_active: boolean;
+  date_established: string | null;
+  room_names?: string[];
+  company_name: string;
 }
 
-interface Submission {
-  submission_id: string;
-  user_id: string;
-  company_name: string;
-  month: number;
-  year: number;
-  submitted_at: string;
+interface AdminSubmission extends Submission {
   deadline: string;
-  penalty?: boolean;
-  receipt_number?: string;
+  company_name: string;
   accommodation_type?: string;
+  nationalityCounts?: Record<string, number>;
+  // Ensure these properties exist
   number_of_rooms: number;
   days: DayData[];
-  nationalityCounts?: Record<string, number>;
 }
-
-interface DayData {
-  day: number;
-  guests: Guest[];
-  check_ins?: number;
-  overnight?: number;
-  occupied?: number;
-}
-
-interface Guest {
-  room_number: number;
-  isCheckIn: boolean;
-  gender: string;
-  age: string;
-  status: string;
-  nationality: string;
-}
-
-// In both AdminDashboard.tsx and SubmissionOverview.tsx
-interface Metrics {
-  totalCheckIns: number;
-  totalOvernight: number;
-  totalOccupied: number;
-  averageGuestNights: number;  // Changed from string to number
-  averageRoomOccupancyRate: number;  // Changed from string to number
-  averageGuestsPerRoom: number;  // Changed from string to number
-}
-
-
 
 const AdminDashboard = () => {
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [activeSection, setActiveSection] = useState<string>("dashboard");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [declineMessage, setDeclineMessage] = useState<string>("");
@@ -139,8 +101,9 @@ const AdminDashboard = () => {
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [showSubmissionModal, setShowSubmissionModal] = useState<boolean>(false);
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
   const navigate = useNavigate();
 
   // Helper function to get month name
@@ -156,79 +119,86 @@ const AdminDashboard = () => {
     
     const fetchUsers = async () => { 
       try { 
-        const token = sessionStorage.getItem("token");
-        const { data } = await axios.get<User[]>(`${API_BASE_URL}/api/admin/users`, { 
-          headers: { Authorization: `Bearer ${token}` } 
-        }); 
-        setUsers(data);
-      } catch (err) { 
-        console.error("Error fetching users:", err); 
-      } 
+        setLoading(true);
+        setError(null);
+        const data = await adminAPI.getUsers();
+        // Transform the data to ensure compatibility
+        const transformedUsers: AdminUser[] = data.map((user: any) => ({
+          ...user,
+          company_name: user.company_name || user.establishment_name || "N/A"
+        }));
+        setUsers(transformedUsers);
+      } catch (err: any) { 
+        console.error("Error fetching users:", err);
+        setError(err.response?.data?.error || "Failed to fetch users");
+      } finally {
+        setLoading(false);
+      }
     };
     
     fetchUsers();
-  }, [activeSection, API_BASE_URL]);
+  }, [activeSection]);
 
   // Fetch all submissions (for Submission Overview section)
   useEffect(() => { 
     const fetchSubmissions = async () => { 
       try { 
-        const token = sessionStorage.getItem("token");
-        const { data } = await axios.get<{ submissions: Submission[] }>(`${API_BASE_URL}/api/admin/submissions`, { 
-          headers: { Authorization: `Bearer ${token}` } 
-        }); 
-        setSubmissions(data.submissions);
-      } catch (err) { 
-        console.error("Error fetching submissions:", err); 
-      } 
+        setLoading(true);
+        setError(null);
+        const response = await adminAPI.getSubmissions();
+        setSubmissions(response.submissions);
+      } catch (err: any) { 
+        console.error("Error fetching submissions:", err);
+        setError(err.response?.data?.error || "Failed to fetch submissions");
+      } finally {
+        setLoading(false);
+      }
     };
     
     fetchSubmissions();
-  }, [API_BASE_URL]);
+  }, []);
 
   // Fetch submission details
   const fetchSubmissionDetails = async (submissionId: string) => {
     try { 
-      const token = sessionStorage.getItem("token");
-      const { data } = await axios.get<Submission>(`${API_BASE_URL}/api/submissions/details/${submissionId}`, { 
-        headers: { Authorization: `Bearer ${token}` } 
-      });
+      setLoading(true);
+      setError(null);
+      const data = await submissionsAPI.getSubmissionDetails(parseInt(submissionId));
       setSelectedSubmission(data); 
       setShowSubmissionModal(true);
-    } catch (err) { 
-      console.error("Error fetching submission details:", err); 
+    } catch (err: any) { 
+      console.error("Error fetching submission details:", err);
+      setError(err.response?.data?.error || "Failed to fetch submission details");
+    } finally {
+      setLoading(false);
     }
   };
 
   // Approve User
   const approveUser = async (userId: string) => {
     try { 
-      const token = sessionStorage.getItem("token");
-      await axios.put(`${API_BASE_URL}/api/admin/approve/${userId}`, {}, { 
-        headers: { Authorization: `Bearer ${token}` } 
-      });
-      setUsers(users.map(u => u.user_id === userId ? { ...u, is_approved: true } : u));
-    } catch (err) { 
-      console.error("Error approving user:", err); 
+      setError(null);
+      await adminAPI.approveUser(parseInt(userId));
+      setUsers(users.map(u => u.user_id === parseInt(userId) ? { ...u, is_approved: true } : u));
+    } catch (err: any) { 
+      console.error("Error approving user:", err);
+      setError(err.response?.data?.error || "Failed to approve user");
     }
   };
 
   // Decline User
   const declineUser = async (userId: string) => {
     try { 
-      const token = sessionStorage.getItem("token");
-      await axios.put(`${API_BASE_URL}/api/admin/decline/${userId}`, { message: declineMessage }, { 
-        headers: { Authorization: `Bearer ${token}` } 
-      });
-      setUsers(users.filter(u => u.user_id !== userId)); 
+      setError(null);
+      await adminAPI.declineUser(parseInt(userId), declineMessage);
+      setUsers(users.filter(u => u.user_id !== parseInt(userId))); 
       setSelectedUserId(null); 
       setDeclineMessage("");
-    } catch (err) { 
-      console.error("Error declining user:", err); 
+    } catch (err: any) { 
+      console.error("Error declining user:", err);
+      setError(err.response?.data?.error || "Failed to decline user");
     }
   };
-
-
 
   // Calculate metrics and totals for submissions
   const calculateMetrics = (submission: Submission | null): Metrics & { averageLengthOfStay: number } => {
@@ -270,19 +240,27 @@ const AdminDashboard = () => {
     navigate("/login"); 
   };
 
-  const isSubmissionLate = (submission: Submission): boolean => 
-    new Date(submission.submitted_at) > new Date(submission.deadline);
+  const isSubmissionLate = (submission: Submission): boolean => {
+    if (!submission.submitted_at) return false;
+    
+    // For AdminSubmission with deadline, use it. Otherwise calculate based on submission date
+    const submissionDate = new Date(submission.submitted_at);
+    const deadlineDate = (submission as any).deadline 
+      ? new Date((submission as any).deadline)
+      : new Date(submissionDate.getFullYear(), submissionDate.getMonth(), 10, 23, 59, 59); // Default to 10th of month
+    
+    return submissionDate > deadlineDate;
+  };
 
   // Handle penalty payment
   const handlePenaltyPayment = async (submissionId: string, penaltyStatus: boolean) => {
     try { 
-      const token = sessionStorage.getItem("token");
-      await axios.put(`${API_BASE_URL}/api/submissions/penalty/${submissionId}`, { penalty: penaltyStatus }, { 
-        headers: { Authorization: `Bearer ${token}` } 
-      });
+      setError(null);
+      await submissionsAPI.applyPenalty(submissionId, penaltyStatus);
       setSubmissions(submissions.map(s => s.submission_id === submissionId ? { ...s, penalty: penaltyStatus } : s));
-    } catch (err) { 
-      console.error("Error updating penalty status:", err); 
+    } catch (err: any) { 
+      console.error("Error updating penalty status:", err);
+      setError(err.response?.data?.error || "Failed to update penalty status");
     }
   };
 
@@ -297,6 +275,28 @@ const AdminDashboard = () => {
         >
           <i className={`bi ${sidebarOpen ? 'bi-x-lg' : 'bi-list'}`} style={{ fontSize: 32, color: '#00BCD4' }}></i>
         </button>
+        
+        {/* Error Display */}
+        {error && (
+          <div className="alert alert-danger alert-dismissible fade show ms-3" role="alert">
+            {error}
+            <button 
+              type="button" 
+              className="btn-close" 
+              onClick={() => setError(null)}
+              aria-label="Close"
+            ></button>
+          </div>
+        )}
+        
+        {/* Loading Indicator */}
+        {loading && (
+          <div className="ms-3">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="row">
@@ -315,16 +315,18 @@ const AdminDashboard = () => {
             {activeSection === "dashboard" && <MainDashboard user={{ role: "admin" }} />}
             {activeSection === "user-approval" && (
               <UserApproval
-                users={users}
+                users={users.map(user => ({
+                  ...user,
+                  user_id: user.user_id.toString() // Convert number to string for UserApproval
+                }))}
                 selectedUserId={selectedUserId}
                 declineMessage={declineMessage}
-
                 approveUser={approveUser}
                 setSelectedUserId={setSelectedUserId}
                 declineUser={declineUser}
                 setDeclineMessage={setDeclineMessage}
-
               />
+
             )}
             {activeSection === "submission-overview" && (
               <SubmissionOverview
