@@ -1,3 +1,4 @@
+// FILE: client\src\services\api.ts
 import axios, { AxiosResponse } from 'axios';
 import { 
   User, 
@@ -48,37 +49,48 @@ apiClient.interceptors.response.use(
 // Auth API
 export const authAPI = {
   login: async (credentials: LoginFormData): Promise<AuthResponse> => {
-    const response: AxiosResponse<AuthResponse> = await apiClient.post('/auth/login', credentials);
+    const response: AxiosResponse<AuthResponse> = await apiClient.post('/api/auth/login', credentials);
     return response.data;
   },
 
   signup: async (userData: SignupFormData): Promise<ApiResponse<User>> => {
-    const response: AxiosResponse<ApiResponse<User>> = await apiClient.post('/auth/signup', userData);
+    const response: AxiosResponse<ApiResponse<User>> = await apiClient.post('/api/auth/signup', userData);
     return response.data;
   },
 
   forgotPassword: async (email: string): Promise<ApiResponse<{ message: string }>> => {
-    const response: AxiosResponse<ApiResponse<{ message: string }>> = await apiClient.post('/auth/forgot-password', { email });
+    const response: AxiosResponse<ApiResponse<{ message: string }>> = await apiClient.post('/api/auth/forgot-password', { email });
     return response.data;
   },
 
   resetPassword: async (token: string, password: string): Promise<ApiResponse<{ message: string }>> => {
-    const response: AxiosResponse<ApiResponse<{ message: string }>> = await apiClient.post('/auth/reset-password', { token, password });
+    const response: AxiosResponse<ApiResponse<{ message: string }>> = await apiClient.post('/api/auth/reset-password', { token, password });
     return response.data;
   },
 
   getUser: async (): Promise<User> => {
-    const response: AxiosResponse<User> = await apiClient.get('/auth/user');
+    const response: AxiosResponse<User> = await apiClient.get('/api/auth/user');  // ← Changed from '/auth/user'
     return response.data;
   },
 
   updateRooms: async (numberOfRooms: number): Promise<ApiResponse<User>> => {
-    const response: AxiosResponse<ApiResponse<User>> = await apiClient.put('/auth/update-rooms', { number_of_rooms: numberOfRooms });
+    const response: AxiosResponse<ApiResponse<User>> = await apiClient.put('/api/auth/update-rooms', { number_of_rooms: numberOfRooms });  // ← Changed
+    return response.data;
+  },
+
+  // Room names endpoints
+  getRoomNames: async (userId: number): Promise<{ roomNames: string[] }> => {
+    const response: AxiosResponse<{ roomNames: string[] }> = await apiClient.get(`/api/auth/user/${userId}/room-names`);  // ← Changed
+    return response.data;
+  },
+
+  updateRoomNames: async (userId: number, roomNames: string[]): Promise<ApiResponse<any>> => {
+    const response: AxiosResponse<ApiResponse<any>> = await apiClient.post(`/api/auth/user/${userId}/room-names`, { roomNames });  // ← Changed
     return response.data;
   },
 };
 
-// Submissions API
+// Submissions API - UPDATED WITH CORRECT ENDPOINTS
 export const submissionsAPI = {
   checkSubmission: async (userId: number, month: number, year: number): Promise<{ hasSubmitted: boolean }> => {
     const response: AxiosResponse<{ hasSubmitted: boolean }> = await apiClient.get('/api/submissions/check-submission', {
@@ -120,6 +132,40 @@ export const submissionsAPI = {
 
   applyPenalty: async (submissionId: number, penalty: boolean): Promise<ApiResponse<any>> => {
     const response: AxiosResponse<ApiResponse<any>> = await apiClient.put(`/api/submissions/penalty/${submissionId}`, { penalty });
+    return response.data;
+  },
+
+  // DRAFT STAYS ENDPOINTS - CORRECTED
+  getDraftStays: async (userId: number, month?: number, year?: number): Promise<any[]> => {
+    let url = `/api/submissions/draft-stays/${userId}`;
+    if (month && year) {
+      url += `/${month}/${year}`;
+    }
+    const response: AxiosResponse<any[]> = await apiClient.get(url);
+    return response.data;
+  },
+
+  createDraftStay: async (stayData: any): Promise<ApiResponse<any>> => {
+    const response: AxiosResponse<ApiResponse<any>> = await apiClient.post('/api/submissions/draft-stays', stayData);
+    return response.data;
+  },
+
+  deleteDraftStay: async (userId: number, stayId: string): Promise<void> => {
+    await apiClient.delete(`/api/submissions/draft-stays/${userId}/${stayId}`);
+  },
+
+  deleteDraftStaysByDayRoom: async (userId: number, day: number, month: number, year: number, room: number): Promise<void> => {
+    await apiClient.delete(`/api/submissions/draft-stays/${userId}/${day}/${month}/${year}/${room}`);
+  },
+
+
+  getAllDraftStaysForUser: async (userId: number): Promise<any[]> => {
+    const response: AxiosResponse<any[]> = await apiClient.get(`/api/submissions/draft-stays/${userId}`);
+    return response.data;
+  },
+
+  getLastUpdateTimestamp: async (userId: number): Promise<{ lastUpdate: number }> => {
+    const response: AxiosResponse<{ lastUpdate: number }> = await apiClient.get(`/api/submissions/last-update/${userId}`);
     return response.data;
   },
 };
@@ -188,4 +234,4 @@ export const adminAPI = {
   },
 };
 
-export default apiClient; 
+export default apiClient;
