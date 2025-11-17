@@ -308,6 +308,11 @@ export const adminAPI = {
     const response: AxiosResponse<ApiResponse<any>> = await apiClient.put(`/api/admin/update-accommodation/${userId}`, { accommodation_type: accommodationType });
     return response.data;
   },
+
+  getVerifiedEmails: async (): Promise<{ email: string }[]> => {
+    const response: AxiosResponse<{ email: string }[]> = await apiClient.get('/api/admin/verified-emails');
+    return response.data;
+  },
 };
 
 export default apiClient;

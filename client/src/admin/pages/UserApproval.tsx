@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { adminAPI } from "../../services/api";
-import { X, Search, ChevronUp, ChevronDown } from "lucide-react";
+import { X, Search, ChevronUp, ChevronDown, Loader2 } from "lucide-react";
 
 interface User {
   user_id: string;
@@ -52,6 +52,16 @@ const UserApproval = ({
     message: string;
     onClose?: () => void;
   }>({ show: false, title: "", message: "" });
+  const [activeTab, setActiveTab] = useState<"approved" | "pending" | "verifiedEmails">("approved");
+  const [verifiedEmails, setVerifiedEmails] = useState<{ email: string }[]>([]);
+  const [loadingUserId, setLoadingUserId] = useState<string | null>(null);
+  const [loadingAction, setLoadingAction] = useState<"approve" | "decline" | null>(null);
+
+  useEffect(() => {
+    if (activeTab === "verifiedEmails") {
+      adminAPI.getVerifiedEmails().then(setVerifiedEmails).catch(() => setVerifiedEmails([]));
+    }
+  }, [activeTab]);
 
   const filteredAndSortedUsers = useMemo(() => {
     return users
@@ -111,6 +121,30 @@ const UserApproval = ({
     }
   };
 
+  // Approve handler with loading
+  const handleApproveUser = async (userId: string) => {
+    setLoadingUserId(userId);
+    setLoadingAction("approve");
+    try {
+      await approveUser(userId);
+    } finally {
+      setLoadingUserId(null);
+      setLoadingAction(null);
+    }
+  };
+
+  // Decline handler with loading
+  const handleDeclineUser = async (userId: string) => {
+    setLoadingUserId(userId);
+    setLoadingAction("decline");
+    try {
+      await declineUser(userId);
+    } finally {
+      setLoadingUserId(null);
+      setLoadingAction(null);
+    }
+  };
+
   const userTable = (userList: User[], isActive: boolean) => (
     <table className="w-full">
       <thead>
@@ -164,23 +198,31 @@ const UserApproval = ({
               <td className="p-4">
                 {!user.is_approved ? (
                   <div className="space-x-2">
-                    <button 
-                      onClick={() => approveUser(user.user_id)} 
-                      className="px-4 py-2 bg-emerald-500 text-white rounded hover:bg-emerald-600 transition-colors"
+                    <button
+                      onClick={() => handleApproveUser(user.user_id)}
+                      className="px-4 py-2 bg-emerald-500 text-white rounded hover:bg-emerald-600 transition-colors flex items-center gap-2"
+                      disabled={loadingUserId === user.user_id && loadingAction === "approve"}
                     >
+                      {loadingUserId === user.user_id && loadingAction === "approve" ? (
+                        <Loader2 className="animate-spin w-4 h-4" />
+                      ) : null}
                       Approve
                     </button>
-                    <button 
-                      onClick={() => setSelectedUserId(user.user_id)} 
-                      className="px-4 py-2 bg-rose-500 text-white rounded hover:bg-rose-600 transition-colors"
+                    <button
+                      onClick={() => setSelectedUserId(user.user_id)}
+                      className="px-4 py-2 bg-rose-500 text-white rounded hover:bg-rose-600 transition-colors flex items-center gap-2"
+                      disabled={loadingUserId === user.user_id && loadingAction === "decline"}
                     >
+                      {loadingUserId === user.user_id && loadingAction === "decline" ? (
+                        <Loader2 className="animate-spin w-4 h-4" />
+                      ) : null}
                       Decline
                     </button>
                   </div>
                 ) : (
                   <div className="flex gap-2">
-                    <button 
-                      onClick={() => handleDeactivateClick(user.user_id)} 
+                    <button
+                      onClick={() => handleDeactivateClick(user.user_id)}
                       className="px-4 py-2 bg-rose-500 text-white rounded hover:bg-rose-600 transition-colors"
                     >
                       Deactivate
@@ -213,19 +255,25 @@ const UserApproval = ({
           />
         </div>
         <div className="flex gap-2">
-          {(["approved", "pending"] as const).map(f => (
+          {([
+            { key: "approved", label: "Approved" },
+            { key: "pending", label: "Pending" },
+            { key: "verifiedEmails", label: "Verified Emails" }
+          ] as const).map(f => (
             <button
-              key={f}
-              onClick={() => setActiveFilter(f)}
+              key={f.key}
+              onClick={() => setActiveTab(f.key)}
               className={`px-4 py-2 rounded-lg transition-colors ${
-                activeFilter === f
-                  ? f === "pending"
+                activeTab === f.key
+                  ? f.key === "pending"
                     ? "bg-amber-500 text-white"
-                    : "bg-emerald-500 text-white"
+                    : f.key === "approved"
+                      ? "bg-emerald-500 text-white"
+                      : "bg-cyan-500 text-white"
                   : "bg-white text-gray-600 hover:bg-sky-50"
               }`}
             >
-              {f.charAt(0).toUpperCase() + f.slice(1)}
+              {f.label}
             </button>
           ))}
         </div>
@@ -236,9 +284,12 @@ const UserApproval = ({
           <span className="text-gray-500 ml-2">({deactivatedUsersCount} deactivated)</span>
         )}
       </div>
-      <div className="overflow-x-auto rounded-lg shadow-lg bg-white mb-8">{userTable(activeUsers, true)}</div>
-      <h3 className="text-2xl font-semibold text-sky-900 mb-4">Deactivated Accounts</h3>
-      <div className="overflow-x-auto rounded-lg shadow-lg bg-white">{userTable(deactivatedUsers, false)}</div>
+      {activeTab === "approved" && (
+        <div className="overflow-x-auto rounded-lg shadow-lg bg-white mb-8">{userTable(activeUsers, true)}</div>
+      )}
+      {activeTab === "pending" && (
+        <div className="overflow-x-auto rounded-lg shadow-lg bg-white mb-8">{userTable(filteredAndSortedUsers.filter(u => !u.is_approved && u.is_active), true)}</div>
+      )}
       {/* Decline User Modal */}
       {selectedUserId && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
@@ -256,19 +307,24 @@ const UserApproval = ({
                 rows={4} 
               />
               <div className="flex justify-end space-x-3 mt-6">
-                <button 
-                  onClick={() => setSelectedUserId(null)} 
+                <button
+                  onClick={() => setSelectedUserId(null)}
                   className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                  disabled={loadingUserId === selectedUserId && loadingAction === "decline"}
                 >
                   Cancel
                 </button>
-                <button 
-                  onClick={() => { 
-                    declineUser(selectedUserId); 
-                    setSelectedUserId(null); 
+                <button
+                  onClick={async () => {
+                    await handleDeclineUser(selectedUserId);
+                    setSelectedUserId(null);
                   }}
-                  className="px-4 py-2 bg-rose-500 text-white rounded hover:bg-rose-600 transition-colors"
+                  className="px-4 py-2 bg-rose-500 text-white rounded hover:bg-rose-600 transition-colors flex items-center gap-2"
+                  disabled={loadingUserId === selectedUserId && loadingAction === "decline"}
                 >
+                  {loadingUserId === selectedUserId && loadingAction === "decline" ? (
+                    <Loader2 className="animate-spin w-4 h-4" />
+                  ) : null}
                   Confirm Decline
                 </button>
               </div>
@@ -333,6 +389,32 @@ const UserApproval = ({
               </button>
             </div>
           </div>
+        </div>
+      )}
+      {activeTab === "verifiedEmails" && (
+        <div className="overflow-x-auto rounded-lg shadow-lg bg-white mb-8">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-cyan-100 text-cyan-900">
+                <th className="p-4 text-left font-medium">Verified Email</th>
+              </tr>
+            </thead>
+            <tbody>
+              {verifiedEmails.length === 0 ? (
+                <tr>
+                  <td className="p-4 text-center text-gray-500">
+                    No verified emails found.
+                  </td>
+                </tr>
+              ) : (
+                verifiedEmails.map(({ email }) => (
+                  <tr key={email}>
+                    <td className="p-4 font-medium">{email}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

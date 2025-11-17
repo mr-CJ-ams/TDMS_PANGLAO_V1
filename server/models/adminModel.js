@@ -290,6 +290,17 @@ class AdminModel {
     const result = await pool.query(query, [year, month]);
     return result.rows;
   }
+
+  static async getVerifiedEmails() {
+    // Select verified emails that do not exist in users table
+    const result = await pool.query(`
+      SELECT email
+      FROM email_verifications
+      WHERE verified = TRUE
+        AND email NOT IN (SELECT email FROM users)
+    `);
+    return result.rows;
+  }
 }
 
 module.exports = AdminModel;

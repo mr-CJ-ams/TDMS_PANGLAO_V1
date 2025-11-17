@@ -79,6 +79,7 @@ router.get("/monthly-metrics", authenticateToken, adminController.getMonthlyMetr
 router.get("/nationality-counts", authenticateToken, adminController.getNationalityCounts);
 router.get("/nationality-counts-by-establishment", authenticateToken, requireAdmin, adminController.getNationalityCountsByEstablishment);
 router.get("/guest-demographics", authenticateToken, adminController.getGuestDemographics);
+router.get("/verified-emails", authenticateToken, requireAdmin, adminController.getVerifiedEmails);
 
 module.exports = router;
 

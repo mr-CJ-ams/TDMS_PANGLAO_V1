@@ -243,3 +243,14 @@ exports.getGuestDemographics = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch guest demographics" });
   }
 };
+
+// Get Verified Emails
+exports.getVerifiedEmails = async (req, res) => {
+  try {
+    const result = await AdminModel.getVerifiedEmails();
+    res.json(result);
+  } catch (err) {
+    console.error("Error fetching verified emails:", err);
+    res.status(500).json({ error: "Failed to fetch verified emails" });
+  }
+};
