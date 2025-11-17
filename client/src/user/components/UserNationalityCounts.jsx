@@ -51,9 +51,7 @@
  */
 
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+import { submissionsAPI } from "../../services/api";
 
 const UserNationalityCounts = ({ user, selectedYear, selectedMonth, formatMonth }) => {
   const [nationalityCounts, setNationalityCounts] = useState([]);
@@ -61,17 +59,25 @@ const UserNationalityCounts = ({ user, selectedYear, selectedMonth, formatMonth 
 
   useEffect(() => {
     if (!user || !selectedYear || !selectedMonth) return;
-    setLoading(true);
-    axios
-      .get(`${API_BASE_URL}/api/submissions/nationality-counts/${user.user_id}?year=${selectedYear}&month=${selectedMonth}`, {
-        headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` },
-      })
-      .then(res => setNationalityCounts(res.data))
-      .catch(err => {
+    
+    const fetchNationalityCounts = async () => {
+      setLoading(true);
+      try {
+        const data = await submissionsAPI.getUserNationalityCounts(
+          user.user_id, 
+          selectedYear, 
+          selectedMonth
+        );
+        setNationalityCounts(data);
+      } catch (err) {
         setNationalityCounts([]);
         console.error("Error fetching nationality counts:", err);
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNationalityCounts();
   }, [user, selectedYear, selectedMonth]);
 
   return (
@@ -118,4 +124,4 @@ const UserNationalityCounts = ({ user, selectedYear, selectedMonth, formatMonth 
   );
 };
 
-export default UserNationalityCounts; 
+export default UserNationalityCounts;

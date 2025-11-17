@@ -168,6 +168,39 @@ export const submissionsAPI = {
     const response: AxiosResponse<{ lastUpdate: number }> = await apiClient.get(`/api/submissions/last-update/${userId}`);
     return response.data;
   },
+
+  getSubmissionHistory: async (userId: number): Promise<any[]> => {
+    const response: AxiosResponse<any[]> = await apiClient.get(`/api/submissions/history/${userId}`);
+    return response.data;
+  },
+
+   // Add these statistics endpoints
+  getUserStatistics: async (userId: number): Promise<any[]> => {
+    const response: AxiosResponse<any[]> = await apiClient.get(`/api/submissions/statistics/${userId}`);
+    return response.data;
+  },
+
+  getUserMonthlyMetrics: async (userId: number, year: number): Promise<any[]> => {
+    const response: AxiosResponse<any[]> = await apiClient.get(`/api/submissions/metrics/${userId}`, {
+      params: { year }
+    });
+    return response.data;
+  },
+
+  getUserGuestDemographics: async (userId: number, year: number, month: number): Promise<GuestDemographics[]> => {
+    const response: AxiosResponse<GuestDemographics[]> = await apiClient.get(`/api/submissions/guest-demographics/${userId}`, {
+      params: { year, month }
+    });
+    return response.data;
+  },
+
+  getUserNationalityCounts: async (userId: number, year: number, month: number): Promise<NationalityCount[]> => {
+    const response: AxiosResponse<NationalityCount[]> = await apiClient.get(`/api/submissions/nationality-counts/${userId}`, {
+      params: { year, month }
+    });
+    return response.data;
+  },
+
 };
 
 // Admin API

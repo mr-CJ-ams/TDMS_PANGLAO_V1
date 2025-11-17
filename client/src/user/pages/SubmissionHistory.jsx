@@ -53,13 +53,10 @@
  * Author: Carlojead Amaquin
  * Date: [2025-08-21]
  */
-
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import { submissionsAPI } from "../../services/api";
 import { Loader2, ExternalLink } from "lucide-react";
 import SubmissionDetailsModal from "../components/SubmissionDetailsModal";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 const SubmissionHistory = ({ user }) => {
   const [submissionHistory, setSubmissionHistory] = useState([]),
@@ -70,11 +67,9 @@ const SubmissionHistory = ({ user }) => {
   useEffect(() => {
     if (!user) return;
     setLoading(true);
-    axios
-      .get(`${API_BASE_URL}/api/submissions/history/${user.user_id}`, {
-        headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` },
-      })
-      .then((res) => setSubmissionHistory(res.data))
+    
+    submissionsAPI.getSubmissionHistory(user.user_id)
+      .then((data) => setSubmissionHistory(data))
       .catch((err) => console.error("Error fetching submission history:", err))
       .finally(() => setLoading(false));
   }, [user]);

@@ -55,7 +55,7 @@
  */
 
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import { submissionsAPI } from "../../services/api"; // Import the API instance
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { Download } from "lucide-react";
@@ -64,7 +64,6 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, LabelList
 } from "recharts";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 const COLORS = ["#42a5f5", "#ec4899"];
 const AGE_COLORS = ["#60a5fa", "#38bdf8", "#34d399", "#4ade80", "#a3e635", "#facc15"];
@@ -106,35 +105,22 @@ const UserGuestDemographics = ({ user, selectedYear, selectedMonth, formatMonth 
     }
 
     setLoading(true);
-    const source = axios.CancelToken.source();
-    const token = sessionStorage.getItem("token");
 
+    // Use Promise.all with the API instance
     Promise.all([
-      axios.get(`${API_BASE_URL}/api/submissions/guest-demographics/${user.user_id}`, {
-        params: { year, month },
-        headers: { Authorization: `Bearer ${token}` },
-        cancelToken: source.token
-      }),
-      axios.get(`${API_BASE_URL}/api/submissions/nationality-counts/${user.user_id}`, {
-        params: { year, month },
-        headers: { Authorization: `Bearer ${token}` },
-        cancelToken: source.token
-      })
+      submissionsAPI.getUserGuestDemographics(user.user_id, year, month),
+      submissionsAPI.getUserNationalityCounts(user.user_id, year, month)
     ])
-      .then(([demographicsRes, nationalityRes]) => {
-        setGuestDemographics(Array.isArray(demographicsRes.data) ? demographicsRes.data : []);
-        setNationalityCounts(Array.isArray(nationalityRes.data) ? nationalityRes.data : []);
+      .then(([demographicsData, nationalityData]) => {
+        setGuestDemographics(Array.isArray(demographicsData) ? demographicsData : []);
+        setNationalityCounts(Array.isArray(nationalityData) ? nationalityData : []);
       })
       .catch((err) => {
-        if (!axios.isCancel(err)) {
-          console.error("Error fetching user guest demographics:", err);
-          setGuestDemographics([]);
-          setNationalityCounts([]);
-        }
+        console.error("Error fetching user guest demographics:", err);
+        setGuestDemographics([]);
+        setNationalityCounts([]);
       })
       .finally(() => setLoading(false));
-
-    return () => source.cancel();
   }, [user, selectedYear, selectedMonth]);
 
   // Safely compute totals using maps to avoid key mismatches
@@ -223,14 +209,6 @@ const UserGuestDemographics = ({ user, selectedYear, selectedMonth, formatMonth 
 
     const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
     saveAs(new Blob([buf], { type: "application/octet-stream" }), `${user?.company_name || 'Establishment'}_${formatMonth(selectedMonth)}_${selectedYear}_Guest_Demographics.xlsx`);
-  };
-
-  const chartCardStyle = {
-    backgroundColor: "#FFF",
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 16,
-    boxShadow: "0px 4px 12px rgba(0,0,0,0.1)"
   };
 
   return (

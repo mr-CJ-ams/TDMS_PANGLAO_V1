@@ -58,12 +58,10 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import axios from "axios";
+import { submissionsAPI } from "../../services/api";
 import UserMonthlyMetrics from "../components/UserMonthlyMetrics";
 import UserGuestDemographics from "../components/UserGuestDemographics";
 import UserNationalityCounts from "../components/UserNationalityCounts";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 const UserStatistics = ({ user }) => {
   const [monthlyData, setMonthlyData] = useState([]);
@@ -77,18 +75,15 @@ const UserStatistics = ({ user }) => {
     return new Date(0, monthNumber - 1).toLocaleString("default", { month: "long" });
   }, []);
 
-  // Fetch user statistics data
+  // Fetch user statistics data - REFACTORED
   useEffect(() => {
     if (!user) return;
     
     const fetchUserStatistics = async () => {
       setLoading(true);
       try {
-        const token = sessionStorage.getItem("token");
-        const response = await axios.get(`${API_BASE_URL}/api/submissions/statistics/${user.user_id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setMonthlyData(response.data);
+        const response = await submissionsAPI.getUserStatistics(user.user_id);
+        setMonthlyData(response);
       } catch (error) {
         console.error("Error fetching user statistics:", error);
         setMonthlyData([]);
@@ -100,17 +95,14 @@ const UserStatistics = ({ user }) => {
     fetchUserStatistics();
   }, [user]);
 
-  // Fetch user monthly metrics data
+  // Fetch user monthly metrics data - REFACTORED
   useEffect(() => {
     if (!user) return;
     
     const fetchUserMonthlyMetrics = async () => {
       try {
-        const token = sessionStorage.getItem("token");
-        const response = await axios.get(`${API_BASE_URL}/api/submissions/metrics/${user.user_id}?year=${selectedYear}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setMonthlyMetrics(response.data);
+        const response = await submissionsAPI.getUserMonthlyMetrics(user.user_id, selectedYear);
+        setMonthlyMetrics(response);
       } catch (error) {
         console.error("Error fetching user monthly metrics:", error);
         setMonthlyMetrics([]);

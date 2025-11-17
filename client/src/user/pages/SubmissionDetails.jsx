@@ -56,7 +56,7 @@
  */
 
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import { submissionsAPI } from "../../services/api";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { Modal, ListGroup } from "react-bootstrap";
@@ -64,8 +64,6 @@ import { FileSpreadsheet, Users, Search, Filter } from "lucide-react";
 import { MetricsCard } from "../components/MetricsCard";
 import { ActionButton } from "../components/ActionButton";
 import Nationality from "../components/Nationality";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 const SubmissionDetails = ({ submissionId }) => {
   const [submission, setSubmission] = useState({ days: [] });
@@ -84,31 +82,28 @@ const SubmissionDetails = ({ submissionId }) => {
   const roomsPerPage = 20;
 
   useEffect(() => {
-  if (!submissionId) return;
-  setLoading(true);
-  
-  const fetchSubmissionData = async () => {
-    try {
-      const submissionRes = await axios.get(`${API_BASE_URL}/api/submissions/details/${submissionId}`, {
-        headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` },
-      });
-      
-      const submissionData = submissionRes.data;
-      setSubmission(submissionData);
-      
-      // Room names are now included in the submission data
-      // No need to fetch separately
-      
-    } catch (err) {
-      console.error("Error fetching submission:", err);
-      setError("Failed to fetch submission details. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    if (!submissionId) return;
+    setLoading(true);
+    
+    const fetchSubmissionData = async () => {
+      try {
+        // Use the API instance instead of direct axios call
+        const submissionData = await submissionsAPI.getSubmissionDetails(submissionId);
+        setSubmission(submissionData);
+        
+        // Room names are now included in the submission data
+        // No need to fetch separately
+        
+      } catch (err) {
+        console.error("Error fetching submission:", err);
+        setError("Failed to fetch submission details. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  fetchSubmissionData();
-}, [submissionId]);
+    fetchSubmissionData();
+  }, [submissionId]);
 
   // Get room name safely
   const getRoomName = (roomNum) => {
@@ -164,72 +159,71 @@ const SubmissionDetails = ({ submissionId }) => {
     setHighlightedRoom(null);
   };
 
+  const handleRoomSearch = () => {
+    if (!roomSearchTerm.trim()) {
+      setHighlightedRoom(null);
+      return;
+    }
 
-const handleRoomSearch = () => {
-  if (!roomSearchTerm.trim()) {
-    setHighlightedRoom(null);
-    return;
-  }
-
-  // Try to parse as room number first
-  const roomNumber = parseInt(roomSearchTerm, 10);
-  
-  // Check if search matches a room name
-  let foundRoomNumber = null;
-  
-  if (roomNumber && roomNumber >= 1 && roomNumber <= submission?.number_of_rooms) {
-    // Search by room number
-    foundRoomNumber = roomNumber;
-  } else {
-    // Search by room name (case-insensitive)
-    const searchLower = roomSearchTerm.toLowerCase().trim();
-    for (let i = 0; i < submission.room_names?.length; i++) {
-      const roomName = submission.room_names[i];
-      if (roomName && roomName.toLowerCase().includes(searchLower)) {
-        foundRoomNumber = i + 1; // Room numbers are 1-indexed
-        break;
+    // Try to parse as room number first
+    const roomNumber = parseInt(roomSearchTerm, 10);
+    
+    // Check if search matches a room name
+    let foundRoomNumber = null;
+    
+    if (roomNumber && roomNumber >= 1 && roomNumber <= submission?.number_of_rooms) {
+      // Search by room number
+      foundRoomNumber = roomNumber;
+    } else {
+      // Search by room name (case-insensitive)
+      const searchLower = roomSearchTerm.toLowerCase().trim();
+      for (let i = 0; i < submission.room_names?.length; i++) {
+        const roomName = submission.room_names[i];
+        if (roomName && roomName.toLowerCase().includes(searchLower)) {
+          foundRoomNumber = i + 1; // Room numbers are 1-indexed
+          break;
+        }
       }
     }
-  }
 
-  if (foundRoomNumber) {
-    setHighlightedRoom(foundRoomNumber);
+    if (foundRoomNumber) {
+      setHighlightedRoom(foundRoomNumber);
 
-    // Calculate which page the room is on
-    const targetPage = Math.ceil(foundRoomNumber / roomsPerPage);
-    setRoomPage(targetPage);
+      // Calculate which page the room is on
+      const targetPage = Math.ceil(foundRoomNumber / roomsPerPage);
+      setRoomPage(targetPage);
 
-    // Wait for page update, then scroll to the room column
-    setTimeout(() => {
-      const roomElement = document.getElementById(`room-${foundRoomNumber}`);
-      if (roomElement) {
-        roomElement.scrollIntoView({
-          behavior: "smooth",
-          block: "nearest",
-          inline: "center",
-        });
+      // Wait for page update, then scroll to the room column
+      setTimeout(() => {
+        const roomElement = document.getElementById(`room-${foundRoomNumber}`);
+        if (roomElement) {
+          roomElement.scrollIntoView({
+            behavior: "smooth",
+            block: "nearest",
+            inline: "center",
+          });
 
-        // Add a temporary highlight effect
-        roomElement.classList.add(
-          "bg-yellow-100",
-          "border-2",
-          "border-yellow-400"
-        );
-        setTimeout(() => {
-          roomElement.classList.remove(
+          // Add a temporary highlight effect
+          roomElement.classList.add(
             "bg-yellow-100",
             "border-2",
             "border-yellow-400"
           );
-        }, 3000);
-      }
-    }, 200);
-  } else {
-    setHighlightedRoom(null);
-    // Optional: Show a message that no room was found
-    alert(`No room found matching "${roomSearchTerm}". Please enter a valid room number or room name.`);
-  }
-};
+          setTimeout(() => {
+            roomElement.classList.remove(
+              "bg-yellow-100",
+              "border-2",
+              "border-yellow-400"
+            );
+          }, 3000);
+        }
+      }, 200);
+    } else {
+      setHighlightedRoom(null);
+      // Optional: Show a message that no room was found
+      alert(`No room found matching "${roomSearchTerm}". Please enter a valid room number or room name.`);
+    }
+  };
 
   const handleRoomSearchKeyPress = (e) => {
     if (e.key === 'Enter') {
