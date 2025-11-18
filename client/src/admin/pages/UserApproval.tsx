@@ -41,8 +41,6 @@ const UserApproval = ({
   setDeclineMessage,
 }: UserApprovalProps) => {
   const [searchTerm, setSearchTerm] = useState("");
-  // Show Pending by default. Removed "All" filter as requested.
-  const [activeFilter, setActiveFilter] = useState<"pending" | "approved">("approved");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
   const [userToDeactivate, setUserToDeactivate] = useState<string | null>(null);
@@ -52,7 +50,7 @@ const UserApproval = ({
     message: string;
     onClose?: () => void;
   }>({ show: false, title: "", message: "" });
-  const [activeTab, setActiveTab] = useState<"approved" | "pending" | "verifiedEmails">("approved");
+  const [activeTab, setActiveTab] = useState<"approved" | "pending" | "verifiedEmails">("pending"); // Changed default to "pending"
   const [verifiedEmails, setVerifiedEmails] = useState<{ email: string }[]>([]);
   const [loadingUserId, setLoadingUserId] = useState<string | null>(null);
   const [loadingAction, setLoadingAction] = useState<"approve" | "decline" | null>(null);
@@ -66,15 +64,26 @@ const UserApproval = ({
   const filteredAndSortedUsers = useMemo(() => {
     return users
       .filter(u => (u.company_name || "").toLowerCase().includes(searchTerm.toLowerCase()))
-      .filter(u => (activeFilter === "pending" ? !u.is_approved : u.is_approved))
+      .filter(u => {
+        // Use activeTab instead of activeFilter for filtering
+        switch (activeTab) {
+          case "pending":
+            return !u.is_approved && u.is_active; // Only show pending AND active users
+          case "approved":
+            return u.is_approved && u.is_active; // Only show approved AND active users
+          default:
+            return true;
+        }
+      })
       .sort((a, b) => {
         const cmp = (a.company_name || "").localeCompare(b.company_name || "");
         return sortDirection === "asc" ? cmp : -cmp;
       });
-  }, [users, searchTerm, activeFilter, sortDirection]);
+  }, [users, searchTerm, activeTab, sortDirection]); // Changed activeFilter to activeTab
 
-  const activeUsers = filteredAndSortedUsers.filter(u => u.is_active);
-  const deactivatedUsers = filteredAndSortedUsers.filter(u => !u.is_active);
+  // Remove the separate activeUsers and deactivatedUsers filtering since we're handling it in the main filter
+  const activeUsers = users.filter(u => u.is_active && u.is_approved);
+  const deactivatedUsers = users.filter(u => !u.is_active);
 
   const handleDeactivateClick = (userId: string) => { 
     setUserToDeactivate(userId); 
@@ -164,7 +173,11 @@ const UserApproval = ({
         {userList.length === 0 ? (
           <tr>
             <td colSpan={isActive ? 16 : 15} className="p-4 text-center text-gray-500">
-              {isActive ? "No active users found matching your criteria" : "No deactivated users found"}
+              {activeTab === "pending" 
+                ? "No pending users found matching your criteria" 
+                : activeTab === "approved"
+                ? "No approved users found matching your criteria"
+                : "No users found matching your criteria"}
             </td>
           </tr>
         ) : userList.map(user => (
@@ -239,6 +252,7 @@ const UserApproval = ({
 
   const activeUsersCount = activeUsers.length;
   const deactivatedUsersCount = deactivatedUsers.length;
+  const pendingUsersCount = users.filter(u => !u.is_approved && u.is_active).length;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-50 to-white p-8">
@@ -256,14 +270,14 @@ const UserApproval = ({
         </div>
         <div className="flex gap-2">
           {([
-            { key: "approved", label: "Approved" },
-            { key: "pending", label: "Pending" },
+            { key: "pending", label: "Pending", count: pendingUsersCount },
+            { key: "approved", label: "Approved", count: activeUsersCount },
             { key: "verifiedEmails", label: "Verified Emails" }
           ] as const).map(f => (
             <button
               key={f.key}
               onClick={() => setActiveTab(f.key)}
-              className={`px-4 py-2 rounded-lg transition-colors ${
+              className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
                 activeTab === f.key
                   ? f.key === "pending"
                     ? "bg-amber-500 text-white"
@@ -274,23 +288,41 @@ const UserApproval = ({
               }`}
             >
               {f.label}
+              {f.count !== undefined && (
+                <span className={`px-2 py-1 text-xs rounded-full ${
+                  activeTab === f.key ? 'bg-white bg-opacity-20' : 'bg-gray-200'
+                }`}>
+                  {f.count}
+                </span>
+              )}
             </button>
           ))}
         </div>
       </div>
+      
+      {/* Show user counts based on active tab */}
       <div className="mb-4 text-sky-900 font-medium">
-        Showing {activeUsersCount} active {activeUsersCount === 1 ? "user" : "users"}
-        {deactivatedUsersCount > 0 && (
+        {activeTab === "pending" && `Showing ${filteredAndSortedUsers.length} pending ${filteredAndSortedUsers.length === 1 ? "user" : "users"}`}
+        {activeTab === "approved" && `Showing ${filteredAndSortedUsers.length} approved ${filteredAndSortedUsers.length === 1 ? "user" : "users"}`}
+        {activeTab === "verifiedEmails" && `Showing ${verifiedEmails.length} verified ${verifiedEmails.length === 1 ? "email" : "emails"}`}
+        {deactivatedUsersCount > 0 && activeTab !== "verifiedEmails" && (
           <span className="text-gray-500 ml-2">({deactivatedUsersCount} deactivated)</span>
         )}
       </div>
-      {activeTab === "approved" && (
-        <div className="overflow-x-auto rounded-lg shadow-lg bg-white mb-8">{userTable(activeUsers, true)}</div>
-      )}
+
+      {/* Render the appropriate table based on active tab */}
       {activeTab === "pending" && (
-        <div className="overflow-x-auto rounded-lg shadow-lg bg-white mb-8">{userTable(filteredAndSortedUsers.filter(u => !u.is_approved && u.is_active), true)}</div>
+        <div className="overflow-x-auto rounded-lg shadow-lg bg-white mb-8">
+          {userTable(filteredAndSortedUsers, true)}
+        </div>
       )}
-      {/* Decline User Modal */}
+      {activeTab === "approved" && (
+        <div className="overflow-x-auto rounded-lg shadow-lg bg-white mb-8">
+          {userTable(filteredAndSortedUsers, true)}
+        </div>
+      )}
+      
+      {/* The rest of your modals remain the same */}
       {selectedUserId && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
@@ -332,6 +364,7 @@ const UserApproval = ({
           </div>
         </div>
       )}
+      
       {/* Deactivate User Modal */}
       {showDeactivateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
@@ -360,6 +393,7 @@ const UserApproval = ({
           </div>
         </div>
       )}
+      
       {/* Modal for alerts */}
       {modal.show && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -391,6 +425,7 @@ const UserApproval = ({
           </div>
         </div>
       )}
+      
       {activeTab === "verifiedEmails" && (
         <div className="overflow-x-auto rounded-lg shadow-lg bg-white mb-8">
           <table className="w-full">
