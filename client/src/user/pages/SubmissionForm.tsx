@@ -42,6 +42,8 @@ const SubmissionForm = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSaveTime, setLastSaveTime] = useState(Date.now());
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isViewOnly, setIsViewOnly] = useState(false);
+
 
   // Generate a unique stay ID for each guest
   const generateStayId = (day: number, room: number, guest: any, startMonth: number, startYear: number) => {
@@ -69,7 +71,7 @@ const SubmissionForm = () => {
   }, []);
 
   // Check if already submitted for month/year
-  useEffect(() => {
+   useEffect(() => {
     if (!user) return;
     
     // Reset form saved state when switching months
@@ -79,9 +81,8 @@ const SubmissionForm = () => {
       try {
         const data = await submissionsAPI.checkSubmission(user.user_id, selectedMonth, selectedYear);
         setHasSubmitted(data.hasSubmitted);
-        
-        // ✅ Even if submitted, we still show draft data for display
-        // The form will be disabled but data remains visible
+        // Set view-only mode if submitted, but allow editing draft data
+        setIsViewOnly(data.hasSubmitted);
         
       } catch (err) { 
         console.error("Error checking submission:", err); 
@@ -89,81 +90,113 @@ const SubmissionForm = () => {
     })();
   }, [user, selectedMonth, selectedYear]);
 
-  // Load draft stays for selected month/year
-  useEffect(() => {
-    if (!user) return;
-    setIsLoading(true);
-    
-    (async () => {
-      try {
-        // Always load draft stays first for display
-        const [serverStays, localData] = await Promise.all([
-          submissionsAPI.getDraftStays(user.user_id, selectedMonth, selectedYear),
-          loadDataFromLocalStorage(user.user_id)
-        ]);
 
-        const currentKey = `${selectedYear}-${selectedMonth}`;
-        
-        // Convert draft stays to monthly data format
-        const staysToMonthlyData = (stays: any[]) => {
-          const monthlyData: any = {};
-          stays.forEach(stay => {
-            const monthKey = `${stay.year}-${stay.month}`;
-            if (!monthlyData[monthKey]) {
-              monthlyData[monthKey] = [];
-            }
-            
-            monthlyData[monthKey].push({
-              day: stay.day,
-              room: stay.room_number,
-              guests: stay.guests || [],
-              isCheckIn: stay.is_check_in,
-              isStartDay: stay.is_start_day,
-              stayId: stay.stay_id,
-              startDay: stay.start_day,
-              startMonth: stay.start_month,
-              startYear: stay.start_year,
-              lengthOfStay: stay.length_of_stay
-            });
-          });
-          return monthlyData;
-        };
 
-        const serverData = staysToMonthlyData(serverStays);
-        const mergedData = { ...localData, ...serverData };
-        
-        // ✅ ALWAYS use draft data for display, even if submitted data exists
-        setMonthlyData(mergedData);
-        setOccupiedRooms(mergedData[currentKey] || []);
+// Load draft stays for selected month/year - FIXED VERSION
+useEffect(() => {
+  if (!user) return;
+  
+  let isMounted = true; // Add mount check to prevent state updates on unmounted component
+  setIsLoading(true);
+  
+  (async () => {
+    try {
+      // Always load draft stays first for editing
+      const [serverStays, localData, submissionCheck] = await Promise.all([
+        submissionsAPI.getDraftStays(user.user_id, selectedMonth, selectedYear),
+        loadDataFromLocalStorage(user.user_id),
+        submissionsAPI.checkSubmission(user.user_id, selectedMonth, selectedYear)
+      ]);
 
-        // Only check for submission status, but don't replace the display data
-        if (serverStays.length === 0 && mergedData[currentKey]?.length === 0) {
-          try {
-            const submissionData = await submissionsAPI.getSubmission(user.user_id, selectedMonth, selectedYear);
-            if (submissionData) {
-              // We found submitted data but no drafts - user can view but not edit
-              const submittedData = Array.isArray(submissionData.days) ? submissionData.days : [];
-              const updatedDataWithSubmission = { ...mergedData, [currentKey]: submittedData };
-              setMonthlyData(updatedDataWithSubmission);
-              setOccupiedRooms(submittedData);
-              saveDataToLocalStorage(user.user_id, updatedDataWithSubmission);
-            }
-          } catch (subErr) {
-            console.warn("Could not load submitted data:", subErr);
+      if (!isMounted) return;
+
+      const currentKey = `${selectedYear}-${selectedMonth}`;
+      
+      // Convert draft stays to monthly data format
+      const staysToMonthlyData = (stays: any[]) => {
+        const monthlyData: any = {};
+        stays.forEach(stay => {
+          const monthKey = `${stay.year}-${stay.month}`;
+          if (!monthlyData[monthKey]) {
+            monthlyData[monthKey] = [];
           }
+          
+          monthlyData[monthKey].push({
+            day: stay.day,
+            room: stay.room_number,
+            guests: stay.guests || [],
+            isCheckIn: stay.is_check_in,
+            isStartDay: stay.is_start_day,
+            stayId: stay.stay_id,
+            startDay: stay.start_day,
+            startMonth: stay.start_month,
+            startYear: stay.start_year,
+            lengthOfStay: stay.length_of_stay
+          });
+        });
+        return monthlyData;
+      };
+
+      const serverData = staysToMonthlyData(serverStays);
+      const mergedData = { ...localData, ...serverData };
+      
+      // Set submission status FIRST
+      setHasSubmitted(submissionCheck.hasSubmitted);
+      
+      // Determine view-only mode: only view-only if submitted AND no draft data exists
+      const hasDraftData = serverStays.length > 0 || mergedData[currentKey]?.length > 0;
+      const shouldBeViewOnly = submissionCheck.hasSubmitted && !hasDraftData;
+      
+      console.log('🔧 Setting view mode:', {
+        hasSubmitted: submissionCheck.hasSubmitted,
+        hasDraftData,
+        shouldBeViewOnly,
+        serverStaysCount: serverStays.length,
+        localDataCount: mergedData[currentKey]?.length || 0
+      });
+      
+      setIsViewOnly(shouldBeViewOnly);
+      
+      // ✅ ALWAYS use draft data for display
+      setMonthlyData(mergedData);
+      setOccupiedRooms(mergedData[currentKey] || []);
+
+      // If no draft data exists but we have a submission, load submitted data for viewing only
+      if (!hasDraftData && submissionCheck.hasSubmitted) {
+        try {
+          const submissionData = await submissionsAPI.getSubmission(user.user_id, selectedMonth, selectedYear);
+          if (submissionData && isMounted) {
+            const submittedData = Array.isArray(submissionData.days) ? submissionData.days : [];
+            const updatedDataWithSubmission = { ...mergedData, [currentKey]: submittedData };
+            setMonthlyData(updatedDataWithSubmission);
+            setOccupiedRooms(submittedData);
+            saveDataToLocalStorage(user.user_id, updatedDataWithSubmission);
+          }
+        } catch (subErr) {
+          console.warn("Could not load submitted data:", subErr);
         }
-      } catch (err) {
-        console.error("Error loading draft stays:", err);
+      }
+    } catch (err) {
+      console.error("Error loading draft stays:", err);
+      if (isMounted) {
         const cachedData = loadDataFromLocalStorage(user.user_id);
         const currentKey = `${selectedYear}-${selectedMonth}`;
         const fallbackData = Array.isArray(cachedData[currentKey]) ? cachedData[currentKey] : [];
         setMonthlyData({ ...cachedData, [currentKey]: fallbackData });
         setOccupiedRooms(fallbackData);
-      } finally { 
+        setIsViewOnly(false); // Default to editable on error
+      }
+    } finally { 
+      if (isMounted) {
         setIsLoading(false); 
       }
-    })();
-  }, [user, selectedMonth, selectedYear]);
+    }
+  })();
+
+  return () => {
+    isMounted = false; // Cleanup function
+  };
+}, [user, selectedMonth, selectedYear]);
 
   // Save to localStorage on monthlyData change (remove server auto-save for drafts)
   useEffect(() => {
@@ -249,6 +282,18 @@ const SubmissionForm = () => {
         message: `Room ${roomNumber} is invalid. Please enter a room number between 1 and ${numberOfRooms}.`,
       });
     }
+  };
+
+   // Add this helper function right after your state declarations
+  const getActualDisabledState = () => {
+    // If loading, always disabled
+    if (isLoading) return true;
+    
+    // If future month, always disabled  
+    if (isFutureMonthValue) return true;
+    
+    // Only disabled if we're in view-only mode (submitted with no drafts)
+    return isViewOnly;
   };
 
   // Cell click
@@ -795,7 +840,7 @@ const handleRemoveAllGuests = async (day: number, room: number): Promise<void> =
   }, [selectedMonth, selectedYear, user]);
 
   return (
-    <div className="container mt-5" style={{ position: 'relative' }}>
+   <div className="container mt-5" style={{ position: 'relative' }}>
       {/* Loading Overlay */}
       {isLoading && (
         <div
@@ -823,14 +868,17 @@ const handleRemoveAllGuests = async (day: number, room: number): Promise<void> =
       
       <h2>Monthly Recording Format</h2>
       <p>Form: DAE-1A</p>
-      <SaveButton
+      
+      {/* MODIFIED: Only disable submission, not editing */}
+       <SaveButton
         onSave={handleSaveForm}
         isFormSaved={isFormSaved}
         hasSubmitted={hasSubmitted}
         isFutureMonth={isFutureMonthValue}
         isCurrentMonth={isCurrentMonthValue}
-        disabled={isLoading}
+        disabled={getActualDisabledState()} // ← Updated
       />
+      
       <MonthYearSelector
         selectedMonth={selectedMonth}
         selectedYear={selectedYear}
@@ -838,13 +886,13 @@ const handleRemoveAllGuests = async (day: number, room: number): Promise<void> =
         onYearChange={e => setSelectedYear(parseInt(e.target.value))}
         disabled={isLoading}
       />
+      
       <div className="d-flex align-items-center gap-2 mb-3">
         <RoomSearchBar 
           onSearch={handleSearch} 
           disabled={isLoading}
-          roomNames={roomNames} // Pass room names for search functionality
+          roomNames={roomNames}
         />
-        {/* Go to Room 1 Button */}
         <button
           onClick={() => handleSearch(1)}
           className="btn btn-outline-secondary"
@@ -870,98 +918,102 @@ const handleRemoveAllGuests = async (day: number, room: number): Promise<void> =
            <ArrowBigRight size={16}/>
         </button>
       </div>
+      
+      {/* MODIFIED: Room names editing - allow editing unless view-only */}
       <div className="mb-3">
-      <div className="d-flex align-items-center mb-2" style={{ gap: "0.5rem" }}>
-        <h5 className="mb-0">Edit Room Names</h5>
-        <button
-          className="btn btn-link d-flex align-items-center gap-1"
-          style={{
-            fontWeight: 500,
-            fontSize: "1rem",
-            textDecoration: "none",
-            marginLeft: "0.5rem"
-          }}
-          onClick={() => setRoomNamesCollapsed(!roomNamesCollapsed)}
-          aria-expanded={!roomNamesCollapsed}
-          aria-controls="room-names-edit-section"
-        >
-          {roomNamesCollapsed ? (
-            <>
-              <span>Show</span>
-              <ChevronDown size={18} />
-            </>
-          ) : (
-            <>
-              <span>Hide</span>
-              <ChevronUp size={18} />
-            </>
-          )}
-        </button>
-      </div>
-      {!roomNamesCollapsed && (
-        <div id="room-names-edit-section" className="p-3 rounded bg-light border mb-2">
-          <div className="d-flex flex-wrap gap-2 mb-2">
-            {(editingRoomNames ? roomNamesDraft : roomNames).map((name, idx) => (
-              <input
-                key={idx}
-                type="text"
-                value={editingRoomNames ? roomNamesDraft[idx] : name}
-                onChange={e => {
-                  if (!editingRoomNames) return;
-                  const newNames = [...roomNamesDraft];
-                  newNames[idx] = e.target.value;
-                  setRoomNamesDraft(newNames);
-                }}
-                className="form-control"
-                style={{
-                  width: 120,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis"
-                }}
-                disabled={!editingRoomNames || hasSubmitted || isLoading || roomNamesLoading}
-                aria-label={`Room ${idx + 1} name`}
-              />
-            ))}
-          </div>
-          <div className="mt-2">
-            {!editingRoomNames ? (
-              <button
-                className="btn btn-outline-primary d-flex align-items-center gap-1"
-                onClick={() => setEditingRoomNames(true)}
-                disabled={hasSubmitted || isLoading || roomNamesLoading}
-              >
-                <Edit2 size={16} />
-                Edit Room Names
-              </button>
+        <div className="d-flex align-items-center mb-2" style={{ gap: "0.5rem" }}>
+          <h5 className="mb-0">Edit Room Names</h5>
+          <button
+            className="btn btn-link d-flex align-items-center gap-1"
+            style={{
+              fontWeight: 500,
+              fontSize: "1rem",
+              textDecoration: "none",
+              marginLeft: "0.5rem"
+            }}
+            onClick={() => setRoomNamesCollapsed(!roomNamesCollapsed)}
+            aria-expanded={!roomNamesCollapsed}
+            aria-controls="room-names-edit-section"
+            disabled={isLoading}
+          >
+            {roomNamesCollapsed ? (
+              <>
+                <span>Show</span>
+                <ChevronDown size={18} />
+              </>
             ) : (
               <>
-                <button
-                  className="btn btn-success me-2 d-flex align-items-center gap-1"
-                  onClick={handleSaveRoomNames}
-                  disabled={roomNamesLoading}
-                >
-                  <Save size={16} />
-                  Save Room Names
-                </button>
-                <button
-                  className="btn btn-secondary d-flex align-items-center gap-1"
-                  onClick={() => {
-                    setRoomNamesDraft(roomNames);
-                    setEditingRoomNames(false);
-                  }}
-                  disabled={roomNamesLoading}
-                >
-                  <X size={16} />
-                  Cancel
-                </button>
+                <span>Hide</span>
+                <ChevronUp size={18} />
               </>
             )}
-          </div>
+          </button>
         </div>
-      )}
-    </div>
-    <div ref={gridRef}>
+        {!roomNamesCollapsed && (
+          <div id="room-names-edit-section" className="p-3 rounded bg-light border mb-2">
+            <div className="d-flex flex-wrap gap-2 mb-2">
+              {(editingRoomNames ? roomNamesDraft : roomNames).map((name, idx) => (
+                <input
+                  key={idx}
+                  type="text"
+                  value={editingRoomNames ? roomNamesDraft[idx] : name}
+                  onChange={e => {
+                    if (!editingRoomNames) return;
+                    const newNames = [...roomNamesDraft];
+                    newNames[idx] = e.target.value;
+                    setRoomNamesDraft(newNames);
+                  }}
+                  className="form-control"
+                  style={{
+                    width: 120,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis"
+                  }}
+                  disabled={!editingRoomNames || getActualDisabledState() || roomNamesLoading} // ← Updated
+                  aria-label={`Room ${idx + 1} name`}
+                />
+              ))}
+            </div>
+            <div className="mt-2">
+              {!editingRoomNames ? (
+                <button
+                  className="btn btn-outline-primary d-flex align-items-center gap-1"
+                  onClick={() => setEditingRoomNames(true)}
+                  disabled={getActualDisabledState() || isLoading || roomNamesLoading} // ← Updated
+                >
+                  <Edit2 size={16} />
+                  Edit Room Names
+                </button>
+              ) : (
+                <>
+                  <button
+                    className="btn btn-success me-2 d-flex align-items-center gap-1"
+                    onClick={handleSaveRoomNames}
+                    disabled={roomNamesLoading}
+                  >
+                    <Save size={16} />
+                    Save Room Names
+                  </button>
+                  <button
+                    className="btn btn-secondary d-flex align-items-center gap-1"
+                    onClick={() => {
+                      setRoomNamesDraft(roomNames);
+                      setEditingRoomNames(false);
+                    }}
+                    disabled={roomNamesLoading}
+                  >
+                    <X size={16} />
+                    Cancel
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+      
+      <div ref={gridRef}>
         <MonthlyGrid
           daysInMonth={daysInMonth}
           numberOfRooms={numberOfRooms}
@@ -969,12 +1021,12 @@ const handleRemoveAllGuests = async (day: number, room: number): Promise<void> =
           onCellClick={handleCellClick}
           getRoomColor={getRoomColor}
           calculateDailyTotals={calculateDailyTotals}
-          disabled={hasSubmitted || isFutureMonthValue || isLoading} // Still disabled but data visible
+          disabled={getActualDisabledState()} // ← Updated
           gridRef={mainGridRef}
         />
-
       </div>
-      {isModalOpen && (
+      
+       {isModalOpen && (
         <GuestModal
           day={selectedDate}
           room={selectedRoom}
@@ -982,7 +1034,7 @@ const handleRemoveAllGuests = async (day: number, room: number): Promise<void> =
           onSave={handleSaveGuests}
           onRemoveAllGuests={handleRemoveAllGuests}
           initialData={getGuestData(selectedDate, selectedRoom)}
-          disabled={hasSubmitted || isLoading}
+          disabled={getActualDisabledState()} // ← Updated
           hasRoomConflict={hasRoomConflict}
           occupiedRooms={occupiedRooms}
           selectedYear={selectedYear}

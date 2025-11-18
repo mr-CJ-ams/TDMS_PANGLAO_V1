@@ -1,11 +1,12 @@
-import React, { useMemo, useRef } from "react";
+// FILE: client\src\user\components\MonthlyGrid.tsx
+import React, { useMemo, useRef, useEffect } from "react"; // Added useEffect
 import { FixedSizeGrid as VirtualizedGrid } from "react-window";
 import useMediaQuery from "../hooks/useMediaQuery";
 
 interface MonthlyGridProps {
   daysInMonth: number;
   numberOfRooms: number;
-  roomNames: string[]; // <-- Add this
+  roomNames: string[];
   onCellClick: (day: number, room: number) => void;
   getRoomColor: (day: number, room: number) => string;
   calculateDailyTotals: (day: number) => { checkIns: number; overnight: number; occupied: number };
@@ -20,7 +21,7 @@ const CELL_PADDING = 4;
 const MonthlyGrid = ({
   daysInMonth,
   numberOfRooms,
-  roomNames, // <-- Add this
+  roomNames,
   onCellClick,
   getRoomColor,
   calculateDailyTotals,
@@ -34,8 +35,13 @@ const MonthlyGrid = ({
   const mainGridRef = gridRef || useRef<VirtualizedGrid>(null);
   const daysColumnRef = useRef<VirtualizedGrid>(null);
 
+  // Add debugging
+  useEffect(() => {
+    console.log('🔧 MonthlyGrid - disabled state:', disabled);
+  }, [disabled]);
+
   // Calculate grid sizes
-  const totalColumns = numberOfRooms + 3; // rooms + 3 totals
+  const totalColumns = numberOfRooms + 3;
   const fullGridWidth = totalColumns * CELL_WIDTH;
   const gridWidth = isDesktop
     ? Math.min(window.innerWidth - CELL_WIDTH, fullGridWidth)
@@ -46,8 +52,7 @@ const MonthlyGrid = ({
 
   // Track the last scroll position to prevent infinite updates
   const lastScrollTop = useRef<number>(0);
-  // Sync vertical scrolling between days column and main grid
-  // Sync vertical scrolling between days column and main grid
+  
   const onMainGridScroll = ({ scrollTop }: { scrollTop: number }) => {
     if (daysColumnRef.current && Math.abs(scrollTop - lastScrollTop.current) > 1) {
       lastScrollTop.current = scrollTop;
@@ -62,11 +67,11 @@ const MonthlyGrid = ({
     }
   };
 
-   // Also update the DayCell component to match the padding
+  // DayCell component remains the same...
   const DayCell = ({ rowIndex, style }: any) => {
     const paddedStyle = {
       ...style,
-      padding: `${CELL_PADDING}px`, // Padding on all sides
+      padding: `${CELL_PADDING}px`,
       boxSizing: 'border-box'
     };
 
@@ -82,13 +87,13 @@ const MonthlyGrid = ({
           borderRadius: "12px 0 0 0",
           borderBottom: "2px solid #bcd",
           borderRight: "1px solid #bcd",
-          padding: `${CELL_PADDING}px` // Padding for header too
+          padding: `${CELL_PADDING}px`
         }}>
           Day
         </div>
       );
     }
-   return (
+    return (
       <div style={{
         ...paddedStyle,
         background: "#fffaf0",
@@ -109,12 +114,12 @@ const MonthlyGrid = ({
   const MainCell = ({ columnIndex, rowIndex, style }: any) => {
     const paddedStyle = {
       ...style,
-      padding: `${CELL_PADDING}px`, // Padding on all sides
+      padding: `${CELL_PADDING}px`,
       boxSizing: 'border-box'
     };
+    
     // Header row
     if (rowIndex === 0) {
-      // Room headers
       if (columnIndex < numberOfRooms) {
         return (
           <div style={{
@@ -131,8 +136,7 @@ const MonthlyGrid = ({
           </div>
         );
       }
-      // Totals headers
-       const labels = ["Check-ins", "Overnight", "Occupied"];
+      const labels = ["Check-ins", "Overnight", "Occupied"];
       const i = columnIndex - numberOfRooms;
       return (
         <div style={{
@@ -155,10 +159,19 @@ const MonthlyGrid = ({
     if (columnIndex < numberOfRooms) {
       const room = rooms[columnIndex];
       const day = days[rowIndex - 1];
+      
+      // Add more detailed debugging for room cells
+      const isCellDisabled = disabled;
+      
       return (
         <div style={paddedStyle}>
           <button
-            onClick={() => !disabled && onCellClick(day, room)}
+            onClick={() => {
+              console.log('🔧 Room cell clicked:', { day, room, disabled: isCellDisabled });
+              if (!isCellDisabled) {
+                onCellClick(day, room);
+              }
+            }}
             className="btn w-100 d-flex align-items-center justify-content-center gap-2 px-2 py-1 border-0"
             style={{
               backgroundColor: getRoomColor(day, room),
@@ -167,8 +180,8 @@ const MonthlyGrid = ({
               color: "#333",
               transition: "all 0.3s ease",
               boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-              cursor: disabled ? "not-allowed" : "pointer",
-              opacity: disabled ? 0.6 : 1,
+              cursor: isCellDisabled ? "not-allowed" : "pointer",
+              opacity: isCellDisabled ? 0.6 : 1,
               width: "100%",
               height: "100%",
               margin: 0,
@@ -176,8 +189,8 @@ const MonthlyGrid = ({
               overflow: "hidden",
               textOverflow: "ellipsis",
             }}
-            disabled={disabled}
-            title={roomNames[columnIndex] || `Room ${room}`} // show full name on hover
+            disabled={isCellDisabled}
+            title={`${roomNames[columnIndex] || `Room ${room}`} - ${isCellDisabled ? 'Disabled' : 'Click to edit'}`}
           >
             {roomNames[columnIndex] || `Room ${room}`}
           </button>
@@ -185,7 +198,7 @@ const MonthlyGrid = ({
       );
     }
 
- // Totals cells
+    // Totals cells
     const totals = calculateDailyTotals(days[rowIndex - 1]);
     const labels = [totals.checkIns, totals.overnight, totals.occupied];
     const i = columnIndex - numberOfRooms;
@@ -225,7 +238,7 @@ const MonthlyGrid = ({
         <VirtualizedGrid
           ref={daysColumnRef}
           columnCount={1}
-          rowCount={daysInMonth + 1} // +1 for header
+          rowCount={daysInMonth + 1}
           columnWidth={CELL_WIDTH}
           rowHeight={CELL_HEIGHT}
           width={CELL_WIDTH}
@@ -246,7 +259,7 @@ const MonthlyGrid = ({
         <VirtualizedGrid
           ref={mainGridRef}
           columnCount={totalColumns}
-          rowCount={daysInMonth + 1} // +1 for header
+          rowCount={daysInMonth + 1}
           columnWidth={CELL_WIDTH}
           rowHeight={CELL_HEIGHT}
           width={gridWidth}
