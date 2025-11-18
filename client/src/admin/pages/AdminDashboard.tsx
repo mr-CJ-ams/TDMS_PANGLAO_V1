@@ -103,6 +103,7 @@ const AdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentAdmin, setCurrentAdmin] = useState<any>(null);
   
   const navigate = useNavigate();
 
@@ -140,22 +141,19 @@ const AdminDashboard = () => {
   }, [activeSection]);
 
   // Fetch all submissions (for Submission Overview section)
-  useEffect(() => { 
-    const fetchSubmissions = async () => { 
-      try { 
-        setLoading(true);
-        setError(null);
-        const response = await adminAPI.getSubmissions();
-        setSubmissions(response.submissions);
-      } catch (err: any) { 
-        console.error("Error fetching submissions:", err);
-        setError(err.response?.data?.error || "Failed to fetch submissions");
-      } finally {
-        setLoading(false);
+  useEffect(() => {
+    const fetchCurrentAdmin = async () => {
+      try {
+        const userData = sessionStorage.getItem("user");
+        if (userData) {
+          setCurrentAdmin(JSON.parse(userData));
+        }
+      } catch (err) {
+        console.error("Error fetching current admin:", err);
       }
     };
     
-    fetchSubmissions();
+    fetchCurrentAdmin();
   }, []);
 
   // Fetch submission details
@@ -312,7 +310,7 @@ const AdminDashboard = () => {
         {/* Main Content */}
         <div className="col-md-9">
           <div className="p-4">
-            {activeSection === "dashboard" && <MainDashboard user={{ role: "admin" }} />}
+            {activeSection === "dashboard" && (<MainDashboard user={currentAdmin || { role: "admin" }} />)}
             {activeSection === "user-approval" && (
               <UserApproval
                 users={users.map(user => ({

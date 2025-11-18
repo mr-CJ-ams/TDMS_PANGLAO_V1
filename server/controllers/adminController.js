@@ -60,7 +60,9 @@ const { sendEmailNotification } = require("../utils/email");
 // Get all users with role 'user'
 exports.getUsers = async (req, res) => {
   try {
-    const allUsers = await AdminModel.getUsers();
+    // Get the admin user ID from the authenticated user
+    const adminUserId = req.user.user_id;
+    const allUsers = await AdminModel.getUsers(adminUserId);
     res.json(allUsers);
   } catch (err) {
     console.error(err.message);
@@ -161,9 +163,13 @@ exports.getSubmissions = async (req, res) => {
     } = req.query;
     const offset = (page - 1) * limit;
     
+    // Get the admin user ID from the authenticated user
+    const adminUserId = req.user.user_id;
+    
     const { submissions, total } = await AdminModel.getSubmissions(
       { month, year, status, penaltyStatus, search },
-      { limit, offset }
+      { limit, offset },
+      adminUserId  // Pass admin user ID for location filtering
     );
     
     res.json({
@@ -179,10 +185,14 @@ exports.getSubmissions = async (req, res) => {
 };
 
 // Monthly Check-ins
+// In server/controllers/adminController.js - Update analytics endpoints
+
+// Monthly Check-ins
 exports.getMonthlyCheckins = async (req, res) => {
   try {
     const { year } = req.query;
-    const result = await AdminModel.getMonthlyCheckins(year);
+    const adminUserId = req.user.user_id; // Get admin user ID
+    const result = await AdminModel.getMonthlyCheckins(year, adminUserId);
     res.json(result);
   } catch (err) {
     console.error("Error fetching monthly check-ins:", err);
@@ -194,7 +204,8 @@ exports.getMonthlyCheckins = async (req, res) => {
 exports.getMonthlyMetrics = async (req, res) => {
   try {
     const { year } = req.query;
-    const { metrics, totalUsers } = await AdminModel.getMonthlyMetrics(year);
+    const adminUserId = req.user.user_id; // Get admin user ID
+    const { metrics, totalUsers } = await AdminModel.getMonthlyMetrics(year, adminUserId);
     
     const metricsWithSubmissionRate = metrics.map((row) => ({
       ...row,
@@ -212,7 +223,8 @@ exports.getMonthlyMetrics = async (req, res) => {
 exports.getNationalityCounts = async (req, res) => {
   try {
     const { year, month } = req.query;
-    const result = await AdminModel.getNationalityCounts(year, month);
+    const adminUserId = req.user.user_id; // Get admin user ID
+    const result = await AdminModel.getNationalityCounts(year, month, adminUserId);
     res.json(result);
   } catch (err) {
     console.error("Error fetching nationality counts:", err);
@@ -224,7 +236,8 @@ exports.getNationalityCounts = async (req, res) => {
 exports.getNationalityCountsByEstablishment = async (req, res) => {
   try {
     const { year, month } = req.query;
-    const result = await AdminModel.getNationalityCountsByEstablishment(year, month);
+    const adminUserId = req.user.user_id; // Get admin user ID
+    const result = await AdminModel.getNationalityCountsByEstablishment(year, month, adminUserId);
     res.json(result);
   } catch (err) {
     console.error("Error fetching nationality counts by establishment:", err);
@@ -236,7 +249,8 @@ exports.getNationalityCountsByEstablishment = async (req, res) => {
 exports.getGuestDemographics = async (req, res) => {
   try {
     const { year, month } = req.query;
-    const result = await AdminModel.getGuestDemographics(year, month);
+    const adminUserId = req.user.user_id; // Get admin user ID
+    const result = await AdminModel.getGuestDemographics(year, month, adminUserId);
     res.json(result);
   } catch (err) {
     console.error("Error fetching guest demographics:", err);

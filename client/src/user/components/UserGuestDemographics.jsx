@@ -148,6 +148,8 @@ const UserGuestDemographics = ({ user, selectedYear, selectedMonth, formatMonth 
     { Category: "Married", Total: statusCounts["Married"] || 0 },
     { Category: "Single", Total: statusCounts["Single"] || 0 },
     { Category: "N/A", Total: statusCounts["N/A"] || 0 },
+    { Category: "Divorced", Total: statusCounts["N/A"] || 0 },
+    { Category: "Widowed", Total: statusCounts["N/A"] || 0 },
   ];
 
   // Chart data - include all labels (so axis and labels are stable)

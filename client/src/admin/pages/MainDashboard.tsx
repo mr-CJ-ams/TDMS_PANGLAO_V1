@@ -117,85 +117,85 @@ const MainDashboard = ({ user }: MainDashboardProps) => {
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
   const [loading, setLoading] = useState<boolean>(false);
 
-  useEffect(() => {
-    setLoading(true);
-    const fetchData = async () => {
-      try {
-        const token = sessionStorage.getItem("token");
-        const [checkInsRes, metricsRes, nationalityRes, demographicsRes] = await Promise.all([
-          api.get<CheckInData[]>("/api/admin/monthly-checkins", { 
-            headers: { Authorization: `Bearer ${token}` }, 
-            params: { year: selectedYear } 
-          }),
-          api.get<MonthlyMetric[]>("/api/admin/monthly-metrics", { 
-            headers: { Authorization: `Bearer ${token}` }, 
-            params: { year: selectedYear } 
-          }),
-          api.get<NationalityCount[]>("/api/admin/nationality-counts", { 
-            headers: { Authorization: `Bearer ${token}` }, 
-            params: { year: selectedYear, month: selectedMonth } 
-          }),
-          api.get<DemographicData[]>("/api/admin/guest-demographics", { 
-            headers: { Authorization: `Bearer ${token}` }, 
-            params: { year: selectedYear, month: selectedMonth } 
-          }),
-        ]);
+useEffect(() => {
+  setLoading(true);
+  const fetchData = async () => {
+    try {
+      const token = sessionStorage.getItem("token");
+      const [checkInsRes, metricsRes, nationalityRes, demographicsRes] = await Promise.all([
+        api.get<CheckInData[]>("/api/admin/monthly-checkins", { 
+          headers: { Authorization: `Bearer ${token}` }, 
+          params: { year: selectedYear } 
+        }),
+        api.get<MonthlyMetric[]>("/api/admin/monthly-metrics", { 
+          headers: { Authorization: `Bearer ${token}` }, 
+          params: { year: selectedYear } 
+        }),
+        api.get<NationalityCount[]>("/api/admin/nationality-counts", { 
+          headers: { Authorization: `Bearer ${token}` }, 
+          params: { year: selectedYear, month: selectedMonth } 
+        }),
+        api.get<DemographicData[]>("/api/admin/guest-demographics", { 
+          headers: { Authorization: `Bearer ${token}` }, 
+          params: { year: selectedYear, month: selectedMonth } 
+        }),
+      ]);
 
-        const allMonths = Array.from({ length: 12 }, (_, i) => i + 1);
-        
-        const fillMonths = <T extends { month: number }>(
-          data: T[], 
-          keys: Array<keyof T> = []
-        ): T[] => {
-          return allMonths.map(month => {
-            const d = data.find(x => x.month === month);
-            if (keys.length > 0) {
-              return keys.reduce((acc, k) => ({ 
-                ...acc, 
-                [k]: d ? d[k] : 0,
-                month
-              }), {} as T);
-            }
-            return { 
-              month, 
-              total_check_ins: d ? (d as unknown as CheckInData).total_check_ins : 0, 
-              isPredicted: false 
-            } as unknown as T;
-          });
-        };
+      const allMonths = Array.from({ length: 12 }, (_, i) => i + 1);
+      
+      const fillMonths = <T extends { month: number }>(
+        data: T[], 
+        keys: Array<keyof T> = []
+      ): T[] => {
+        return allMonths.map(month => {
+          const d = data.find(x => x.month === month);
+          if (keys.length > 0) {
+            return keys.reduce((acc, k) => ({ 
+              ...acc, 
+              [k]: d ? d[k] : 0,
+              month
+            }), {} as T);
+          }
+          return { 
+            month, 
+            total_check_ins: d ? (d as unknown as CheckInData).total_check_ins : 0, 
+            isPredicted: false 
+          } as unknown as T;
+        });
+      };
 
-        const checkInsData = fillMonths<CheckInData>(checkInsRes.data);
+      const checkInsData = fillMonths<CheckInData>(checkInsRes.data);
 
-        // Ensure total_check_ins is a number and normalize months
-        const normalizedCheckIns = checkInsData
-          .map(m => ({
-            ...m,
-            total_check_ins: Number((m as any).total_check_ins) || 0,
-            isPredicted: false
-          }))
-          .sort((a, b) => a.month - b.month);
-        normalizedCheckIns.sort((a, b) => a.month - b.month);
-        setMonthlyCheckIns(normalizedCheckIns);
-        
-        setMonthlyMetrics(
-          fillMonths<MonthlyMetric>(metricsRes.data, [
-            "total_check_ins", "total_overnight", "total_occupied", "average_guest_nights",
-            "average_room_occupancy_rate", "average_guests_per_room", "total_submissions", 
-            "submission_rate", "total_rooms"
-          ])
-        );
-        
-        setNationalityCounts(nationalityRes.data);
-        setGuestDemographics(demographicsRes.data);
-      } catch (err) {
-        console.error("Error fetching dashboard data:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+      // Ensure total_check_ins is a number and normalize months
+      const normalizedCheckIns = checkInsData
+        .map(m => ({
+          ...m,
+          total_check_ins: Number((m as any).total_check_ins) || 0,
+          isPredicted: false
+        }))
+        .sort((a, b) => a.month - b.month);
+      normalizedCheckIns.sort((a, b) => a.month - b.month);
+      setMonthlyCheckIns(normalizedCheckIns);
+      
+      setMonthlyMetrics(
+        fillMonths<MonthlyMetric>(metricsRes.data, [
+          "total_check_ins", "total_overnight", "total_occupied", "average_guest_nights",
+          "average_room_occupancy_rate", "average_guests_per_room", "total_submissions", 
+          "submission_rate", "total_rooms"
+        ])
+      );
+      
+      setNationalityCounts(nationalityRes.data);
+      setGuestDemographics(demographicsRes.data);
+    } catch (err) {
+      console.error("Error fetching dashboard data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchData();
-  }, [selectedYear, selectedMonth]);
+  fetchData();
+}, [selectedYear, selectedMonth]);
 
   const formatMonth = (m: number): string => 
     new Date(2023, m - 1).toLocaleString("default", { month: "long" });

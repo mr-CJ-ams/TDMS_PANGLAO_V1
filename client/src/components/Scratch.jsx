@@ -1,0 +1,1 @@
+{activeSection === "dashboard" && (<MainDashboard user={currentAdmin || { role: "admin" }} />)}
