@@ -57,9 +57,17 @@ const pool = require("../db");
 class AdminModel {
   // User related methods
   static async getUsers() {
-    const result = await pool.query("SELECT * FROM users WHERE role = 'user'");
-    return result.rows;
-  }
+  // Only return users who have completed registration (have essential fields filled)
+  const result = await pool.query(`
+    SELECT * FROM users 
+    WHERE role = 'user' 
+    AND phone_number IS NOT NULL 
+    AND registered_owner IS NOT NULL
+    AND company_name IS NOT NULL
+    AND accommodation_type IS NOT NULL
+  `);
+  return result.rows;
+}
 
   static async approveUser(id) {
     await pool.query("UPDATE users SET is_approved = true WHERE user_id = $1", [id]);
@@ -291,16 +299,22 @@ class AdminModel {
     return result.rows;
   }
 
-  static async getVerifiedEmails() {
-    // Select verified emails that do not exist in users table
-    const result = await pool.query(`
-      SELECT email
-      FROM email_verifications
-      WHERE verified = TRUE
-        AND email NOT IN (SELECT email FROM users)
-    `);
-    return result.rows;
-  }
+static async getVerifiedEmails() {
+  // Select verified emails that do not exist in users table OR exist but haven't completed registration
+  const result = await pool.query(`
+    SELECT ev.email
+    FROM email_verifications ev
+    WHERE ev.verified = TRUE
+      AND NOT EXISTS (
+        SELECT 1 FROM users u 
+        WHERE u.email = ev.email 
+        AND u.phone_number IS NOT NULL 
+        AND u.registered_owner IS NOT NULL
+        AND u.company_name IS NOT NULL
+      )
+  `);
+  return result.rows;
+}
 }
 
 module.exports = AdminModel;

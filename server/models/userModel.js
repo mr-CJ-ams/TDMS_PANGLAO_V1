@@ -130,47 +130,40 @@ exports.updatePasswordAndClearReset = async (email, hashedPassword) => {
 
 // Add email verification functions
 exports.createEmailVerification = async (email, token, expiresAt) => {
-  // First check if user exists
-  const existingUser = await pool.query("SELECT email FROM users WHERE email = $1", [email]);
-  
-  if (existingUser.rows.length > 0) {
-    // Update existing user with verification token
-    const res = await pool.query(
-      "UPDATE users SET email_verification_token = $1, email_verification_expires = $2 WHERE email = $3 RETURNING email",
-      [token, expiresAt, email]
-    );
-    return res.rows[0];
-  } else {
-    // Create a temporary user record with just email and verification data
-    const res = await pool.query(
-      "INSERT INTO users (email, email_verification_token, email_verification_expires, password, role) VALUES ($1, $2, $3, $4, $5) RETURNING email",
-      [email, token, expiresAt, 'temp_password', 'user']
-    );
-    return res.rows[0];
-  }
+  // Use the email_verifications table instead of users table
+  const res = await pool.query(
+    `INSERT INTO email_verifications (email, token, expires_at, verified) 
+     VALUES ($1, $2, $3, $4) 
+     ON CONFLICT (email) 
+     DO UPDATE SET token = $2, expires_at = $3, verified = $4 
+     RETURNING email`,
+    [email, token, expiresAt, false]
+  );
+  return res.rows[0];
 };
 
 exports.verifyEmailToken = async (email, token) => {
   const res = await pool.query(
-    "SELECT email FROM users WHERE email = $1 AND email_verification_token = $2 AND email_verification_expires > NOW()",
+    "SELECT email FROM email_verifications WHERE email = $1 AND token = $2 AND expires_at > NOW() AND verified = false",
     [email, token]
   );
   return res.rows[0];
 };
 
+
 exports.markEmailAsVerified = async (email) => {
   await pool.query(
-    "UPDATE users SET email_verified = TRUE, email_verification_token = NULL, email_verification_expires = NULL WHERE email = $1",
+    "UPDATE email_verifications SET verified = TRUE, token = NULL, expires_at = NULL WHERE email = $1",
     [email]
   );
 };
 
 exports.isEmailVerified = async (email) => {
   const res = await pool.query(
-    "SELECT email_verified FROM users WHERE email = $1",
+    "SELECT verified FROM email_verifications WHERE email = $1",
     [email]
   );
-  return res.rows[0]?.email_verified || false;
+  return res.rows[0]?.verified || false;
 };
 
 exports.cleanupExpiredTokens = async () => {

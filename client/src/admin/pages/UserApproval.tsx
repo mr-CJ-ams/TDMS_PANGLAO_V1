@@ -1,3 +1,4 @@
+// client/src/admin/pages/UserApproval.tsx
 import { useState, useMemo, useEffect } from "react";
 import { adminAPI } from "../../services/api";
 import { X, Search, ChevronUp, ChevronDown, Loader2 } from "lucide-react";
@@ -19,6 +20,10 @@ interface User {
   number_of_rooms: number;
   is_approved: boolean;
   is_active: boolean;
+}
+
+interface VerifiedEmail {
+  email: string;
 }
 
 interface UserApprovalProps {
@@ -50,27 +55,30 @@ const UserApproval = ({
     message: string;
     onClose?: () => void;
   }>({ show: false, title: "", message: "" });
-  const [activeTab, setActiveTab] = useState<"approved" | "pending" | "verifiedEmails">("pending"); // Changed default to "pending"
-  const [verifiedEmails, setVerifiedEmails] = useState<{ email: string }[]>([]);
+  const [activeTab, setActiveTab] = useState<"approved" | "pending" | "verifiedEmails">("pending");
+  const [verifiedEmails, setVerifiedEmails] = useState<VerifiedEmail[]>([]);
   const [loadingUserId, setLoadingUserId] = useState<string | null>(null);
   const [loadingAction, setLoadingAction] = useState<"approve" | "decline" | null>(null);
 
+  // Load verified emails when the tab is active
   useEffect(() => {
     if (activeTab === "verifiedEmails") {
-      adminAPI.getVerifiedEmails().then(setVerifiedEmails).catch(() => setVerifiedEmails([]));
+      adminAPI.getVerifiedEmails()
+        .then(emails => setVerifiedEmails(emails))
+        .catch(() => setVerifiedEmails([]));
     }
   }, [activeTab]);
 
+  // Filter users based on active tab
   const filteredAndSortedUsers = useMemo(() => {
     return users
       .filter(u => (u.company_name || "").toLowerCase().includes(searchTerm.toLowerCase()))
       .filter(u => {
-        // Use activeTab instead of activeFilter for filtering
         switch (activeTab) {
           case "pending":
-            return !u.is_approved && u.is_active; // Only show pending AND active users
+            return !u.is_approved && u.is_active;
           case "approved":
-            return u.is_approved && u.is_active; // Only show approved AND active users
+            return u.is_approved && u.is_active;
           default:
             return true;
         }
@@ -79,11 +87,18 @@ const UserApproval = ({
         const cmp = (a.company_name || "").localeCompare(b.company_name || "");
         return sortDirection === "asc" ? cmp : -cmp;
       });
-  }, [users, searchTerm, activeTab, sortDirection]); // Changed activeFilter to activeTab
+  }, [users, searchTerm, activeTab, sortDirection]);
 
-  // Remove the separate activeUsers and deactivatedUsers filtering since we're handling it in the main filter
+  // Filter verified emails based on search
+  const filteredVerifiedEmails = useMemo(() => {
+    return verifiedEmails.filter(emailObj => 
+      emailObj.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [verifiedEmails, searchTerm]);
+
   const activeUsers = users.filter(u => u.is_active && u.is_approved);
   const deactivatedUsers = users.filter(u => !u.is_active);
+  const pendingUsersCount = users.filter(u => !u.is_approved && u.is_active).length;
 
   const handleDeactivateClick = (userId: string) => { 
     setUserToDeactivate(userId); 
@@ -109,7 +124,6 @@ const UserApproval = ({
           onClose: () => {
             setShowDeactivateModal(false);
             setModal(m => ({ ...m, show: false }));
-            // Refresh the page to show updated user status
             window.location.reload();
           }
         });
@@ -130,7 +144,6 @@ const UserApproval = ({
     }
   };
 
-  // Approve handler with loading
   const handleApproveUser = async (userId: string) => {
     setLoadingUserId(userId);
     setLoadingAction("approve");
@@ -142,7 +155,6 @@ const UserApproval = ({
     }
   };
 
-  // Decline handler with loading
   const handleDeclineUser = async (userId: string) => {
     setLoadingUserId(userId);
     setLoadingAction("decline");
@@ -250,9 +262,36 @@ const UserApproval = ({
     </table>
   );
 
-  const activeUsersCount = activeUsers.length;
-  const deactivatedUsersCount = deactivatedUsers.length;
-  const pendingUsersCount = users.filter(u => !u.is_approved && u.is_active).length;
+  const verifiedEmailsTable = (emailList: VerifiedEmail[]) => (
+    <table className="w-full">
+      <thead>
+        <tr className="bg-cyan-100 text-cyan-900">
+          <th className="p-4 text-left font-medium">Verified Email</th>
+          <th className="p-4 text-left font-medium">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {emailList.length === 0 ? (
+          <tr>
+            <td colSpan={2} className="p-4 text-center text-gray-500">
+              No verified emails found matching your criteria.
+            </td>
+          </tr>
+        ) : (
+          emailList.map(({ email }) => (
+            <tr key={email} className="hover:bg-cyan-50 transition-colors">
+              <td className="p-4 font-medium">{email}</td>
+              <td className="p-4">
+                <span className="px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-700">
+                  Awaiting Registration
+                </span>
+              </td>
+            </tr>
+          ))
+        )}
+      </tbody>
+    </table>
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-50 to-white p-8">
@@ -262,7 +301,7 @@ const UserApproval = ({
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
           <input 
             type="text" 
-            placeholder="Search by company name..." 
+            placeholder={activeTab === "verifiedEmails" ? "Search by email..." : "Search by company name..."} 
             value={searchTerm} 
             onChange={e => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-sky-200 focus:border-sky-500 transition-all" 
@@ -271,8 +310,8 @@ const UserApproval = ({
         <div className="flex gap-2">
           {([
             { key: "pending", label: "Pending", count: pendingUsersCount },
-            { key: "approved", label: "Approved", count: activeUsersCount },
-            { key: "verifiedEmails", label: "Verified Emails" }
+            { key: "approved", label: "Approved", count: activeUsers.length },
+            { key: "verifiedEmails", label: "Verified Emails", count: verifiedEmails.length }
           ] as const).map(f => (
             <button
               key={f.key}
@@ -304,9 +343,9 @@ const UserApproval = ({
       <div className="mb-4 text-sky-900 font-medium">
         {activeTab === "pending" && `Showing ${filteredAndSortedUsers.length} pending ${filteredAndSortedUsers.length === 1 ? "user" : "users"}`}
         {activeTab === "approved" && `Showing ${filteredAndSortedUsers.length} approved ${filteredAndSortedUsers.length === 1 ? "user" : "users"}`}
-        {activeTab === "verifiedEmails" && `Showing ${verifiedEmails.length} verified ${verifiedEmails.length === 1 ? "email" : "emails"}`}
-        {deactivatedUsersCount > 0 && activeTab !== "verifiedEmails" && (
-          <span className="text-gray-500 ml-2">({deactivatedUsersCount} deactivated)</span>
+        {activeTab === "verifiedEmails" && `Showing ${filteredVerifiedEmails.length} verified ${filteredVerifiedEmails.length === 1 ? "email" : "emails"} awaiting registration`}
+        {deactivatedUsers.length > 0 && activeTab !== "verifiedEmails" && (
+          <span className="text-gray-500 ml-2">({deactivatedUsers.length} deactivated)</span>
         )}
       </div>
 
@@ -319,6 +358,11 @@ const UserApproval = ({
       {activeTab === "approved" && (
         <div className="overflow-x-auto rounded-lg shadow-lg bg-white mb-8">
           {userTable(filteredAndSortedUsers, true)}
+        </div>
+      )}
+      {activeTab === "verifiedEmails" && (
+        <div className="overflow-x-auto rounded-lg shadow-lg bg-white mb-8">
+          {verifiedEmailsTable(filteredVerifiedEmails)}
         </div>
       )}
       
@@ -423,33 +467,6 @@ const UserApproval = ({
               </button>
             </div>
           </div>
-        </div>
-      )}
-      
-      {activeTab === "verifiedEmails" && (
-        <div className="overflow-x-auto rounded-lg shadow-lg bg-white mb-8">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-cyan-100 text-cyan-900">
-                <th className="p-4 text-left font-medium">Verified Email</th>
-              </tr>
-            </thead>
-            <tbody>
-              {verifiedEmails.length === 0 ? (
-                <tr>
-                  <td className="p-4 text-center text-gray-500">
-                    No verified emails found.
-                  </td>
-                </tr>
-              ) : (
-                verifiedEmails.map(({ email }) => (
-                  <tr key={email}>
-                    <td className="p-4 font-medium">{email}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
         </div>
       )}
     </div>
