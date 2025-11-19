@@ -58,7 +58,7 @@
  * Date: [2025-08-21]
  */
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import api from "../../services/api"; // use shared axios instance
 import Filters from "../components/Filters";
 import MonthlyMetrics from "../components/MonthlyMetrics";
@@ -66,6 +66,7 @@ import LineChartComponent from "../components/LineChart";
 import GuestDemographics from "../components/GuestDemographics";
 import NationalityCounts from "../components/NationalityCounts";
 import RegionalDistribution from "../components/RegionalDistribution";
+import MonthSelector from "../components/MonthSelector";
 
 
 interface CheckInData {
@@ -203,20 +204,18 @@ useEffect(() => {
   const toNumber = (v: string | number, d: number = 0): number => 
     isNaN(parseFloat(v as string)) ? d : parseFloat(v as string);
 
-  // If you compute derived values for charts do that with useMemo:
-  const chartData = useMemo(() => {
-    return monthlyCheckIns.slice().sort((a, b) => a.month - b.month);
-  }, [monthlyCheckIns]);
 
   return (
     <div>
       <h2>Main Dashboard</h2>
+      {/* Show only the year selector at the top */}
       <Filters
         selectedYear={selectedYear}
         setSelectedYear={setSelectedYear}
         selectedMonth={selectedMonth}
         setSelectedMonth={setSelectedMonth}
         formatMonth={formatMonth}
+        showMonth={false} // hide month selector here
       />
       {loading ? (
         <p>Loading monthly check-ins...</p>
@@ -232,6 +231,12 @@ useEffect(() => {
         selectedYear={selectedYear}
         formatMonth={formatMonth}
         toNumber={toNumber}
+      />
+      {/* Move the month selector above GuestDemographics */}
+      <MonthSelector
+        selectedMonth={selectedMonth}
+        setSelectedMonth={setSelectedMonth}
+        formatMonth={formatMonth}
       />
       <GuestDemographics
         guestDemographics={guestDemographics}

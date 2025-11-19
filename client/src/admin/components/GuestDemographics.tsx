@@ -59,7 +59,7 @@ import React from "react";
 import { Download } from "lucide-react";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip,
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, LabelList
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, LabelList
 } from "recharts";
 
 interface GuestDemographic {

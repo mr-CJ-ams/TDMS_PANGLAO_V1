@@ -66,7 +66,7 @@ import SubmissionOverview from "./SubmissionOverview";
 import MainDashboard from "./MainDashboard";
 import AdminSidebar from "../components/AdminSidebar";
 import '../../components/MenuButton.css';
-import { User, Submission, DayData, Guest, Metrics } from "../../types";
+import { User, Submission, Metrics } from "../../types";
 
 // Use the base interfaces from types, extend only where necessary
 interface AdminUser extends Omit<User, 'user_id'> {
@@ -80,16 +80,6 @@ interface AdminUser extends Omit<User, 'user_id'> {
   date_established: string | null;
   room_names?: string[];
   company_name: string;
-}
-
-interface AdminSubmission extends Submission {
-  deadline: string;
-  company_name: string;
-  accommodation_type?: string;
-  nationalityCounts?: Record<string, number>;
-  // Ensure these properties exist
-  number_of_rooms: number;
-  days: DayData[];
 }
 
 const AdminDashboard = () => {

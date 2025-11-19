@@ -233,21 +233,6 @@ const UserStatistics = ({ user }) => {
               ))}
             </select>
           </div>
-          <div style={{ marginBottom: 20 }}>
-            <label htmlFor="monthFilter" style={{ display: "block", color: "#37474F", fontWeight: "bold", marginBottom: 8 }}>
-              Select Month:
-            </label>
-            <select
-              id="monthFilter"
-              style={selectStyle}
-              value={selectedMonth}
-              onChange={e => setSelectedMonth(+e.target.value)}
-            >
-              {Array.from({ length: 12 }, (_, i) => (
-                <option key={i + 1} value={i + 1}>{formatMonth(i + 1)}</option>
-              ))}
-            </select>
-          </div>
         </div>
 
         {/* Chart */}
@@ -337,6 +322,24 @@ const UserStatistics = ({ user }) => {
             user={user}
           />
         )}
+
+         <div style={{ padding: 20, marginTop: 20, backgroundColor: "#E0F7FA", borderRadius: 12, boxShadow: "0px 4px 12px rgba(0,0,0,0.1)" }}>
+            <div style={{ marginBottom: 20 }}>
+                <label htmlFor="monthFilter" style={{ display: "block", color: "#37474F", fontWeight: "bold", marginBottom: 8 }}>
+                Select Month:
+                </label>
+                <select
+                id="monthFilter"
+                style={selectStyle}
+                value={selectedMonth}
+                onChange={e => setSelectedMonth(+e.target.value)}
+                >
+                {Array.from({ length: 12 }, (_, i) => (
+                    <option key={i + 1} value={i + 1}>{formatMonth(i + 1)}</option>
+                ))}
+                </select>
+          </div>
+        </div>
 
         {/* Guest Demographics Table */}
         <UserGuestDemographics

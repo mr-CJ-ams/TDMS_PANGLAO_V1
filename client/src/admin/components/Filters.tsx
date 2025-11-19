@@ -6,6 +6,7 @@ interface FiltersProps {
   selectedMonth: number;
   setSelectedMonth: (month: number) => void;
   formatMonth: (month: number) => string;
+  showMonth?: boolean; // <-- added optional flag
 }
 
 const Filters: React.FC<FiltersProps> = ({
@@ -13,7 +14,8 @@ const Filters: React.FC<FiltersProps> = ({
   setSelectedYear,
   selectedMonth,
   setSelectedMonth,
-  formatMonth
+  formatMonth,
+  showMonth = true // default true to preserve behavior
 }) => {
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: 10 }, (_, i) => (currentYear-3) + i);
@@ -63,33 +65,37 @@ const Filters: React.FC<FiltersProps> = ({
           ))}
         </select>
       </div>
-      <div style={{ marginBottom: 20 }}>
-        <label 
-          htmlFor="monthFilter" 
-          style={{ 
-            display: "block", 
-            color: "#37474F", 
-            fontWeight: "bold", 
-            marginBottom: 8 
-          }}
-        >
-          Select Month:
-        </label>
-        <select
-          id="monthFilter"
-          style={selectStyle}
-          value={selectedMonth}
-          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => 
-            setSelectedMonth(parseInt(e.target.value))
-          }
-        >
-          {Array.from({ length: 12 }, (_, i) => (
-            <option key={i + 1} value={i + 1}>
-              {formatMonth(i + 1)}
-            </option>
-          ))}
-        </select>
-      </div>
+
+      {/* Only render the month selector if showMonth is true */}
+      {showMonth && (
+        <div style={{ marginBottom: 20 }}>
+          <label 
+            htmlFor="monthFilter" 
+            style={{ 
+              display: "block", 
+              color: "#37474F", 
+              fontWeight: "bold", 
+              marginBottom: 8 
+            }}
+          >
+            Select Month:
+          </label>
+          <select
+            id="monthFilter"
+            style={selectStyle}
+            value={selectedMonth}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => 
+              setSelectedMonth(parseInt(e.target.value))
+            }
+          >
+            {Array.from({ length: 12 }, (_, i) => (
+              <option key={i + 1} value={i + 1}>
+                {formatMonth(i + 1)}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
     </div>
   );
 };

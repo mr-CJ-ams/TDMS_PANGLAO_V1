@@ -192,7 +192,7 @@ const UserGuestDemographics = ({ user, selectedYear, selectedMonth, formatMonth 
   };
 
   return (
-    <div style={{ padding: 20, backgroundColor: "#E0F7FA", marginTop: 24, borderRadius: 12 }}>
+    <div style={{ padding: 20, backgroundColor: "#E0F7FA", marginTop: 15, borderRadius: 12 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
         <h3 style={{ color: "#37474F", margin: 0 }}>Guest Demographics of Guest Check-Ins</h3>
         <button

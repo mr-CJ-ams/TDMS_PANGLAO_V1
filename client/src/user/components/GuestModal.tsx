@@ -117,7 +117,7 @@ const GuestModal = ({
   }, [day, selectedMonth, selectedYear, MAX_LENGTH_OF_STAY]);
 
   // Function to handle check-out day selection
-  const handleCheckOutDaySelect = (guestIndex: number, checkOutDay: number, checkOutMonth: number, checkOutYear: number, stayDuration: number) => {
+  const handleCheckOutDaySelect = (guestIndex: number, stayDuration: number) => {
     if (stayDuration > 0 && stayDuration <= MAX_LENGTH_OF_STAY) {
       handleUpdateGuest(guestIndex, "lengthOfStay", stayDuration.toString());
       setShowCheckOutDays(null);
@@ -685,10 +685,7 @@ const GuestModal = ({
                                             className="btn btn-outline-success btn-sm"
                                             onClick={() => handleCheckOutDaySelect(
                                               idx, 
-                                              checkOutDay.day, 
-                                              checkOutDay.month, 
-                                              checkOutDay.year, 
-                                              checkOutDay.stayDuration
+                                              checkOutDay.day,
                                             )}
                                             disabled={disabled}
                                             style={{ fontSize: '0.75rem', padding: '4px 8px' }}
