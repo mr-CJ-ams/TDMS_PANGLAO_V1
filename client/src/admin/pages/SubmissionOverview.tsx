@@ -142,7 +142,6 @@ const SubmissionOverview: React.FC<SubmissionOverviewProps> = ({
   setShowSubmissionModal,
   calculateMetrics,
   activeSection,
-  loading = false, // Default to false
 }) => {
   const [filters, setFilters] = useState<Filters>({ 
     month: "", 
@@ -171,31 +170,47 @@ const SubmissionOverview: React.FC<SubmissionOverviewProps> = ({
     return selectedSubmission?.room_names?.[roomNum - 1] || `Room ${roomNum}`;
   };
 
-  // FIXED: Type-safe submissions fetch
-  useEffect(() => {
-    if (activeSection !== "submission-overview") return;
-    
-    let isMounted = true;
+ // FIXED: Type-safe submissions fetch with filters
+useEffect(() => {
+  if (activeSection !== "submission-overview") return;
+  
+  let isMounted = true;
 
-    const fetchSubmissions = async () => {
-      try {
-        const data = await adminAPI.getSubmissions();
-        
-        if (isMounted) {
-          setSubmissions(data.submissions); 
-          setTotal(data.total);
-        }
-      } catch (err) { 
-        console.error("Error fetching submissions:", err); 
+  const fetchSubmissions = async () => {
+    try {
+      // Prepare filter parameters for API call
+      const filterParams: any = {};
+      
+      if (filters.month) filterParams.month = parseInt(filters.month);
+      if (filters.year) filterParams.year = parseInt(filters.year);
+      if (filters.status) filterParams.status = filters.status;
+      if (filters.penaltyStatus) filterParams.penaltyStatus = filters.penaltyStatus;
+      if (filters.search) filterParams.search = filters.search;
+      
+      // Add pagination parameters
+      const paginationParams = {
+        page: page,
+        limit: limit
+      };
+
+      // Pass both filters and pagination to the API
+      const data = await adminAPI.getSubmissions(filterParams, paginationParams);
+      
+      if (isMounted) {
+        setSubmissions(data.submissions); 
+        setTotal(data.total);
       }
-    };
-    
-    fetchSubmissions();
+    } catch (err) { 
+      console.error("Error fetching submissions:", err); 
+    }
+  };
+  
+  fetchSubmissions();
 
-    return () => {
-      isMounted = false;
-    };
-  }, [filters, page, activeSection, setSubmissions]);
+  return () => {
+    isMounted = false;
+  };
+}, [filters, page, activeSection, setSubmissions, limit]); // Added filters and limit to dependencies
 
   useEffect(() => {
     if (showSubmissionModal) {
@@ -256,6 +271,45 @@ const SubmissionOverview: React.FC<SubmissionOverviewProps> = ({
       setLoadingPenalty(p => ({ ...p, [currentSubmissionId]: false }));
     }
   };
+
+  // Add this helper function to filter submissions locally (as backup)
+const filterSubmissions = (submissions: Submission[]) => {
+  return submissions.filter(submission => {
+    // Month filter
+    if (filters.month && submission.month !== parseInt(filters.month)) {
+      return false;
+    }
+    
+    // Year filter
+    if (filters.year && submission.year !== parseInt(filters.year)) {
+      return false;
+    }
+    
+    // Status filter (Late/On-Time)
+    if (filters.status) {
+      const isLate = isSubmissionLate(submission);
+      if (filters.status === "Late" && !isLate) return false;
+      if (filters.status === "On-Time" && isLate) return false;
+    }
+    
+    // Penalty status filter
+    if (filters.penaltyStatus) {
+      if (filters.penaltyStatus === "Paid" && !submission.penalty) return false;
+      if (filters.penaltyStatus === "Unpaid" && submission.penalty) return false;
+    }
+    
+    // Search by company name
+    if (filters.search) {
+      const searchTerm = filters.search.toLowerCase();
+      const companyName = submission.company_name?.toLowerCase() || '';
+      if (!companyName.includes(searchTerm)) {
+        return false;
+      }
+    }
+    
+    return true;
+  });
+};
 
   const handleRoomSearch = () => {
     if (!selectedSubmission || !roomSearchTerm.trim()) {
@@ -672,7 +726,7 @@ const SubmissionOverview: React.FC<SubmissionOverviewProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-sky-100">
-            {submissions.map(submission => (
+            {filterSubmissions(submissions).map(submission => ( // Use filtered submissions here
               <tr key={submission.submission_id} className="hover:bg-sky-50 transition-colors">
                 <td className="p-4">{submission.submission_id}</td>
                 <td className="p-4">{submission.user_id}</td>
@@ -716,7 +770,7 @@ const SubmissionOverview: React.FC<SubmissionOverviewProps> = ({
           className="flex items-center gap-2 px-4 py-2 bg-sky-500 text-white rounded hover:bg-sky-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <ChevronLeft size={20} />Previous
         </button>
-        <span className="text-sky-900">Page {page} of {totalPages}</span>
+        <span className="text-sky-900">Page {page} of {totalPages} ({filterSubmissions(submissions).length} results)</span>
         <button onClick={() => setPage(page + 1)} disabled={page >= totalPages}
           className="flex items-center gap-2 px-4 py-2 bg-sky-500 text-white rounded hover:bg-sky-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           Next<ChevronRight size={20} />
