@@ -592,21 +592,6 @@ const GuestModal = ({
                   </div>
                   <div className="row mt-2">
                     <div className="col">
-                      <label className="form-label">Status</label>
-                      <select
-                        className="form-control"
-                        value={guest.status}
-                        onChange={e => handleUpdateGuest(idx, "status", e.target.value)}
-                        disabled={disabled || !isGuestEditable(guest)}
-                      >
-                        <option>Single</option>
-                        <option>Married</option>
-                        <option>N/A</option>
-                        <option>Divorced</option>
-                        <option>Widowed</option>
-                      </select>
-                    </div>
-                    <div className="col">
                       <label className="form-label">Nationality</label>
                       <select
                         className="form-control"

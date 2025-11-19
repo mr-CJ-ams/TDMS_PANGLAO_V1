@@ -364,7 +364,7 @@ const SubmissionDetails = ({ submissionId }) => {
         const roomGuests = guestsByRoom[roomNum] || [];
         if (roomGuests.length > 0) {
           const guestDetails = roomGuests.map(guest => 
-            `${guest.isCheckIn ? '✓' : '●'} ${guest.gender}, ${guest.age}, ${guest.status}, ${guest.nationality}`
+            `${guest.isCheckIn ? '✓' : '●'} ${guest.gender}, ${guest.age}, ${guest.nationality}`
           ).join('\n');
           row.push(guestDetails);
         } else {
@@ -804,7 +804,7 @@ const SubmissionDetails = ({ submissionId }) => {
                                       {guest.isCheckIn ? '✓' : '●'} {guest.gender}, {guest.age}
                                     </div>
                                     <div className="text-gray-500">
-                                      {guest.status}, {guest.nationality}
+                                      {guest.nationality} {/* Removed marital status */}
                                     </div>
                                   </div>
                                 ))}

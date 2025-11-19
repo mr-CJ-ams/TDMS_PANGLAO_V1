@@ -78,9 +78,18 @@ interface GuestDemographicsProps {
 
 const COLORS = ["#42a5f5", "#ec4899"];
 const AGE_COLORS = ["#60a5fa", "#38bdf8", "#34d399", "#4ade80", "#a3e635", "#facc15"];
-const STATUS_COLORS = ["#a78bfa", "#818cf8", "#f472b6", "#f87171", "#fbbf24"];
 
 const ageGroupLabels = [
+  "Children (0–12)",
+  "Teens (13–17)",
+  "Young Adults (18–24)",
+  "Adults (25–44)",
+  "Middle-Aged (45–59)",
+  "Seniors (60+)"
+];
+
+// Original age group labels for data filtering (keep this for internal logic)
+const originalAgeGroupLabels = [
   "Children",
   "Teens",
   "Young Adults",
@@ -89,13 +98,11 @@ const ageGroupLabels = [
   "Seniors"
 ];
 
-const statusLabels = [
-  "Married",
-  "Single",
-  "N/A",
-  "Divorced",
-  "Widowed"
-];
+// Function to get display age group label
+const getDisplayAgeGroup = (originalGroup: string): string => {
+  const index = originalAgeGroupLabels.indexOf(originalGroup);
+  return index !== -1 ? ageGroupLabels[index] : originalGroup;
+};
 
 const GuestDemographics: React.FC<GuestDemographicsProps> = ({
   guestDemographics,
@@ -109,48 +116,56 @@ const GuestDemographics: React.FC<GuestDemographicsProps> = ({
     { name: "Female", value: guestDemographics.filter(d => d.gender === "Female").reduce((a, b) => a + (typeof b.count === "string" ? parseInt(b.count) || 0 : b.count), 0) }
   ];
 
-  const ageGroupData = ageGroupLabels.map((label, i) => ({
-    name: label,
+  const ageGroupData = originalAgeGroupLabels.map((label, i) => ({
+    name: ageGroupLabels[i], // Use the new label with age ranges for display
+    originalName: label, // Keep original for data filtering
     value: guestDemographics.filter(d => d.age_group === label).reduce((a, b) => a + (typeof b.count === "string" ? parseInt(b.count) || 0 : b.count), 0),
     fill: AGE_COLORS[i % AGE_COLORS.length]
   }));
 
-  const statusData = statusLabels.map((label, i) => ({
-    name: label,
-    value: guestDemographics.filter(d => d.status === label).reduce((a, b) => a + (typeof b.count === "string" ? parseInt(b.count) || 0 : b.count), 0),
-    fill: STATUS_COLORS[i % STATUS_COLORS.length]
-  }));
-
-  // Export logic (unchanged)
+  // Export logic - include age ranges in export
   const exportGuestDemographics = () => {
+    // Use display age groups with age ranges in detailed data
     const detailedData = guestDemographics.map(d => [
-      d.gender, d.age_group, d.status, typeof d.count === 'string' ? parseInt(d.count) || 0 : d.count
+      d.gender, 
+      getDisplayAgeGroup(d.age_group), // Use age ranges in export
+      typeof d.count === 'string' ? parseInt(d.count) || 0 : d.count
     ]);
+    
+    // Use display age groups with age ranges in summary data
     const summaryData = [
       ["Male", genderData[0].value],
       ["Female", genderData[1].value],
-      ...ageGroupData.map(a => [a.name, a.value]),
-      ...statusData.map(s => [s.name, s.value])
+      ...ageGroupData.map(a => [a.name, a.value]) // Use display names with age ranges
     ];
+    
     const detailedSheet = XLSX.utils.aoa_to_sheet([
-      ["Panglao Report of Guest Demographics", "", "", ""],
-      ["Year", selectedYear, "", ""],
-      ["Month", formatMonth(selectedMonth), "", ""],
-      ["Gender", "AgeGroup", "Status", "Count"],
+      ["Panglao Report of Guest Demographics", "", ""],
+      ["Year", selectedYear, ""],
+      ["Month", formatMonth(selectedMonth), ""],
+      ["Gender", "AgeGroup", "Count"],
       ...detailedData
     ]);
-    detailedSheet["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 3 } }];
-    detailedSheet["!cols"] = Array(4).fill({ wch: 15 });
+    detailedSheet["!merges"] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } },
+      { s: { r: 1, c: 1 }, e: { r: 1, c: 2 } },
+      { s: { r: 2, c: 1 }, e: { r: 2, c: 2 } }
+    ];
+    detailedSheet["!cols"] = Array(3).fill({ wch: 15 });
 
     const summarySheet = XLSX.utils.aoa_to_sheet([
-      ["Panglao Report of Guest Demographics", "", "", ""],
-      ["Year", selectedYear, "", ""],
-      ["Month", formatMonth(selectedMonth), "", ""],
-      ["Category", "Total", "", ""],
-      ...summaryData.map(([cat, total]) => [cat, total, "", ""])
+      ["Panglao Report of Guest Demographics", "", ""],
+      ["Year", selectedYear, ""],
+      ["Month", formatMonth(selectedMonth), ""],
+      ["Category", "Total", ""],
+      ...summaryData.map(([cat, total]) => [cat, total, ""])
     ]);
-    summarySheet["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 3 } }];
-    summarySheet["!cols"] = Array(4).fill({ wch: 15 });
+    summarySheet["!merges"] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } },
+      { s: { r: 1, c: 1 }, e: { r: 1, c: 2 } },
+      { s: { r: 2, c: 1 }, e: { r: 2, c: 2 } }
+    ];
+    summarySheet["!cols"] = Array(3).fill({ wch: 15 });
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, detailedSheet, "Detailed Data");
@@ -178,26 +193,26 @@ const GuestDemographics: React.FC<GuestDemographicsProps> = ({
   return (
     <div style={{ padding: 20, backgroundColor: "#E0F7FA" }}>
       <h3 style={{ color: "#37474F", marginBottom: 20 }}>Guest Demographics of Guest Check-Ins</h3>
+      
       {/* Export Button */}
-  
       <button
-          style={{
-            backgroundColor: "#00BCD4",
-            color: "#FFF",
-            border: "none",
-            padding: "10px 20px",
-            borderRadius: 8,
-            cursor: "pointer",
-            marginBottom: 20,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px", // space between icon and text
-          }}
-          onClick={exportGuestDemographics}
-        >
-          <Download size={16}/> Monthly Metrics
-        </button>
+        style={{
+          backgroundColor: "#00BCD4",
+          color: "#FFF",
+          border: "none",
+          padding: "10px 20px",
+          borderRadius: 8,
+          cursor: "pointer",
+          marginBottom: 20,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "8px",
+        }}
+        onClick={exportGuestDemographics}
+      >
+        <Download size={16}/> Monthly Metrics
+      </button>
 
       <div style={{
         display: "flex",
@@ -265,13 +280,16 @@ const GuestDemographics: React.FC<GuestDemographicsProps> = ({
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis type="number" allowDecimals={false} />
-              {/* increased width so full labels are visible */}
-              <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 13 }} />
+              <YAxis 
+                type="category" 
+                dataKey="name" 
+                width={140} 
+                tick={{ fontSize: 13 }} 
+              />
               <Bar dataKey="value" fill="#4ade80" radius={[6, 6, 6, 6]}>
                 {ageGroupData.map((entry, idx) => (
                   <Cell key={`cell-age-${idx}`} fill={AGE_COLORS[idx % AGE_COLORS.length]} />
                 ))}
-                {/* show value next to bar */}
                 <LabelList dataKey="value" position="right" formatter={v => v} />
               </Bar>
               <RechartsTooltip />
@@ -279,35 +297,10 @@ const GuestDemographics: React.FC<GuestDemographicsProps> = ({
           </ResponsiveContainer>
         </div>
 
-        {/* Relationship Status Vertical Bar Chart */}
-        <div style={chartCardStyle}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <span role="img" aria-label="relationship-status" style={{ fontSize: 22 }}>💜</span>
-            <span style={{ fontWeight: 600, fontSize: 18, color: "#263238" }}>Relationship Status</span>
-          </div>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart
-              data={statusData}
-              margin={{ top: 8, right: 16, left: 8, bottom: 30 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              {/* ensure labels are readable and not cut off */}
-              <XAxis dataKey="name" tick={{ fontSize: 12 }} interval={0} />
-              <YAxis allowDecimals={false} />
-              <Bar dataKey="value" fill="#a78bfa" radius={[6,6,0,0]}>
-                {statusData.map((entry, idx) => (
-                  <Cell key={`cell-status-${idx}`} fill={STATUS_COLORS[idx % STATUS_COLORS.length]} />
-                ))}
-                {/* show value above each bar */}
-                <LabelList dataKey="value" position="top" formatter={v => v} />
-              </Bar>
-              <RechartsTooltip />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        {/* Removed Relationship Status Chart */}
       </div>
 
-      {/* Detailed Table */}
+      {/* Detailed Table - Updated Age Group Labels */}
       <div className="table-responsive">
         <table style={{
           width: "100%",
@@ -321,27 +314,30 @@ const GuestDemographics: React.FC<GuestDemographicsProps> = ({
             <tr style={{ backgroundColor: "#00BCD4", color: "#FFF" }}>
               <th style={{ padding: 12, textAlign: "left" }}>Age Group</th>
               <th style={{ padding: 12, textAlign: "left" }}>Gender</th>
-              <th style={{ padding: 12, textAlign: "left" }}>Status</th>
               <th style={{ padding: 12, textAlign: "left" }}>Count</th>
             </tr>
           </thead>
           <tbody>
-            {guestDemographics.map((demo, i) => (
-              <tr
-                key={`${demo.gender}-${demo.age_group}-${demo.status}-${i}`}
-                style={{
-                  borderBottom: "1px solid #B0BEC5",
-                  backgroundColor: i % 2 === 0 ? "#F5F5F5" : "#FFF"
-                }}
-              >
-                <td style={{ padding: 12, color: "#37474F" }}>{demo.age_group}</td>
-                <td style={{ padding: 12, color: "#37474F" }}>{demo.gender}</td>
-                <td style={{ padding: 12, color: "#37474F" }}>{demo.status}</td>
-                <td style={{ padding: 12, color: "#37474F" }}>
-                  {typeof demo.count === 'string' ? parseInt(demo.count) || 0 : demo.count}
-                </td>
-              </tr>
-            ))}
+            {guestDemographics.map((demo, i) => {
+              // Map original age group to display label with age ranges
+              const displayAgeGroup = getDisplayAgeGroup(demo.age_group);
+              
+              return (
+                <tr
+                  key={`${demo.gender}-${demo.age_group}-${i}`}
+                  style={{
+                    borderBottom: "1px solid #B0BEC5",
+                    backgroundColor: i % 2 === 0 ? "#F5F5F5" : "#FFF"
+                  }}
+                >
+                  <td style={{ padding: 12, color: "#37474F" }}>{displayAgeGroup}</td>
+                  <td style={{ padding: 12, color: "#37474F" }}>{demo.gender}</td>
+                  <td style={{ padding: 12, color: "#37474F" }}>
+                    {typeof demo.count === 'string' ? parseInt(demo.count) || 0 : demo.count}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
