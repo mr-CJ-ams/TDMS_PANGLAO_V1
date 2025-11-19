@@ -1,13 +1,13 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import nationalities from "./Nationality";
-import { Trash2, PlusIcon, X, Edit, Save, X as CancelIcon, Copy, Trash } from "lucide-react"; // Add Clock icon
+import { Trash2, PlusIcon, X, Edit, Save, X as CancelIcon, Copy, Trash, Calendar } from "lucide-react";
 
 interface GuestModalProps {
   day: number;
   room: number;
   onClose: () => void;
   onSave: (day: number, room: number, data: any) => Promise<boolean>;
-  onRemoveAllGuests: (day: number, room: number) => Promise<void>; // Make it return Promise<void>
+  onRemoveAllGuests: (day: number, room: number) => Promise<void>;
   initialData?: any;
   disabled: boolean;
   hasRoomConflict: (day: number, room: number, lengthOfStay: number, occupiedRooms: any[]) => boolean;
@@ -27,10 +27,12 @@ const GuestModal = ({
   initialData,
   disabled,
   onChange,
-  roomNames = []
+  roomNames = [],
+  selectedYear,
+  selectedMonth
 }: GuestModalProps) => {
-  const MAX_LENGTH_OF_STAY = 183;
-   const roomName = roomNames[room - 1] || `Room ${room}`;
+  const MAX_LENGTH_OF_STAY = 365;
+  const roomName = roomNames[room - 1] || `Room ${room}`;
 
   const [guests, setGuests] = useState(
     initialData?.guests?.map(g => ({
@@ -38,8 +40,8 @@ const GuestModal = ({
       lengthOfStay: g.lengthOfStay?.toString() || "",
       isCheckIn: g.isCheckIn !== false,
       _saved: true,
-      _isStartDay: g._isStartDay !== false, // <-- use saved value
-      _stayId: g._stayId,                   // <-- use saved value
+      _isStartDay: g._isStartDay !== false,
+      _stayId: g._stayId,
       _startDay: g._startDay,
       _startMonth: g._startMonth,
       _startYear: g._startYear,
@@ -54,15 +56,112 @@ const GuestModal = ({
     onConfirm: () => void;
   }>({ show: false, message: "", onConfirm: () => {} });
 
-  // Add state for global remove confirmation
+  // Add state for check-out day selection
+  const [showCheckOutDays, setShowCheckOutDays] = useState<number | null>(null);
+
   const [globalRemoveModal, setGlobalRemoveModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [removingAllGuests, setRemovingAllGuests] = useState(false);
-  // New state for confirming removal of a guest and setting length of stay to 1 day
   const [confirmOneDayModal, setConfirmOneDayModal] = useState<{
     show: boolean;
     guestIndex: number | null;
   }>({ show: false, guestIndex: null });
+
+  // Function to format date
+  const formatDate = (day: number, month: number, year: number) => {
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
+  };
+
+  // Function to add days to a date
+  const addDays = (startDay: number, startMonth: number, startYear: number, daysToAdd: number) => {
+    const date = new Date(startYear, startMonth - 1, startDay);
+    date.setDate(date.getDate() + daysToAdd);
+    return {
+      day: date.getDate(),
+      month: date.getMonth() + 1,
+      year: date.getFullYear()
+    };
+  };
+
+  // Generate check-out days with complete date information up to 183 days
+  // Use the guest's actual start day for consistent calculation
+  const generateCheckOutDays = useMemo(() => {
+    const days = [];
+    // Use the current modal's day for new guests, but for saved guests use their actual start day
+    const startDate = new Date(selectedYear, selectedMonth - 1, day);
+    
+    // Generate days for the full 183-day period
+    for (let i = 1; i <= MAX_LENGTH_OF_STAY; i++) {
+      const checkOutDate = new Date(startDate);
+      checkOutDate.setDate(checkOutDate.getDate() + i);
+      
+      const checkOutDay = checkOutDate.getDate();
+      const checkOutMonth = checkOutDate.getMonth() + 1;
+      const checkOutYear = checkOutDate.getFullYear();
+      
+      days.push({
+        day: checkOutDay,
+        month: checkOutMonth,
+        year: checkOutYear,
+        stayDuration: i,
+        display: formatDate(checkOutDay, checkOutMonth, checkOutYear)
+      });
+    }
+    
+    return days;
+  }, [day, selectedMonth, selectedYear, MAX_LENGTH_OF_STAY]);
+
+  // Function to handle check-out day selection
+  const handleCheckOutDaySelect = (guestIndex: number, checkOutDay: number, checkOutMonth: number, checkOutYear: number, stayDuration: number) => {
+    if (stayDuration > 0 && stayDuration <= MAX_LENGTH_OF_STAY) {
+      handleUpdateGuest(guestIndex, "lengthOfStay", stayDuration.toString());
+      setShowCheckOutDays(null);
+    }
+  };
+
+  // Function to toggle check-out days display for a specific guest
+  const toggleCheckOutDays = (guestIndex: number) => {
+    if (showCheckOutDays === guestIndex) {
+      setShowCheckOutDays(null);
+    } else {
+      setShowCheckOutDays(guestIndex);
+    }
+  };
+
+  // Calculate check-out date based on length of stay - FIXED: Use guest's actual start day
+  const calculateCheckOutDate = (guest: any) => {
+    if (!guest.lengthOfStay || isNaN(parseInt(guest.lengthOfStay))) return null;
+    
+    const stayDuration = parseInt(guest.lengthOfStay);
+    
+    // For saved guests, use their actual start day; for new guests, use current modal day
+    const startDay = guest._saved ? guest._startDay : day;
+    const startMonth = guest._saved ? guest._startMonth : selectedMonth;
+    const startYear = guest._saved ? guest._startYear : selectedYear;
+    
+    return addDays(startDay, startMonth, startYear, stayDuration);
+  };
+
+  // Get button text for check-out dates - FIXED: Use consistent start day
+  const getCheckOutButtonText = (guest: any, guestIndex: number) => {
+    if (showCheckOutDays === guestIndex) {
+      return 'Hide Check-out Dates';
+    }
+    
+    if (guest.lengthOfStay && !isNaN(parseInt(guest.lengthOfStay))) {
+      const checkOutDate = calculateCheckOutDate(guest);
+      if (checkOutDate) {
+        return `Check-out: ${formatDate(checkOutDate.day, checkOutDate.month, checkOutDate.year)}`;
+      }
+    }
+    
+    return 'Check-out Dates';
+  };
 
   // Copy guest ID to clipboard
   const copyGuestId = (guestId: string) => {
@@ -73,76 +172,66 @@ const GuestModal = ({
     });
   };
 
-  // Global Remove All Guests in this room
-  const handleGlobalRemove = () => {
-    setGlobalRemoveModal(true);
-  };
 
   // Confirm and execute global removal
-const confirmGlobalRemove = async () => {
-  setGlobalRemoveModal(false);
-  setRemovingAllGuests(true);
+  const confirmGlobalRemove = async () => {
+    setGlobalRemoveModal(false);
+    setRemovingAllGuests(true);
 
-  try {
-    // Notify parent that changes are being made
+    try {
+      if (onChange) {
+        onChange(true);
+      }
+
+      await onRemoveAllGuests(day, room);
+      console.log("✅ Remove All Guests operation completed successfully");
+      onClose();
+
+    } catch (error) {
+      setError("Failed to remove all guests. Please try again.");
+    } finally {
+      setRemovingAllGuests(false);
+    }
+  };
+
+  // Add guest (unsaved by default)
+  const handleAddGuest = () => {
     if (onChange) {
       onChange(true);
     }
-
-    // Call the remove all guests function
-    await onRemoveAllGuests(day, room);
     
-    // Success - data will be automatically refreshed by onRemoveAllGuests
-    console.log("✅ Remove All Guests operation completed successfully");
-    
-    // Close the modal after successful operation
-    onClose();
-
-  } catch (error) {
-    setError("Failed to remove all guests. Please try again.");
-  } finally {
-    setRemovingAllGuests(false);
-  }
-};
-
-  // Add guest (unsaved by default)
- const handleAddGuest = () => {
-  // Notify parent that changes are being made
-  if (onChange) {
-    onChange(true);
-  }
-  
-  setGuests([
-    ...guests,
-    {
-      gender: "Male",
-      age: "",
-      status: "Single",
-      nationality: "Philippines",
-      lengthOfStay: "",
-      isCheckIn: true,
-      _saved: false,
-      _isStartDay: true,
-      _editing: true,
-      _originalData: null,
-    },
-  ]);
-};
-
-
+    setGuests([
+      ...guests,
+      {
+        gender: "Male",
+        age: "",
+        status: "Single",
+        nationality: "Philippines",
+        lengthOfStay: "",
+        isCheckIn: true,
+        _saved: false,
+        _isStartDay: true,
+        _editing: true,
+        _originalData: null,
+        // Set start day info for new guests
+        _startDay: day,
+        _startMonth: selectedMonth,
+        _startYear: selectedYear,
+      },
+    ]);
+  };
 
   // Update guest field - only allowed for start day guests in edit mode
   const handleUpdateGuest = (idx, field, value) => {
     const guest = guests[idx];
     
-    // Only allow updates for guests in edit mode and start day guests
     if (!guest._editing || (guest._saved && !guest._isStartDay)) {
       return;
     }
 
-   if (onChange) {
-    onChange(true);
-  }
+    if (onChange) {
+      onChange(true);
+    }
 
     setGuests(
       guests.map((g, i) =>
@@ -165,10 +254,9 @@ const confirmGlobalRemove = async () => {
 
   // Enable edit mode for a saved guest
   const handleEditGuest = idx => {
-
     if (onChange) {
-    onChange(true);
-  }
+      onChange(true);
+    }
 
     setGuests(
       guests.map((g, i) =>
@@ -176,8 +264,8 @@ const confirmGlobalRemove = async () => {
           ? {
               ...g,
               _editing: true,
-              _originalData: { ...g }, // Store original data for cancel
-              _originalStayId: g._stayId, // Store original stay ID
+              _originalData: { ...g },
+              _originalStayId: g._stayId,
               _originalGender: g.gender,
               _originalAge: g.age,
               _originalStatus: g.status,
@@ -189,113 +277,110 @@ const confirmGlobalRemove = async () => {
   };
 
   // Cancel edit mode and restore original data
- const handleCancelEdit = (idx: number) => {
-  const guest = guests[idx];
-  
-  // Notify parent that changes are being made (or cleared)
-  if (onChange) {
-    if (guest._originalData) {
-      onChange(false); // Changes were cancelled
-    } else {
-      onChange(true); // Still have changes (removing unsaved guest)
+  const handleCancelEdit = (idx: number) => {
+    const guest = guests[idx];
+    
+    if (onChange) {
+      if (guest._originalData) {
+        onChange(false);
+      } else {
+        onChange(true);
+      }
     }
-  }
-  
-  if (guest._originalData) {
-    setGuests(
-      guests.map((g, i) =>
-        i === idx ? { ...guest._originalData, _editing: false, _originalData: null } : g
-      )
-    );
-  } else {
-    setGuests(guests.filter((_, i) => i !== idx));
-  }
-};
+    
+    if (guest._originalData) {
+      setGuests(
+        guests.map((g, i) =>
+          i === idx ? { ...guest._originalData, _editing: false, _originalData: null } : g
+        )
+      );
+    } else {
+      setGuests(guests.filter((_, i) => i !== idx));
+    }
+    setShowCheckOutDays(null);
+  };
 
   // Update handleSaveGuest to include original data
-const handleSaveGuest = async (idx: number) => {
-  const guest = guests[idx];
-  
-  // Validate guest
-  if (!guest.age || isNaN(guest.age) || parseInt(guest.age) <= 0) {
-    setError("Please enter a valid age for this guest.");
-    return;
-  }
-  if (!guest.lengthOfStay || isNaN(guest.lengthOfStay) || parseInt(guest.lengthOfStay) <= 0) {
-    setError("Please enter a valid length of stay for this guest.");
-    return;
-  }
-  if (parseInt(guest.lengthOfStay) > MAX_LENGTH_OF_STAY) {
-    setError(`Maximum allowed length of stay is ${MAX_LENGTH_OF_STAY} days for each guest.`);
-    return;
-  }
-
-  // Clear error if validation passes
-  setError("");
-  setSaving(true);
-
-  try {
-    // Notify parent that changes are being saved
-    if (onChange) {
-      onChange(false);
+  const handleSaveGuest = async (idx: number) => {
+    const guest = guests[idx];
+    
+    if (!guest.age || isNaN(guest.age) || parseInt(guest.age) <= 0) {
+      setError("Please enter a valid age for this guest.");
+      return;
+    }
+    if (!guest.lengthOfStay || isNaN(guest.lengthOfStay) || parseInt(guest.lengthOfStay) <= 0) {
+      setError("Please enter a valid length of stay for this guest.");
+      return;
+    }
+    if (parseInt(guest.lengthOfStay) > MAX_LENGTH_OF_STAY) {
+      setError(`Maximum allowed length of stay is ${MAX_LENGTH_OF_STAY} days for each guest.`);
+      return;
     }
 
-    // Prepare the guest data for saving
-    const savedGuest = {
-      ...guest,
-      age: parseInt(guest.age),
-      lengthOfStay: parseInt(guest.lengthOfStay),
-      _saved: true,
-      _isStartDay: guest._isStartDay,
-      _editing: false,
-      _originalData: null,
-    };
+    setError("");
+    setSaving(true);
 
-    // Call the parent save function and wait for it to complete
-    const success = await onSave(day, room, {
-      guests: [savedGuest],
-      singleGuest: true,
-      isEdit: !!guest._originalStayId,
-    });
+    try {
+      if (onChange) {
+        onChange(false);
+      }
 
-    if (success) {
-      // Update local state only after successful save
-      setGuests(guests.map((g, i) => (i === idx ? savedGuest : g)));
-    } else {
+      const savedGuest = {
+        ...guest,
+        age: parseInt(guest.age),
+        lengthOfStay: parseInt(guest.lengthOfStay),
+        _saved: true,
+        _isStartDay: guest._isStartDay,
+        _editing: false, // Set editing to false after save
+        _originalData: null,
+        // Ensure start day info is preserved
+        _startDay: guest._startDay || day,
+        _startMonth: guest._startMonth || selectedMonth,
+        _startYear: guest._startYear || selectedYear,
+      };
+
+      const success = await onSave(day, room, {
+        guests: [savedGuest],
+        singleGuest: true,
+        isEdit: !!guest._originalStayId,
+      });
+
+      if (success) {
+        setGuests(guests.map((g, i) => (i === idx ? savedGuest : g)));
+      } else {
+        setError("Failed to save guest. Please try again.");
+      }
+
+    } catch (error) {
       setError("Failed to save guest. Please try again.");
+    } finally {
+      setSaving(false);
+      setShowCheckOutDays(null);
     }
-
-  } catch (error) {
-    setError("Failed to save guest. Please try again.");
-  } finally {
-    setSaving(false);
-  }
-};
+  };
 
   // Modal exit (X button)
   const handleExit = () => onClose();
 
- // Check if guest is editable - FIXED: Only editable on actual start day
-  // Check if guest is editable - FIXED: Only editable on actual start day
-const isGuestEditable = (guest) => {
-  // Allow editing if:
-  // - Guest is unsaved (new)
-  // - Guest is in edit mode
-  // - Guest is on their actual start day (regardless of other guests)
-  return guest._editing || !guest._saved || (guest._saved && guest._isStartDay);
-};
+  // Check if guest is editable
+  const isGuestEditable = (guest) => {
+    return guest._editing || !guest._saved || (guest._saved && guest._isStartDay);
+  };
 
-  // Check if guest can be edited - FIXED: Only editable on actual start day
-const canEditGuest = (guest) => {
-  // Only allow editing from the start day for saved guests
-  return guest._saved && guest._isStartDay && !guest._editing;
-};
+  // Check if guest can be edited
+  const canEditGuest = (guest) => {
+    return guest._saved && guest._isStartDay && !guest._editing;
+  };
 
-  // Check if guest shows action buttons - FIXED: Only show on actual start day
-const showActionButtons = (guest) => {
-  // Show buttons for unsaved guests or guests on their start day
-  return !guest._saved || (guest._saved && guest._isStartDay);
-};
+  // Check if guest shows action buttons
+  const showActionButtons = (guest) => {
+    return !guest._saved || (guest._saved && guest._isStartDay);
+  };
+
+  // Check if check-out button should be clickable
+  const isCheckOutButtonClickable = (guest) => {
+    return guest._editing && isGuestEditable(guest);
+  };
 
   // Format guest ID for display (shortened version)
   const formatGuestId = (stayId: string) => {
@@ -309,56 +394,52 @@ const showActionButtons = (guest) => {
   // Check if there are any guests to remove
   const hasGuests = guests.length > 0;
 
-const [processingOneDay, setProcessingOneDay] = useState<number | null>(null);
+  const [processingOneDay, setProcessingOneDay] = useState<number | null>(null);
 
-const handleSetLengthOfStayToOneAndDelete = async (idx: number) => {
-  setConfirmOneDayModal({ show: true, guestIndex: idx });
-};
+  const handleSetLengthOfStayToOneAndDelete = async (idx: number) => {
+    setConfirmOneDayModal({ show: true, guestIndex: idx });
+  };
 
-// Update the confirmation function to handle the refresh
-const confirmSetLengthOfStayToOneAndDelete = async () => {
-  if (confirmOneDayModal.guestIndex === null) return;
+  // Update the confirmation function to handle the refresh
+  const confirmSetLengthOfStayToOneAndDelete = async () => {
+    if (confirmOneDayModal.guestIndex === null) return;
 
-  const idx = confirmOneDayModal.guestIndex;
-  const guestToDelete = guests[idx];
-  
-  setProcessingOneDay(idx);
-  setConfirmOneDayModal({ show: false, guestIndex: null });
+    const idx = confirmOneDayModal.guestIndex;
+    const guestToDelete = guests[idx];
+    
+    setProcessingOneDay(idx);
+    setConfirmOneDayModal({ show: false, guestIndex: null });
 
-  try {
-    // Notify parent that changes are being made
-    if (onChange) {
-      onChange(true);
-    }
+    try {
+      if (onChange) {
+        onChange(true);
+      }
 
-    // Update the guest's length of stay to 1 day and remove the guest
-    setGuests((prevGuests) => {
-      return prevGuests.filter((_, i) => i !== idx); // Remove the guest from the list
-    });
+      setGuests((prevGuests) => {
+        return prevGuests.filter((_, i) => i !== idx);
+      });
 
-    // Automatically save the updated guest with refresh
-    const success = await onSave(day, room, {
-      guests: [],
-      removeGuest: {
-        ...guestToDelete,
-        _stayId: guestToDelete._stayId, // Ensure stay ID is passed for deletion
-      },
-      singleGuest: true,
-    });
+      const success = await onSave(day, room, {
+        guests: [],
+        removeGuest: {
+          ...guestToDelete,
+          _stayId: guestToDelete._stayId,
+        },
+        singleGuest: true,
+      });
 
-    if (success) {
-      // Success - data will be automatically refreshed by onSave
-      console.log("✅ 1 Day operation completed successfully");
-    } else {
+      if (success) {
+        console.log("✅ 1 Day operation completed successfully");
+      } else {
+        setError("Failed to update guest. Please try again.");
+      }
+
+    } catch (error) {
       setError("Failed to update guest. Please try again.");
+    } finally {
+      setProcessingOneDay(null);
     }
-
-  } catch (error) {
-    setError("Failed to update guest. Please try again.");
-  } finally {
-    setProcessingOneDay(null);
-  }
-};
+  };
 
   return (
     <div className="modal" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
@@ -397,249 +478,351 @@ const confirmSetLengthOfStayToOneAndDelete = async () => {
             )}
 
             {/* Show guest fields for each guest */}
-            {guests.map((guest, idx) => (
-              <div key={idx} className="mb-3 border rounded p-2">
-                {/* Guest header showing edit status */}
-                <div className="d-flex justify-between align-items-center mb-2">
-                  <h6 className="mb-0">
-                    Guest {idx + 1}
-                    {guest._saved && (
-                      <span className={`badge ${guest._isStartDay ? 'bg-warning' : 'bg-info'} ms-2`}>
-                        {guest._isStartDay ? 'Start Day' : 'Following Day'}
-                      </span>
+            {guests.map((guest, idx) => {
+              // const checkOutDate = calculateCheckOutDate(guest);
+              const checkOutButtonText = getCheckOutButtonText(guest, idx);
+              const isCheckOutClickable = isCheckOutButtonClickable(guest);
+              
+              return (
+                <div key={idx} className="mb-3 border rounded p-2">
+                  {/* Guest header showing edit status */}
+                  <div className="d-flex justify-between align-items-center mb-2">
+                    <h6 className="mb-0">
+                      Guest {idx + 1}
+                      {guest._saved && (
+                        <span className={`badge ${guest._isStartDay ? 'bg-warning' : 'bg-info'} ms-2`}>
+                          {guest._isStartDay ? 'Start Day' : 'Following Day'}
+                        </span>
+                      )}
+                      {guest._editing && (
+                        <span className="badge bg-success ms-2">Editing</span>
+                      )}
+                    </h6>
+                    {!isGuestEditable(guest) && !guest._editing && (
+                      <small className="text-muted">Read-only (not start day)</small>
                     )}
-                    {guest._editing && (
-                      <span className="badge bg-success ms-2">Editing</span>
-                    )}
-                  </h6>
-                  {!isGuestEditable(guest) && !guest._editing && (
-                    <small className="text-muted">Read-only (not start day)</small>
+                  </div>
+
+                  {/* Guest ID Display - Show for saved guests */}
+                  {guest._saved && guest._stayId && (
+                    <div className="mb-3 p-2 bg-light rounded">
+                      <div className="d-flex justify-between align-items-center">
+                        <div>
+                          <small className="text-muted d-block">Guest ID:</small>
+                          <code className="text-primary" style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>
+                            {formatGuestId(guest._stayId)}
+                          </code>
+                        </div>
+                        <button
+                          type="button"
+                          className="btn btn-outline-secondary btn-sm"
+                          onClick={() => copyGuestId(guest._stayId)}
+                          title="Copy Guest ID"
+                        >
+                          <Copy size={14} />
+                        </button>
+                      </div>
+                      <small className="text-muted">
+                        {guest._isStartDay 
+                          ? "You can edit or delete this guest from their start day."
+                          : "This guest is read-only. Edit or delete from their start day (" + guest._startMonth + "/"+ guest._startDay +"/"+ guest._startYear +")."
+                        }
+                      </small>
+                    </div>
+                  )}
+
+                  {/* Per-guest check-in toggle - only editable in edit mode */}
+                  <div className="form-group mb-2">
+                   <label className="form-label fw-bold">Is the Guest checking in today?</label>
+                  <div className="d-flex gap-2">
+                    <button
+                      type="button"
+                      className={`btn ${guest.isCheckIn ? "btn-warning" : "btn-outline-warning"} flex-fill`}
+                      onClick={() => handleUpdateGuest(idx, "isCheckIn", "true")}
+                      disabled={disabled || !isGuestEditable(guest)}
+                      style={{ color: guest.isCheckIn ? "black" : "black" }}
+                    >
+                      Yes, checking in today
+                    </button>
+
+                    <button
+                      type="button"
+                      className={`btn ${!guest.isCheckIn ? "btn-primary" : "btn-outline-primary"} flex-fill`}
+                      onClick={() => handleUpdateGuest(idx, "isCheckIn", "false")}
+                      disabled={disabled || !isGuestEditable(guest)}
+                      style={{ color: !guest.isCheckIn ? "white" : "black" }}
+                    >
+                      No, staying from a previous day
+                    </button>
+                  </div>
+
+                  <small className="form-text text-muted">
+                    {guest.isCheckIn
+                      ? "✅ This will count as a check-in and the start day cell will be yellow"
+                      : "ℹ️ This will NOT count as a check-in and the start day cell will be blue"}
+                  </small>
+
+                  </div>
+                  
+                  <div className="row">
+                    <div className="col">
+                      <label className="form-label">Gender</label>
+                      <select
+                        className="form-control"
+                        value={guest.gender}
+                        onChange={e => handleUpdateGuest(idx, "gender", e.target.value)}
+                        disabled={disabled || !isGuestEditable(guest)}
+                      >
+                        <option>Male</option>
+                        <option>Female</option>
+                      </select>
+                    </div>
+                    <div className="col">
+                      <label className="form-label">Age</label>
+                      <input
+                        type="number"
+                        className="form-control"
+                        placeholder="Age"
+                        value={guest.age}
+                        onChange={e => handleUpdateGuest(idx, "age", e.target.value)}
+                        min="1"
+                        disabled={disabled || !isGuestEditable(guest)}
+                      />
+                    </div>
+                  </div>
+                  <div className="row mt-2">
+                    <div className="col">
+                      <label className="form-label">Status</label>
+                      <select
+                        className="form-control"
+                        value={guest.status}
+                        onChange={e => handleUpdateGuest(idx, "status", e.target.value)}
+                        disabled={disabled || !isGuestEditable(guest)}
+                      >
+                        <option>Single</option>
+                        <option>Married</option>
+                        <option>N/A</option>
+                        <option>Divorced</option>
+                        <option>Widowed</option>
+                      </select>
+                    </div>
+                    <div className="col">
+                      <label className="form-label">Nationality</label>
+                      <select
+                        className="form-control"
+                        value={guest.nationality}
+                        onChange={e => handleUpdateGuest(idx, "nationality", e.target.value)}
+                        disabled={disabled || !isGuestEditable(guest)}
+                      >
+                        {nationalities.map(n => (
+                          <option key={n} value={n}>
+                            {n}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  
+                  {/* Enhanced Length of Stay Section with Check-out Days */}
+                  <div className="row mt-2 pt-3">
+                    <div className="col">
+                      
+                      {/* Check-out Days Button - Full width, always visible but only clickable in edit mode */}
+                      <div className="mb-2">
+                        <button
+                          type="button"
+                          className={`btn d-flex align-items-center justify-content-center gap-2 w-100 ${
+                            isCheckOutClickable 
+                              ? showCheckOutDays === idx 
+                                ? 'btn-outline-secondary' 
+                                : 'btn-outline-primary'
+                              : 'btn-outline-secondary'
+                          }`}
+                          onClick={() => isCheckOutClickable && toggleCheckOutDays(idx)}
+                          disabled={disabled || !isCheckOutClickable}
+                          title={
+                            isCheckOutClickable 
+                              ? "Click to show/hide check-out dates" 
+                              : "Click Edit button to modify check-out date"
+                          }
+                        >
+                          <Calendar size={16} />
+                          {checkOutButtonText}
+                        </button>
+                        
+                        {showCheckOutDays === idx && isCheckOutClickable && (
+                          <div className="check-out-days-container mt-2 p-2 border rounded bg-light">
+                            <div className="d-flex justify-between align-items-center mb-2">
+                              <small className="text-muted fw-bold">
+                                Check-in: {formatDate(
+                                  guest._saved ? guest._startDay : day,
+                                  guest._saved ? guest._startMonth : selectedMonth,
+                                  guest._saved ? guest._startYear : selectedYear
+                                )}
+                              </small>
+                              <small className="text-muted">
+                                Max stay: {MAX_LENGTH_OF_STAY} days (until {formatDate(
+                                  generateCheckOutDays[generateCheckOutDays.length - 1].day,
+                                  generateCheckOutDays[generateCheckOutDays.length - 1].month,
+                                  generateCheckOutDays[generateCheckOutDays.length - 1].year
+                                )})
+                              </small>
+                            </div>
+                            
+                            {/* Group dates by month for better organization */}
+                            <div className="check-out-days-grid" style={{ 
+                              maxHeight: '300px', 
+                              overflowY: 'auto'
+                            }}>
+                              {(() => {
+                                const groupedByMonth: { [key: string]: any[] } = {};
+                                
+                                generateCheckOutDays.forEach((checkOutDay) => {
+                                  const monthYear = `${checkOutDay.month}-${checkOutDay.year}`;
+                                  if (!groupedByMonth[monthYear]) {
+                                    groupedByMonth[monthYear] = [];
+                                  }
+                                  groupedByMonth[monthYear].push(checkOutDay);
+                                });
+                                
+                                return Object.entries(groupedByMonth).map(([monthYear, days]) => {
+                                  const [month, year] = monthYear.split('-');
+                                  const monthName = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                                  
+                                  return (
+                                    <div key={monthYear} className="month-group mb-3">
+                                      <h6 className="text-primary mb-2 border-bottom pb-1">{monthName}</h6>
+                                      <div className="d-flex flex-wrap gap-1">
+                                        {days.map((checkOutDay, dayIdx) => (
+                                          <button
+                                            key={dayIdx}
+                                            type="button"
+                                            className="btn btn-outline-success btn-sm"
+                                            onClick={() => handleCheckOutDaySelect(
+                                              idx, 
+                                              checkOutDay.day, 
+                                              checkOutDay.month, 
+                                              checkOutDay.year, 
+                                              checkOutDay.stayDuration
+                                            )}
+                                            disabled={disabled}
+                                            style={{ fontSize: '0.75rem', padding: '4px 8px' }}
+                                            title={`${checkOutDay.stayDuration} days stay - Check out on ${checkOutDay.display}`}
+                                          >
+                                            {checkOutDay.day}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  );
+                                });
+                              })()}
+                            </div>
+                            
+                            <small className="text-muted d-block mt-2">
+                              Showing all available check-out dates within {MAX_LENGTH_OF_STAY} days maximum stay
+                            </small>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* <input
+                        type="number"
+                        className="form-control"
+                        placeholder="Length of Stay"
+                        value={guest.lengthOfStay}
+                        onChange={e => handleUpdateGuest(idx, "lengthOfStay", e.target.value)}
+                        min="1"
+                        max={MAX_LENGTH_OF_STAY}
+                        disabled={disabled || !isGuestEditable(guest)}
+                      /> */}
+                    </div>
+                  </div>
+                  
+                  {/* Action buttons - Only show for start day guests or unsaved guests */}
+                 {showActionButtons(guest) && (
+                    <div className="d-flex justify-between align-items-center w-100 mt-2"> {/* Changed to justify-between and added w-100 */}
+                      {!guest._saved || guest._editing ? (
+                        <div className="d-flex gap-2"> {/* Container for Save and Cancel buttons */}
+                          <button
+                            className="btn btn-success btn-sm d-flex align-items-center gap-1"
+                            onClick={() => handleSaveGuest(idx)}
+                            disabled={disabled || saving}
+                            title="Save guest data"
+                          >
+                            {saving ? (
+                              <>
+                                <div className="spinner-border spinner-border-sm" role="status">
+                                  <span className="visually-hidden">Loading...</span>
+                                </div>
+                                Saving...
+                              </>
+                            ) : (
+                              <>
+                                <Save size={14} />
+                                Save
+                              </>
+                            )}
+                          </button>
+                          <button
+                            className="btn btn-secondary btn-sm d-flex align-items-center gap-1"
+                            onClick={() => handleCancelEdit(idx)}
+                            disabled={disabled}
+                          >
+                            <CancelIcon size={14} />
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          {canEditGuest(guest) && (
+                            <div className="d-flex justify-between align-items-center w-100">
+                              <button
+                                className="btn btn-warning btn-sm d-flex align-items-center gap-1"
+                                onClick={() => handleEditGuest(idx)}
+                                disabled={disabled}
+                              >
+                                <Edit size={14} />
+                                Edit
+                              </button>
+                              <button
+                                className="btn btn-danger btn-sm d-flex align-items-center gap-1"
+                                onClick={() => handleSetLengthOfStayToOneAndDelete(idx)}
+                                disabled={disabled || processingOneDay === idx}
+                                title="Remove Guest Entire Stay"
+                              >
+                                {processingOneDay === idx ? (
+                                  <>
+                                    <div className="spinner-border spinner-border-sm" role="status">
+                                      <span className="visually-hidden">Loading...</span>
+                                    </div>
+                                    Processing...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Trash2 size={14} />
+                                    Delete
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Message for read-only guests */}
+                  {!showActionButtons(guest) && (
+                    <div className="text-center mt-2 p-2 bg-light rounded">
+                      <small className="text-muted">
+                        This guest is read-only. Edit or delete from their start day ({guest._startMonth}/{guest._startDay}/{guest._startYear}).
+                      </small>
+                    </div>
                   )}
                 </div>
-
-                {/* Guest ID Display - Show for saved guests */}
-                {guest._saved && guest._stayId && (
-                  <div className="mb-3 p-2 bg-light rounded">
-                    <div className="d-flex justify-between align-items-center">
-                      <div>
-                        <small className="text-muted d-block">Guest ID:</small>
-                        <code className="text-primary" style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>
-                          {formatGuestId(guest._stayId)}
-                        </code>
-                      </div>
-                      <button
-                        type="button"
-                        className="btn btn-outline-secondary btn-sm"
-                        onClick={() => copyGuestId(guest._stayId)}
-                        title="Copy Guest ID"
-                      >
-                        <Copy size={14} />
-                      </button>
-                    </div>
-                    <small className="text-muted">
-                      {guest._isStartDay 
-                        ? "You can edit or delete this guest from their start day."
-                        : "This guest is read-only. Edit or delete from their start day (" + guest._startMonth + "/"+ guest._startDay +"/"+ guest._startYear +")."
-                      }
-                    </small>
-                  </div>
-                )}
-
-                {/* Per-guest check-in toggle - only editable in edit mode */}
-                <div className="form-group mb-2">
-                 <label className="form-label fw-bold">Is the Guest checking in today?</label>
-                <div className="d-flex gap-2">
-                  <button
-                    type="button"
-                    className={`btn ${guest.isCheckIn ? "btn-warning" : "btn-outline-warning"} flex-fill`}
-                    onClick={() => handleUpdateGuest(idx, "isCheckIn", "true")}
-                    disabled={disabled || !isGuestEditable(guest)}
-                    style={{ color: guest.isCheckIn ? "black" : "black" }}
-                  >
-                    Yes, checking in today
-                  </button>
-
-                  <button
-                    type="button"
-                    className={`btn ${!guest.isCheckIn ? "btn-primary" : "btn-outline-primary"} flex-fill`}
-                    onClick={() => handleUpdateGuest(idx, "isCheckIn", "false")}
-                    disabled={disabled || !isGuestEditable(guest)}
-                    style={{ color: !guest.isCheckIn ? "white" : "black" }} // white when active, black otherwise
-                  >
-                    No, staying from a previous day
-                  </button>
-                </div>
-
-                <small className="form-text text-muted">
-                  {guest.isCheckIn
-                    ? "✅ This will count as a check-in and the start day cell will be yellow"
-                    : "ℹ️ This will NOT count as a check-in and the start day cell will be blue"}
-                </small>
-
-                </div>
-                
-                <div className="row">
-                  <div className="col">
-                    <label className="form-label">Gender</label>
-                    <select
-                      className="form-control"
-                      value={guest.gender}
-                      onChange={e => handleUpdateGuest(idx, "gender", e.target.value)}
-                      disabled={disabled || !isGuestEditable(guest)}
-                    >
-                      <option>Male</option>
-                      <option>Female</option>
-                    </select>
-                  </div>
-                  <div className="col">
-                    <label className="form-label">Age</label>
-                    <input
-                      type="number"
-                      className="form-control"
-                      placeholder="Age"
-                      value={guest.age}
-                      onChange={e => handleUpdateGuest(idx, "age", e.target.value)}
-                      min="1"
-                      disabled={disabled || !isGuestEditable(guest)}
-                    />
-                  </div>
-                </div>
-                <div className="row mt-2">
-                  <div className="col">
-                    <label className="form-label">Status</label>
-                    <select
-                      className="form-control"
-                      value={guest.status}
-                      onChange={e => handleUpdateGuest(idx, "status", e.target.value)}
-                      disabled={disabled || !isGuestEditable(guest)}
-                    >
-                      <option>Single</option>
-                      <option>Married</option>
-                      <option>N/A</option>
-                      <option>Divorced</option>
-                      <option>Widowed</option>
-                    </select>
-                  </div>
-                  <div className="col">
-                    <label className="form-label">Nationality</label>
-                    <select
-                      className="form-control"
-                      value={guest.nationality}
-                      onChange={e => handleUpdateGuest(idx, "nationality", e.target.value)}
-                      disabled={disabled || !isGuestEditable(guest)}
-                    >
-                      {nationalities.map(n => (
-                        <option key={n} value={n}>
-                          {n}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                {/* Per-guest Length of Stay - only editable in edit mode */}
-                <div className="row mt-2">
-                  <div className="col">
-                    <label className="form-label">Length of Stay</label>
-                    <input
-                      type="number"
-                      className="form-control"
-                      placeholder="Length of Stay"
-                      value={guest.lengthOfStay}
-                      onChange={e => handleUpdateGuest(idx, "lengthOfStay", e.target.value)}
-                      min="1"
-                      max={MAX_LENGTH_OF_STAY}
-                      disabled={disabled || !isGuestEditable(guest)}
-                    />
-                    <small className="form-text text-muted">
-                      Maximum allowed length of stay is {MAX_LENGTH_OF_STAY} days (6 months).
-                    </small>
-                  </div>
-                </div>
-                
-                {/* Action buttons - Only show for start day guests or unsaved guests */}
-                {showActionButtons(guest) && (
-                  <div className="d-flex justify-end gap-2 mt-2">
-                    {!guest._saved || guest._editing ? (
-                      <>
-                        <button
-                          className="btn btn-success btn-sm d-flex align-items-center gap-1"
-                          onClick={() => handleSaveGuest(idx)}
-                          disabled={disabled || saving}
-                          title="Save guest data"
-                        >
-                          {saving ? (
-                            <>
-                              <div className="spinner-border spinner-border-sm" role="status">
-                                <span className="visually-hidden">Loading...</span>
-                              </div>
-                              Saving...
-                            </>
-                          ) : (
-                            <>
-                              <Save size={14} />
-                              Save
-                            </>
-                          )}
-                        </button>
-                        <button
-                          className="btn btn-secondary btn-sm d-flex align-items-center gap-1"
-                          onClick={() => handleCancelEdit(idx)}
-                          disabled={disabled}
-                        >
-                          <CancelIcon size={14} />
-                          Cancel
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        {/* // Replace the current 1 Day button with this enhanced version: */}
-                        {canEditGuest(guest) && (
-                          <>
-                            <button
-                              className="btn btn-warning btn-sm d-flex align-items-center gap-1"
-                              onClick={() => handleEditGuest(idx)}
-                              disabled={disabled}
-                            >
-                              <Edit size={14} />
-                              Edit
-                            </button>
-                            <button
-                              className="btn btn-danger btn-sm d-flex align-items-center gap-1"
-                              onClick={() => handleSetLengthOfStayToOneAndDelete(idx)}
-                              disabled={disabled || processingOneDay === idx}
-                              title="Remove Guest Entire Stay"
-                            >
-                              {processingOneDay === idx ? (
-                                <>
-                                  <div className="spinner-border spinner-border-sm" role="status">
-                                    <span className="visually-hidden">Loading...</span>
-                                  </div>
-                                  Processing...
-                                </>
-                              ) : (
-                                <>
-                                  <Trash2 size={14} />
-                                  Delete
-                                </>
-                              )}
-                            </button>
-                          </>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
-                
-                {/* Message for read-only guests */}
-                {!showActionButtons(guest) && (
-                  <div className="text-center mt-2 p-2 bg-light rounded">
-                    <small className="text-muted">
-                      This guest is read-only. Edit or delete from their start day ({guest._startMonth}/{guest._startDay}/{guest._startYear}).
-                    </small>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
 
             {/* Add Guest button - Always show at bottom */}
             <div className="flex justify-center mt-3 w-full">
@@ -653,33 +836,7 @@ const confirmSetLengthOfStayToOneAndDelete = async () => {
           </div>
           </div>
           <div className="modal-footer">
-            <div className="flex justify-between items-center w-full">
-              {/* Global Remove Button in Footer (alternative placement) */}
-              {hasGuests && (
-                <button
-                  className="btn btn-outline-danger d-flex align-items-center gap-2"
-                  onClick={handleGlobalRemove}
-                  disabled={disabled || removingAllGuests}
-                  title="Remove all guests from this room and day, then refresh data"
-                >
-                  {removingAllGuests ? (
-                    <>
-                      <div className="spinner-border spinner-border-sm" role="status">
-                        <span className="visually-hidden">Loading...</span>
-                      </div>
-                      Removing...
-                    </>
-                  ) : (
-                    <>
-                      <Trash2 size={16} />
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-                      </svg>
-                      Remove All Guests
-                    </>
-                  )}
-                </button>
-              )}
+            <div className="flex justify-end items-center w-full">
               <button
                 className="btn btn-secondary"
                 onClick={handleExit}
