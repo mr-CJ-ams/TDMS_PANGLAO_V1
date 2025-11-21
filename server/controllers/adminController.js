@@ -112,7 +112,7 @@ exports.declineUser = async (req, res) => {
       We regret to inform you that your registration for the Panglao Tourist Data Management System (TDMS) has not been approved.<br><br>
       <strong>Reason for decline:</strong> ${declineMessage}<br><br>
       If you believe this decision was made in error or if you have any questions, please contact our office for further clarification.<br><br>
-      Thank you for your interest in the TDMS.<br><br>
+      <strong>Please note:</strong> This is a system-generated email. Please do not reply directly to this message. Instead, contact us at <strong>statistics.tourismpanglao@gmail.com</strong>.<br><br>
       Sincerely,<br>
       Panglao Municipal Tourism Office
     `;
