@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import nationalities from "./Nationality";
-import { Trash2, PlusIcon, X, Edit, Save, X as CancelIcon, Copy, Trash, Calendar } from "lucide-react";
+import { Trash2, PlusIcon, X, Edit, Save, X as CancelIcon, Trash, Calendar } from "lucide-react";
 
 interface GuestModalProps {
   day: number;
@@ -158,7 +158,7 @@ const GuestModal = ({
   // Get button text for check-out dates - FIXED: Use consistent start day
   const getCheckOutButtonText = (guest: any, guestIndex: number) => {
     if (showCheckOutDays === guestIndex) {
-      return 'Hide Check-out Dates';
+      return 'Hide Set Departure';
     }
     
     if (guest.lengthOfStay && !isNaN(parseInt(guest.lengthOfStay))) {
@@ -168,17 +168,17 @@ const GuestModal = ({
       }
     }
     
-    return 'Check-out Dates';
+    return 'Set Departure';
   };
 
   // Copy guest ID to clipboard
-  const copyGuestId = (guestId: string) => {
-    navigator.clipboard.writeText(guestId).then(() => {
-      console.log("Guest ID copied to clipboard:", guestId);
-    }).catch(err => {
-      console.error("Failed to copy guest ID:", err);
-    });
-  };
+  // const copyGuestId = (guestId: string) => {
+  //   navigator.clipboard.writeText(guestId).then(() => {
+  //     console.log("Guest ID copied to clipboard:", guestId);
+  //   }).catch(err => {
+  //     console.error("Failed to copy guest ID:", err);
+  //   });
+  // };
 
 
   // Confirm and execute global removal
@@ -391,13 +391,13 @@ const GuestModal = ({
   };
 
   // Format guest ID for display (shortened version)
-  const formatGuestId = (stayId: string) => {
-    if (!stayId) return "No ID";
-    if (stayId.length > 16) {
-      return `${stayId.substring(0, 8)}...${stayId.substring(stayId.length - 8)}`;
-    }
-    return stayId;
-  };
+  // const formatGuestId = (stayId: string) => {
+  //   if (!stayId) return "No ID";
+  //   if (stayId.length > 16) {
+  //     return `${stayId.substring(0, 8)}...${stayId.substring(stayId.length - 8)}`;
+  //   }
+  //   return stayId;
+  // };
 
 
   const [processingOneDay, setProcessingOneDay] = useState<number | null>(null);
@@ -484,7 +484,7 @@ const GuestModal = ({
                       Guest {idx + 1}
                       {guest._saved && (
                         <span className={`badge ${guest._isStartDay ? 'bg-warning' : 'bg-info'} ms-2`}>
-                          {guest._isStartDay ? 'Start Day' : 'Following Day'}
+                          {guest._isStartDay ? 'Arrival Day' : 'Ongoing Stay'}
                         </span>
                       )}
                       {guest._editing && (
@@ -492,41 +492,14 @@ const GuestModal = ({
                       )}
                     </h6>
                     {!isGuestEditable(guest) && !guest._editing && (
-                      <small className="text-muted">Read-only (not start day)</small>
+                      <small className="text-muted">View Mode</small>
                     )}
                   </div>
 
-                  {/* Guest ID Display - Show for saved guests */}
-                  {guest._saved && guest._stayId && (
-                    <div className="mb-3 p-2 bg-light rounded">
-                      <div className="d-flex justify-between align-items-center">
-                        <div>
-                          <small className="text-muted d-block">Guest ID:</small>
-                          <code className="text-primary" style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>
-                            {formatGuestId(guest._stayId)}
-                          </code>
-                        </div>
-                        <button
-                          type="button"
-                          className="btn btn-outline-secondary btn-sm"
-                          onClick={() => copyGuestId(guest._stayId)}
-                          title="Copy Guest ID"
-                        >
-                          <Copy size={14} />
-                        </button>
-                      </div>
-                      <small className="text-muted">
-                        {guest._isStartDay 
-                          ? "You can edit or delete this guest from their start day."
-                          : "Edit or delete from their start day " + formatDate(guest._startDay, guest._startMonth, guest._startYear) + "."
-                        }
-                      </small>
-                    </div>
-                  )}
 
                   {/* Per-guest check-in toggle - only editable in edit mode */}
                   <div className="form-group mb-2">
-                   <label className="form-label fw-bold">Is the Guest checking in today?</label>
+                   <label className="form-label fw-bold">Arrival Type:</label>
                   <div className="d-flex gap-2">
                     <button
                       type="button"
@@ -535,7 +508,7 @@ const GuestModal = ({
                       disabled={disabled || !isGuestEditable(guest)}
                       style={{ color: guest.isCheckIn ? "black" : "black" }}
                     >
-                      Yes, checking in today
+                      New Arrival
                     </button>
 
                     <button
@@ -545,15 +518,9 @@ const GuestModal = ({
                       disabled={disabled || !isGuestEditable(guest)}
                       style={{ color: !guest.isCheckIn ? "white" : "black" }}
                     >
-                      No, staying from a previous day
+                      Continuing Stay
                     </button>
                   </div>
-
-                  <small className="form-text text-muted">
-                    {guest.isCheckIn
-                      ? "✅ This will count as a check-in and the start day cell will be yellow"
-                      : "ℹ️ This will NOT count as a check-in and the start day cell will be blue"}
-                  </small>
 
                   </div>
                   
@@ -632,14 +599,14 @@ const GuestModal = ({
                           <div className="check-out-days-container mt-2 p-2 border rounded bg-light">
                             <div className="d-flex justify-between align-items-center mb-2">
                               <small className="text-muted fw-bold">
-                                Check-in: {formatDate(
+                                Arrival: {formatDate(
                                   guest._saved ? guest._startDay : day,
                                   guest._saved ? guest._startMonth : selectedMonth,
                                   guest._saved ? guest._startYear : selectedYear
                                 )}
                               </small>
                               <small className="text-muted">
-                                Max stay: {MAX_LENGTH_OF_STAY} days (until {formatDate(
+                                Limit: {MAX_LENGTH_OF_STAY} days (until {formatDate(
                                   generateCheckOutDays[generateCheckOutDays.length - 1].day,
                                   generateCheckOutDays[generateCheckOutDays.length - 1].month,
                                   generateCheckOutDays[generateCheckOutDays.length - 1].year
@@ -695,7 +662,7 @@ const GuestModal = ({
                             </div>
                             
                             <small className="text-muted d-block mt-2">
-                              Showing all available check-out dates within {MAX_LENGTH_OF_STAY} days maximum stay
+                              Showing all available departure dates within {MAX_LENGTH_OF_STAY} days maximum stay
                             </small>
                           </div>
                         )}
@@ -791,7 +758,7 @@ const GuestModal = ({
                   {!showActionButtons(guest) && (
                     <div className="text-center mt-2 p-2 bg-light rounded">
                       <small className="text-muted">
-                        This guest is read-only. Edit or delete from their start day {formatDate(guest._startDay, guest._startMonth, guest._startYear)}.
+                        Edit or delete from their arrival day {formatDate(guest._startDay, guest._startMonth, guest._startYear)}.
                       </small>
                     </div>
                   )}
