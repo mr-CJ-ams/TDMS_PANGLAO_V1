@@ -391,8 +391,6 @@ const GuestModal = ({
     return stayId;
   };
 
-  // Check if there are any guests to remove
-  const hasGuests = guests.length > 0;
 
   const [processingOneDay, setProcessingOneDay] = useState<number | null>(null);
 
@@ -463,19 +461,6 @@ const GuestModal = ({
           </div>
           <div className="modal-body">
             {error && <div className="alert alert-danger">{error}</div>}
-
-            {/* Global Remove Warning Message */}
-            {hasGuests && (
-              <div className="alert alert-warning mb-3">
-                <div className="d-flex align-items-center">
-                  <Trash2 size={16} className="me-2" />
-                  <small>
-                    <strong>Day-Specific Removal:</strong> The "Remove All" button will delete ALL guests from <strong>Room {room} on Day {day} ONLY</strong>. 
-                    Guests will remain on other days of their stay. This action cannot be undone.
-                  </small>
-                </div>
-              </div>
-            )}
 
             {/* Show guest fields for each guest */}
             {guests.map((guest, idx) => {
