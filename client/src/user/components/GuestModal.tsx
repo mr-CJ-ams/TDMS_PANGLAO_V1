@@ -118,11 +118,19 @@ const GuestModal = ({
 
   // Function to handle check-out day selection
   const handleCheckOutDaySelect = (guestIndex: number, stayDuration: number) => {
-    if (stayDuration > 0 && stayDuration <= MAX_LENGTH_OF_STAY) {
-      handleUpdateGuest(guestIndex, "lengthOfStay", stayDuration.toString());
-      setShowCheckOutDays(null);
-    }
-  };
+  console.log('📅 Check-out day selected:', { 
+    guestIndex, 
+    stayDuration,
+    maxStay: MAX_LENGTH_OF_STAY 
+  });
+  
+  if (stayDuration > 0 && stayDuration <= MAX_LENGTH_OF_STAY) {
+    handleUpdateGuest(guestIndex, "lengthOfStay", stayDuration.toString());
+    setShowCheckOutDays(null);
+  } else {
+    console.error('❌ Invalid stay duration:', stayDuration);
+  }
+};
 
   // Function to toggle check-out days display for a specific guest
   const toggleCheckOutDays = (guestIndex: number) => {
@@ -670,7 +678,7 @@ const GuestModal = ({
                                             className="btn btn-outline-success btn-sm"
                                             onClick={() => handleCheckOutDaySelect(
                                               idx, 
-                                              checkOutDay.day,
+                                              checkOutDay.stayDuration, // ✅ FIXED: Use stayDuration instead of day
                                             )}
                                             disabled={disabled}
                                             style={{ fontSize: '0.75rem', padding: '4px 8px' }}
