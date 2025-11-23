@@ -518,7 +518,7 @@ const GuestModal = ({
                       <small className="text-muted">
                         {guest._isStartDay 
                           ? "You can edit or delete this guest from their start day."
-                          : "This guest is read-only. Edit or delete from their start day (" + guest._startMonth + "/"+ guest._startDay +"/"+ guest._startYear +")."
+                          : "Edit or delete from their start day " + formatDate(guest._startDay, guest._startMonth, guest._startYear) + "."
                         }
                       </small>
                     </div>
@@ -791,7 +791,7 @@ const GuestModal = ({
                   {!showActionButtons(guest) && (
                     <div className="text-center mt-2 p-2 bg-light rounded">
                       <small className="text-muted">
-                        This guest is read-only. Edit or delete from their start day ({guest._startMonth}/{guest._startDay}/{guest._startYear}).
+                        This guest is read-only. Edit or delete from their start day {formatDate(guest._startDay, guest._startMonth, guest._startYear)}.
                       </small>
                     </div>
                   )}
