@@ -312,7 +312,7 @@ const Signup = () => {
             </div>
             {/* Company Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Company Name *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Establishment Name *</label>
               <input
                 type="text"
                 name="companyName"
