@@ -73,61 +73,77 @@ const Login = () => {
   const navigate = useNavigate();
 
   const handleSubmit = async e => {
-    e.preventDefault();
-    if (isSubmitting) return;
-    setIsSubmitting(true); setError(null);
+  e.preventDefault();
+  if (isSubmitting) return;
+  setIsSubmitting(true); 
+  setError(null);
+  
+  const timeoutId = setTimeout(() => {
+    setIsSubmitting(false);
+    setError("Login is taking longer than expected. Please try again.");
+  }, LOGIN_TIMEOUT);
+  
+  try {
+    // Use the API instance instead of direct axios call
+    const data = await authAPI.login({ email, password });
+    clearTimeout(timeoutId);
     
-    const timeoutId = setTimeout(() => {
-      setIsSubmitting(false);
-      setError("Login is taking longer than expected. Please try again.");
-    }, LOGIN_TIMEOUT);
-    
-    try {
-      // Use the API instance instead of direct axios call
-      const data = await authAPI.login({ email, password });
-      clearTimeout(timeoutId);
-      
-      if (data.message === "Account is deactivated") {
-        setError("Your account has been deactivated. Please contact the administrator.");
-        return;
-      }
-      
-      sessionStorage.setItem("token", data.token);
-
-      // Only store safe fields
-      const safeUser = {
-        user_id: data.user.user_id,
-        role: data.user.role,
-        company_name: data.user.company_name,
-        accommodation_type: data.user.accommodation_type,
-        number_of_rooms: data.user.number_of_rooms,
-        region: data.user.region,
-        province: data.user.province,
-        municipality: data.user.municipality,
-        barangay: data.user.barangay,
-        is_active: data.user.is_active,
-        is_approved: data.user.is_approved,
-        email_verified: data.user.email_verified,
-        // Add other non-sensitive fields as needed
-      };
-      sessionStorage.setItem("user", JSON.stringify(safeUser));
-      
-      if (data.user.role === "admin") {
-        navigate("/admin/dashboard");
-      } else {
-        navigate("/user/dashboard");
-      }
-    } catch (err) {
-      // Handle different error types from the API instance
-      if (err.response?.data) {
-        setError(err.response.data.message || "Invalid credentials or account is deactivated");
-      } else {
-        setError("Invalid credentials or account is deactivated");
-      }
-    } finally {
-      setIsSubmitting(false);
+    // Check for specific error messages from backend
+    if (data.message === "Your account has been deactivated. Please contact the administrator.") {
+      setError("Your account has been deactivated. Please contact the administrator.");
+      return;
     }
-  };
+    
+    if (data.message === "Your account is pending approval. Please wait for administrator approval before logging in.") {
+      setError("Your account is pending approval. Please wait for administrator approval before logging in.");
+      return;
+    }
+    
+    sessionStorage.setItem("token", data.token);
+
+    // Only store safe fields
+    const safeUser = {
+      user_id: data.user.user_id,
+      role: data.user.role,
+      company_name: data.user.company_name,
+      accommodation_type: data.user.accommodation_type,
+      number_of_rooms: data.user.number_of_rooms,
+      region: data.user.region,
+      province: data.user.province,
+      municipality: data.user.municipality,
+      barangay: data.user.barangay,
+      is_active: data.user.is_active,
+      is_approved: data.user.is_approved,
+      email_verified: data.user.email_verified,
+    };
+    sessionStorage.setItem("user", JSON.stringify(safeUser));
+    
+    if (data.user.role === "admin") {
+      navigate("/admin/dashboard");
+    } else {
+      navigate("/user/dashboard");
+    }
+  } catch (err) {
+    clearTimeout(timeoutId);
+    // Handle different error types from the API instance
+    if (err.response?.data) {
+      const errorMessage = err.response.data.message;
+      
+      // Show specific messages for different error cases
+      if (errorMessage.includes("pending approval")) {
+        setError(errorMessage);
+      } else if (errorMessage.includes("deactivated")) {
+        setError(errorMessage);
+      } else {
+        setError("Invalid credentials. Please check your email and password.");
+      }
+    } else {
+      setError("Network error. Please check your connection and try again.");
+    }
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-cyan-400 to-teal-500 p-4">

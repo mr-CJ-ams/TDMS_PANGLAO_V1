@@ -240,16 +240,48 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await userModel.findUserByEmail(email);
-    if (!user) return res.status(400).json("Invalid credentials");
+    
+    if (!user) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid credentials or account is deactivated" 
+      });
+    }
+    
     const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) return res.status(400).json("Invalid credentials");
-    if (!user.is_approved) return res.status(400).json("Waiting for admin approval");
-    if (!user.is_active) return res.status(400).json("Account is deactivated");
+    if (!validPassword) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid credentials or account is deactivated" 
+      });
+    }
+    
+    if (!user.is_approved) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Your account is pending approval. Please wait for administrator approval before logging in." 
+      });
+    }
+    
+    if (!user.is_active) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Your account has been deactivated. Please contact the administrator." 
+      });
+    }
+    
     const token = jwt.sign({ user_id: user.user_id, role: user.role }, process.env.JWT_SECRET);
-    res.json({ token, user });
+    res.json({ 
+      success: true,
+      token, 
+      user 
+    });
   } catch (err) {
     console.error(err.message);
-    res.status(500).send("Server error");
+    res.status(500).json({ 
+      success: false,
+      message: "Server error during login" 
+    });
   }
 };
 
