@@ -113,10 +113,10 @@ const ProfileSection = ({ user, onUpdateRooms, token }) => {
               </Grid2>
             </Section>
             {/* Company Info */}
-            <Section title="Company Details" color="teal">
+            <Section title="Establishment Details" color="teal">
               <Grid2>
                 <Field
-                  label="Company Name"
+                  label="Establishment Name"
                   value={user.company_name}
                   color="teal"
                 />
