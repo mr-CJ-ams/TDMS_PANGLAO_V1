@@ -72,36 +72,44 @@ const Login = () => {
     [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  const handleSubmit = async e => {
+const handleSubmit = async e => {
   e.preventDefault();
   if (isSubmitting) return;
+  
+  // Basic client-side validation
+  if (!email.trim() || !password.trim()) {
+    setError("Please enter both email and password");
+    return;
+  }
+  
+  // Email format validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    setError("Please enter a valid email address");
+    return;
+  }
+  
   setIsSubmitting(true); 
   setError(null);
   
   const timeoutId = setTimeout(() => {
     setIsSubmitting(false);
-    setError("Login is taking longer than expected. Please try again.");
+    setError("Login is taking longer than expected. Please check your internet connection and try again.");
   }, LOGIN_TIMEOUT);
   
   try {
-    // Use the API instance instead of direct axios call
     const data = await authAPI.login({ email, password });
     clearTimeout(timeoutId);
     
-    // Check for specific error messages from backend
-    if (data.message === "Your account has been deactivated. Please contact the administrator.") {
-      setError("Your account has been deactivated. Please contact the administrator.");
+    // Handle specific backend error messages
+    if (data.message) {
+      setError(data.message);
       return;
     }
     
-    if (data.message === "Your account is pending approval. Please wait for administrator approval before logging in.") {
-      setError("Your account is pending approval. Please wait for administrator approval before logging in.");
-      return;
-    }
-    
+    // Successful login
     sessionStorage.setItem("token", data.token);
 
-    // Only store safe fields
     const safeUser = {
       user_id: data.user.user_id,
       role: data.user.role,
@@ -125,21 +133,30 @@ const Login = () => {
     }
   } catch (err) {
     clearTimeout(timeoutId);
-    // Handle different error types from the API instance
+    
+    // Enhanced error handling
     if (err.response?.data) {
       const errorMessage = err.response.data.message;
       
-      // Show specific messages for different error cases
+      // Categorize errors for better user experience
       if (errorMessage.includes("pending approval")) {
         setError(errorMessage);
       } else if (errorMessage.includes("deactivated")) {
         setError(errorMessage);
+      } else if (errorMessage.includes("Invalid email or password")) {
+        setError("The email or password you entered is incorrect. Please check your credentials and try again.");
+      } else if (errorMessage.includes("required")) {
+        setError(errorMessage);
       } else {
-        setError("Invalid credentials. Please check your email and password.");
+        setError("Login failed. Please check your credentials and try again.");
       }
+    } else if (err.code === 'NETWORK_ERROR' || err.message === 'Network Error') {
+      setError("Network error. Please check your internet connection and try again.");
     } else {
-      setError("Network error. Please check your connection and try again.");
+      setError("An unexpected error occurred. Please try again later.");
     }
+    
+    console.error("Login error:", err);
   } finally {
     setIsSubmitting(false);
   }

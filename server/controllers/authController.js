@@ -239,23 +239,35 @@ exports.signup = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await userModel.findUserByEmail(email);
     
-    if (!user) {
+    // Basic validation
+    if (!email || !password) {
       return res.status(400).json({ 
         success: false, 
-        message: "Invalid credentials or account is deactivated" 
+        message: "Email and password are required" 
       });
     }
     
+    const user = await userModel.findUserByEmail(email);
+    
+    // User not found - don't reveal whether email exists for security
+    if (!user) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid email or password" 
+      });
+    }
+    
+    // Check password
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
       return res.status(400).json({ 
         success: false, 
-        message: "Invalid credentials or account is deactivated" 
+        message: "Invalid email or password" 
       });
     }
     
+    // Account status checks - these are specific since user provided valid credentials
     if (!user.is_approved) {
       return res.status(400).json({ 
         success: false, 
@@ -270,6 +282,7 @@ exports.login = async (req, res) => {
       });
     }
     
+    // Successful login
     const token = jwt.sign({ user_id: user.user_id, role: user.role }, process.env.JWT_SECRET);
     res.json({ 
       success: true,
@@ -277,10 +290,10 @@ exports.login = async (req, res) => {
       user 
     });
   } catch (err) {
-    console.error(err.message);
+    console.error("Login error:", err.message);
     res.status(500).json({ 
       success: false,
-      message: "Server error during login" 
+      message: "Server error during login. Please try again later." 
     });
   }
 };
