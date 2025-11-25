@@ -78,6 +78,7 @@ interface GuestDemographicsProps {
 
 const COLORS = ["#42a5f5", "#ec4899"];
 const AGE_COLORS = ["#60a5fa", "#38bdf8", "#34d399", "#4ade80", "#a3e635", "#facc15"];
+const MARITAL_STATUS_COLORS = ["#42a5f5", "#ec4899", "#34d399", "#f59e0b", "#8b5cf6", "#6b7280"];
 
 const ageGroupLabels = [
   "Children (0–12)",
@@ -96,6 +97,16 @@ const originalAgeGroupLabels = [
   "Adults",
   "Middle-Aged",
   "Seniors"
+];
+
+// Marital status labels
+const maritalStatusLabels = [
+  "Single",
+  "Married", 
+  "Widowed",
+  "Separated",
+  "Divorced",
+  "Prefer not to Say"
 ];
 
 // Function to get display age group label
@@ -123,12 +134,20 @@ const GuestDemographics: React.FC<GuestDemographicsProps> = ({
     fill: AGE_COLORS[i % AGE_COLORS.length]
   }));
 
-  // Export logic - include age ranges in export
+  // Calculate marital status data for horizontal bar chart
+  const maritalStatusData = maritalStatusLabels.map((label, i) => ({
+    name: label,
+    value: guestDemographics.filter(d => d.status === label).reduce((a, b) => a + (typeof b.count === "string" ? parseInt(b.count) || 0 : b.count), 0),
+    fill: MARITAL_STATUS_COLORS[i % MARITAL_STATUS_COLORS.length]
+  })).filter(item => item.value > 0); // Only show statuses with data
+
+  // Export logic - include age ranges and marital status in export
   const exportGuestDemographics = () => {
     // Use display age groups with age ranges in detailed data
     const detailedData = guestDemographics.map(d => [
       d.gender, 
       getDisplayAgeGroup(d.age_group), // Use age ranges in export
+      d.status, // Include marital status
       typeof d.count === 'string' ? parseInt(d.count) || 0 : d.count
     ]);
     
@@ -136,36 +155,37 @@ const GuestDemographics: React.FC<GuestDemographicsProps> = ({
     const summaryData = [
       ["Male", genderData[0].value],
       ["Female", genderData[1].value],
-      ...ageGroupData.map(a => [a.name, a.value]) // Use display names with age ranges
+      ...ageGroupData.map(a => [a.name, a.value]), // Use display names with age ranges
+      ...maritalStatusData.map(m => [m.name, m.value]) // Include marital status in summary
     ];
     
     const detailedSheet = XLSX.utils.aoa_to_sheet([
-      ["Panglao Report of Guest Demographics", "", ""],
-      ["Year", selectedYear, ""],
-      ["Month", formatMonth(selectedMonth), ""],
-      ["Gender", "AgeGroup", "Count"],
+      ["Panglao Report of Guest Demographics", "", "", ""],
+      ["Year", selectedYear, "", ""],
+      ["Month", formatMonth(selectedMonth), "", ""],
+      ["Gender", "AgeGroup", "Marital Status", "Count"],
       ...detailedData
     ]);
     detailedSheet["!merges"] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } },
-      { s: { r: 1, c: 1 }, e: { r: 1, c: 2 } },
-      { s: { r: 2, c: 1 }, e: { r: 2, c: 2 } }
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
+      { s: { r: 1, c: 1 }, e: { r: 1, c: 3 } },
+      { s: { r: 2, c: 1 }, e: { r: 2, c: 3 } }
     ];
-    detailedSheet["!cols"] = Array(3).fill({ wch: 15 });
+    detailedSheet["!cols"] = Array(4).fill({ wch: 15 });
 
     const summarySheet = XLSX.utils.aoa_to_sheet([
-      ["Panglao Report of Guest Demographics", "", ""],
-      ["Year", selectedYear, ""],
-      ["Month", formatMonth(selectedMonth), ""],
-      ["Category", "Total", ""],
-      ...summaryData.map(([cat, total]) => [cat, total, ""])
+      ["Panglao Report of Guest Demographics", "", "", ""],
+      ["Year", selectedYear, "", ""],
+      ["Month", formatMonth(selectedMonth), "", ""],
+      ["Category", "Total", "", ""],
+      ...summaryData.map(([cat, total]) => [cat, total, "", ""])
     ]);
     summarySheet["!merges"] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } },
-      { s: { r: 1, c: 1 }, e: { r: 1, c: 2 } },
-      { s: { r: 2, c: 1 }, e: { r: 2, c: 2 } }
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
+      { s: { r: 1, c: 1 }, e: { r: 1, c: 3 } },
+      { s: { r: 2, c: 1 }, e: { r: 2, c: 3 } }
     ];
-    summarySheet["!cols"] = Array(3).fill({ wch: 15 });
+    summarySheet["!cols"] = Array(4).fill({ wch: 15 });
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, detailedSheet, "Detailed Data");
@@ -182,12 +202,20 @@ const GuestDemographics: React.FC<GuestDemographicsProps> = ({
     boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
     padding: 16,
     margin: 8,
-    flex: 1,
-    minWidth: 260,
-    maxWidth: 400,
+    flex: "1 1 300px",
+    minWidth: 280,
+    maxWidth: 420,
     display: "flex",
     flexDirection: "column",
     alignItems: "center"
+  };
+
+  // Larger chart container for horizontal bar charts
+  const horizontalChartCardStyle: React.CSSProperties = {
+    ...chartCardStyle,
+    flex: "1 1 420px",
+    minWidth: 300,
+    maxWidth: 640
   };
 
   return (
@@ -266,8 +294,41 @@ const GuestDemographics: React.FC<GuestDemographicsProps> = ({
           </div>
         </div>
 
+        {/* Marital Status Horizontal Bar Chart */}
+        <div style={horizontalChartCardStyle}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <span role="img" aria-label="marital-status" style={{ fontSize: 22 }}>💍</span>
+            <span style={{ fontWeight: 600, fontSize: 18, color: "#263238" }}>Marital Status</span>
+          </div>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart 
+              data={maritalStatusData} 
+              layout="vertical" 
+              margin={{ top: 8, right: 24, left: 12, bottom: 8 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis type="number" allowDecimals={false} />
+              <YAxis 
+                type="category" 
+                dataKey="name" 
+                width={160} 
+                tick={{ fontSize: 13 }} 
+              />
+              <Bar dataKey="value" radius={[6,6,6,6]}>
+                {maritalStatusData.map((entry, idx) => (
+                  <Cell key={`cell-marital-${idx}`} fill={MARITAL_STATUS_COLORS[idx % MARITAL_STATUS_COLORS.length]} />
+                ))}
+                <LabelList dataKey="value" position="right" formatter={v => v} />
+              </Bar>
+              <RechartsTooltip 
+                formatter={(value) => [value, "Count"]}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
         {/* Age Groups Horizontal Bar Chart */}
-        <div style={chartCardStyle}>
+        <div style={horizontalChartCardStyle}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
             <span role="img" aria-label="age-groups" style={{ fontSize: 22 }}>🎂</span>
             <span style={{ fontWeight: 600, fontSize: 18, color: "#263238" }}>Age Groups</span>
@@ -296,11 +357,9 @@ const GuestDemographics: React.FC<GuestDemographicsProps> = ({
             </BarChart>
           </ResponsiveContainer>
         </div>
-
-        {/* Removed Relationship Status Chart */}
       </div>
 
-      {/* Detailed Table - Updated Age Group Labels */}
+      {/* Detailed Table - Updated with Marital Status */}
       <div className="table-responsive">
         <table style={{
           width: "100%",
@@ -314,6 +373,7 @@ const GuestDemographics: React.FC<GuestDemographicsProps> = ({
             <tr style={{ backgroundColor: "#00BCD4", color: "#FFF" }}>
               <th style={{ padding: 12, textAlign: "left" }}>Age Group</th>
               <th style={{ padding: 12, textAlign: "left" }}>Gender</th>
+              <th style={{ padding: 12, textAlign: "left" }}>Marital Status</th>
               <th style={{ padding: 12, textAlign: "left" }}>Count</th>
             </tr>
           </thead>
@@ -324,7 +384,7 @@ const GuestDemographics: React.FC<GuestDemographicsProps> = ({
               
               return (
                 <tr
-                  key={`${demo.gender}-${demo.age_group}-${i}`}
+                  key={`${demo.gender}-${demo.age_group}-${demo.status}-${i}`}
                   style={{
                     borderBottom: "1px solid #B0BEC5",
                     backgroundColor: i % 2 === 0 ? "#F5F5F5" : "#FFF"
@@ -332,6 +392,7 @@ const GuestDemographics: React.FC<GuestDemographicsProps> = ({
                 >
                   <td style={{ padding: 12, color: "#37474F" }}>{displayAgeGroup}</td>
                   <td style={{ padding: 12, color: "#37474F" }}>{demo.gender}</td>
+                  <td style={{ padding: 12, color: "#37474F" }}>{demo.status}</td>
                   <td style={{ padding: 12, color: "#37474F" }}>
                     {typeof demo.count === 'string' ? parseInt(demo.count) || 0 : demo.count}
                   </td>

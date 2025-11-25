@@ -50,8 +50,9 @@ const SubmissionForm = () => {
     const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
     const genderCode = guest.gender.substring(0, 1).toUpperCase();
     const age = guest.age || 'NA';
+    const statusCode = guest.status ? guest.status.substring(0, 1).toUpperCase() : 'U'; // U for Unknown
     
-    return `G-${startYear}${startMonth.toString().padStart(2, '0')}${day.toString().padStart(2, '0')}-R${room.toString().padStart(2, '0')}-${genderCode}-${age}-${randomSuffix}`;
+    return `G-${startYear}${startMonth.toString().padStart(2, '0')}${day.toString().padStart(2, '0')}-R${room.toString().padStart(2, '0')}-${genderCode}-${age}-${statusCode}-${randomSuffix}`;
   };
 
   // Fetch user profile
@@ -391,7 +392,7 @@ useEffect(() => {
                 guests: [{
                   gender: guest.gender,
                   age: parseInt(guest.age),
-                  status: guest.status,
+                  status: guest.status, // Ensure status is included
                   nationality: guest.nationality,
                   isCheckIn: isFirstDay ? !!guest.isCheckIn : false,
                   _isStartDay: isFirstDay,
@@ -494,16 +495,14 @@ useEffect(() => {
         guestMap.set(guestKey, {
           ...guest,
           _saved: true,
-          // Determine if this is the actual start day for this guest
           _isStartDay: guest._isStartDay || 
                       (guest._startDay === day && 
-                       guest._startMonth === selectedMonth && 
-                       guest._startYear === selectedYear),
+                      guest._startMonth === selectedMonth && 
+                      guest._startYear === selectedYear),
           _stayId: guest._stayId,
           _startDay: guest._startDay,
           _startMonth: guest._startMonth,
           _startYear: guest._startYear,
-          // Store original data for editing
           _originalGender: guest.gender,
           _originalAge: guest.age,
           _originalStatus: guest.status,

@@ -117,14 +117,14 @@ class SubmissionModel {
   static async createGuest(client, metricId, guest) {
     await client.query(
       `INSERT INTO guests 
-       (metric_id, room_number, gender, age, status, nationality, is_check_in)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      (metric_id, room_number, gender, age, status, nationality, is_check_in)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [
         metricId,
         guest.roomNumber,
         guest.gender,
         guest.age,
-        guest.status,
+        guest.status || 'Single',
         guest.nationality,
         guest.isCheckIn,
       ]
@@ -187,7 +187,7 @@ class SubmissionModel {
     const result = await pool.query(
       `SELECT s.submission_id, s.month, s.year, s.submitted_at, s.is_late, s.penalty,
               s.average_guest_nights, s.average_room_occupancy_rate, s.average_guests_per_room,
-              s.number_of_rooms, s.room_names, u.company_name, u.accommodation_type,  -- Add room_names
+              s.number_of_rooms, s.room_names, u.company_name, u.accommodation_type,
               COALESCE(json_agg(json_build_object(
                 'day', dm.day,
                 'check_ins', dm.check_ins,

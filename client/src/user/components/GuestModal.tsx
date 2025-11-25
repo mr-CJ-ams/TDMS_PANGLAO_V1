@@ -221,7 +221,6 @@ const GuestModal = ({
         _isStartDay: true,
         _editing: true,
         _originalData: null,
-        // Set start day info for new guests
         _startDay: day,
         _startMonth: selectedMonth,
         _startYear: selectedYear,
@@ -551,6 +550,22 @@ const GuestModal = ({
                     </div>
                   </div>
                   <div className="row mt-2">
+                    <div className="col">
+                      <label className="form-label">Marital Status</label>
+                      <select
+                        className="form-control"
+                        value={guest.status}
+                        onChange={e => handleUpdateGuest(idx, "status", e.target.value)}
+                        disabled={disabled || !isGuestEditable(guest)}
+                      >
+                        <option value="Single">Single</option>
+                        <option value="Married">Married</option>
+                        <option value="Widowed">Widowed</option>
+                        <option value="Separated">Separated</option>
+                        <option value="Divorced">Divorced</option>
+                        <option value="Prefer not to Say">Prefer not to Say</option>
+                      </select>
+                    </div>
                     <div className="col">
                       <label className="form-label">Nationality</label>
                       <select

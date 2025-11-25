@@ -79,6 +79,7 @@ const SubmissionDetails = ({ submissionId }) => {
   const [roomSearchTerm, setRoomSearchTerm] = useState("");
   const [highlightedRoom, setHighlightedRoom] = useState(null);
   const [roomPage, setRoomPage] = useState(1);
+  const [filterMaritalStatus, setFilterMaritalStatus] = useState("");
   const roomsPerPage = 20;
 
   useEffect(() => {
@@ -128,10 +129,17 @@ const SubmissionDetails = ({ submissionId }) => {
       const hasMatchingGuest = dayGuests.some(guest => 
         guest.nationality.toLowerCase().includes(searchLower) ||
         guest.gender.toLowerCase().includes(searchLower) ||
-        guest.status.toLowerCase().includes(searchLower) ||
+        guest.status.toLowerCase().includes(searchLower) || // Add marital status to search
         guest.room_number.toString().includes(searchTerm)
       );
       if (!hasMatchingGuest) return null;
+    }
+
+    if (filterMaritalStatus) {
+      const hasMaritalStatusGuest = dayGuests.some(guest => 
+        guest.status.toLowerCase().includes(filterMaritalStatus.toLowerCase())
+      );
+      if (!hasMaritalStatusGuest) return null;
     }
     
     if (filterRoom) {
@@ -155,6 +163,7 @@ const SubmissionDetails = ({ submissionId }) => {
     setSearchTerm("");
     setFilterRoom("");
     setFilterNationality("");
+    setFilterMaritalStatus("");
     setRoomSearchTerm("");
     setHighlightedRoom(null);
   };
@@ -302,7 +311,24 @@ const SubmissionDetails = ({ submissionId }) => {
     const currentRoomNames = submission.room_names || 
       Array.from({ length: submission.number_of_rooms || 1 }, (_, i) => `Room ${i + 1}`);
     
-    
+    // Calculate marital status counts for the statistics sheet
+    const maritalStatusCounts = {};
+    submission.days?.forEach(day => {
+      day.guests?.forEach(guest => {
+        if (guest.isCheckIn) {
+          maritalStatusCounts[guest.status] = (maritalStatusCounts[guest.status] || 0) + 1;
+        }
+      });
+    });
+
+    // Calculate nationality counts
+    const nationalityCounts = {};
+    submission.days?.forEach((day) =>
+      day.guests?.forEach((g) => {
+        if (g.isCheckIn) nationalityCounts[g.nationality] = (nationalityCounts[g.nationality] || 0) + 1;
+      })
+    );
+
     // Create workbook with multiple sheets
     const wb = XLSX.utils.book_new();
     
@@ -336,10 +362,10 @@ const SubmissionDetails = ({ submissionId }) => {
       { width: 20 }
     ];
     
-    // Sheet 2: Daily Metrics
+    // Sheet 2: Daily Metrics with Marital Status
     const headers = ["Day"];
     for (let i = 1; i <= submission.number_of_rooms; i++) {
-      headers.push(currentRoomNames[i - 1] || `Room ${i}`); // Use historical names
+      headers.push(currentRoomNames[i - 1] || `Room ${i}`);
     }
     headers.push("Check-ins", "Overnight", "Occupied");
     
@@ -363,8 +389,9 @@ const SubmissionDetails = ({ submissionId }) => {
       for (let roomNum = 1; roomNum <= submission.number_of_rooms; roomNum++) {
         const roomGuests = guestsByRoom[roomNum] || [];
         if (roomGuests.length > 0) {
+          // Updated to include marital status in guest details
           const guestDetails = roomGuests.map(guest => 
-            `${guest.isCheckIn ? '✓' : '●'} ${guest.gender}, ${guest.age}, ${guest.nationality}`
+            `${guest.isCheckIn ? '✓' : '●'} ${guest.gender}, ${guest.age}, ${guest.status}, ${guest.nationality}`
           ).join('\n');
           row.push(guestDetails);
         } else {
@@ -381,7 +408,7 @@ const SubmissionDetails = ({ submissionId }) => {
     
     const colWidths = [8];
     for (let i = 1; i <= submission.number_of_rooms; i++) {
-      colWidths.push(30);
+      colWidths.push(35); // Increased width to accommodate additional marital status info
     }
     colWidths.push(12, 12, 12);
     
@@ -404,8 +431,85 @@ const SubmissionDetails = ({ submissionId }) => {
       dailyMetricsWs['!rows'][rowIndex] = { hpt: rowHeight };
     }
     
-    // Sheet 3: Nationality Counts (unchanged)
-      const nationalityData = [
+    // Sheet 3: Detailed Guest Data with Marital Status
+    const guestDataHeaders = [
+      "Day", 
+      "Room Number", 
+      "Room Name", 
+      "Gender", 
+      "Age", 
+      "Marital Status",
+      "Nationality", 
+      "Check-in Type"
+    ];
+    
+    const guestData = [guestDataHeaders];
+    
+    // Collect all guest data across all days
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dayData = submission.days.find(d => d.day === day);
+      const dayGuests = dayData?.guests || [];
+      
+      dayGuests.forEach(guest => {
+        guestData.push([
+          day,
+          guest.room_number,
+          getRoomName(guest.room_number),
+          guest.gender,
+          guest.age,
+          guest.status, // Marital status
+          guest.nationality,
+          guest.isCheckIn ? "New Arrival" : "Continuing Stay"
+        ]);
+      });
+    }
+    
+    const guestDataWs = XLSX.utils.aoa_to_sheet(guestData);
+    XLSX.utils.book_append_sheet(wb, guestDataWs, "Guest Details");
+    
+    guestDataWs['!cols'] = [
+      { width: 8 },  // Day
+      { width: 12 }, // Room Number
+      { width: 20 }, // Room Name
+      { width: 10 }, // Gender
+      { width: 8 },  // Age
+      { width: 15 }, // Marital Status
+      { width: 20 }, // Nationality
+      { width: 15 }  // Check-in Type
+    ];
+    
+    // Sheet 4: Marital Status Statistics
+    const maritalStatusData = [
+      ["MARITAL STATUS BREAKDOWN"],
+      [""],
+      ["Marital Status", "Count", "Percentage"]
+    ];
+    
+    const totalCheckInsForStats = Object.values(maritalStatusCounts).reduce((sum, count) => sum + count, 0);
+    
+    Object.entries(maritalStatusCounts)
+      .sort(([,a], [,b]) => b - a)
+      .forEach(([status, count]) => {
+        const percentage = totalCheckInsForStats > 0 ? ((count / totalCheckInsForStats) * 100).toFixed(2) + '%' : '0%';
+        maritalStatusData.push([status, count, percentage]);
+      });
+    
+    maritalStatusData.push(
+      [""],
+      ["Total Check-ins", totalCheckInsForStats, "100%"]
+    );
+    
+    const maritalStatusWs = XLSX.utils.aoa_to_sheet(maritalStatusData);
+    XLSX.utils.book_append_sheet(wb, maritalStatusWs, "Marital Status");
+    
+    maritalStatusWs['!cols'] = [
+      { width: 20 },
+      { width: 12 },
+      { width: 12 }
+    ];
+    
+    // Sheet 5: Nationality Counts
+    const nationalityData = [
       ["Year", "=", submission.year],
       ["Month", "=", new Date(0, submission.month - 1).toLocaleString("default", { month: "long" })],
       ["(PANGLAO REPORT)", submission.company_name || "Resort"],
@@ -548,6 +652,51 @@ const SubmissionDetails = ({ submissionId }) => {
       { width: 15 }
     ];
     
+    // Sheet 6: Guest Demographics Summary
+    const demographicsData = [
+      ["GUEST DEMOGRAPHICS SUMMARY"],
+      [""],
+      ["Category", "Count", "Percentage"]
+    ];
+
+    // Gender breakdown
+    const genderCounts = {};
+    submission.days?.forEach(day => {
+      day.guests?.forEach(guest => {
+        if (guest.isCheckIn) {
+          genderCounts[guest.gender] = (genderCounts[guest.gender] || 0) + 1;
+        }
+      });
+    });
+
+    demographicsData.push(["GENDER BREAKDOWN"]);
+    Object.entries(genderCounts).forEach(([gender, count]) => {
+      const percentage = totalCheckInsForStats > 0 ? ((count / totalCheckInsForStats) * 100).toFixed(2) + '%' : '0%';
+      demographicsData.push([`  ${gender}`, count, percentage]);
+    });
+
+    demographicsData.push([""]);
+    demographicsData.push(["MARITAL STATUS BREAKDOWN"]);
+    Object.entries(maritalStatusCounts)
+      .sort(([,a], [,b]) => b - a)
+      .forEach(([status, count]) => {
+        const percentage = totalCheckInsForStats > 0 ? ((count / totalCheckInsForStats) * 100).toFixed(2) + '%' : '0%';
+        demographicsData.push([`  ${status}`, count, percentage]);
+      });
+
+    demographicsData.push([""]);
+    demographicsData.push(["TOTALS"]);
+    demographicsData.push(["Total Check-ins", totalCheckInsForStats, "100%"]);
+
+    const demographicsWs = XLSX.utils.aoa_to_sheet(demographicsData);
+    XLSX.utils.book_append_sheet(wb, demographicsWs, "Demographics Summary");
+
+    demographicsWs['!cols'] = [
+      { width: 30 },
+      { width: 12 },
+      { width: 12 }
+    ];
+
     saveAs(
       new Blob([XLSX.write(wb, { bookType: "xlsx", type: "array" })], { type: "application/octet-stream" }),
       `${submission.company_name || 'Resort'}_${new Date(0, submission.month - 1).toLocaleString("default", { month: "long" })}_${submission.year}_Tourist_Arrival_Report.xlsx`
@@ -675,12 +824,12 @@ const SubmissionDetails = ({ submissionId }) => {
               {/* Room Quick Search */}
               <div className="flex items-center gap-2">
                 <input
-                  type="text" // Changed from "number" to "text"
+                  type="text"
                   placeholder="Room Name"
                   value={roomSearchTerm}
                   onChange={(e) => setRoomSearchTerm(e.target.value)}
                   onKeyPress={handleRoomSearchKeyPress}
-                  className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 w-32" // Slightly wider
+                  className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 w-32"
                 />
                 <button
                   onClick={handleRoomSearch}
@@ -695,6 +844,21 @@ const SubmissionDetails = ({ submissionId }) => {
                   View Summary
                 </button>
               </div>
+              
+              {/* Marital Status Filter */}
+              <select
+                value={filterMaritalStatus}
+                onChange={(e) => setFilterMaritalStatus(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              >
+                <option value="">All Marital Status</option>
+                <option value="Single">Single</option>
+                <option value="Married">Married</option>
+                <option value="Widowed">Widowed</option>
+                <option value="Separated">Separated</option>
+                <option value="Divorced">Divorced</option>
+                <option value="Prefer not to Say">Prefer not to Say</option>
+              </select>
               
               <button
                 onClick={resetFilters}
@@ -804,7 +968,7 @@ const SubmissionDetails = ({ submissionId }) => {
                                       {guest.isCheckIn ? '✓' : '●'} {guest.gender}, {guest.age}
                                     </div>
                                     <div className="text-gray-500">
-                                      {guest.nationality} {/* Removed marital status */}
+                                      {guest.status},{guest.nationality} 
                                     </div>
                                   </div>
                                 ))}

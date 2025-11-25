@@ -64,9 +64,9 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, LabelList
 } from "recharts";
 
-
 const COLORS = ["#42a5f5", "#ec4899"];
 const AGE_COLORS = ["#60a5fa", "#38bdf8", "#34d399", "#4ade80", "#a3e635", "#facc15"];
+const MARITAL_STATUS_COLORS = ["#42a5f5", "#ec4899", "#34d399", "#f59e0b", "#8b5cf6", "#6b7280"];
 
 const ageGroupLabels = [
   "Children",
@@ -75,6 +75,15 @@ const ageGroupLabels = [
   "Adults",
   "Middle-Aged",
   "Seniors"
+];
+
+const maritalStatusLabels = [
+  "Single",
+  "Married", 
+  "Widowed",
+  "Separated",
+  "Divorced",
+  "Prefer not to Say"
 ];
 
 const UserGuestDemographics = ({ user, selectedYear, selectedMonth, formatMonth }) => {
@@ -117,14 +126,18 @@ const UserGuestDemographics = ({ user, selectedYear, selectedMonth, formatMonth 
   // Safely compute totals using maps to avoid key mismatches
   const genderCounts = { Male: 0, Female: 0 };
   const ageCounts = ageGroupLabels.reduce((acc, label) => ({ ...acc, [label]: 0 }), {});
+  const maritalStatusCounts = maritalStatusLabels.reduce((acc, label) => ({ ...acc, [label]: 0 }), {});
 
   guestDemographics.forEach((item) => {
     const c = typeof item.count === "string" ? parseInt(item.count, 10) || 0 : (Number(item.count) || 0);
     if (item.gender && genderCounts[item.gender] !== undefined) genderCounts[item.gender] += c;
     if (item.age_group && ageCounts[item.age_group] !== undefined) ageCounts[item.age_group] += c;
+    if (item.status && maritalStatusCounts[item.status] !== undefined) {
+      maritalStatusCounts[item.status] += c;
+    }
   });
 
-  // Summary table data without relationship status
+  // Summary table data with relationship status
   const summaryTableData = [
     { Category: "Male", Total: genderCounts.Male },
     { Category: "Female", Total: genderCounts.Female },
@@ -134,6 +147,12 @@ const UserGuestDemographics = ({ user, selectedYear, selectedMonth, formatMonth 
     { Category: "Adults (25–44)", Total: ageCounts["Adults"] || 0 },
     { Category: "Middle-Aged (45–59)", Total: ageCounts["Middle-Aged"] || 0 },
     { Category: "Seniors (60+)", Total: ageCounts["Seniors"] || 0 },
+    { Category: "Single", Total: maritalStatusCounts.Single },
+    { Category: "Married", Total: maritalStatusCounts.Married },
+    { Category: "Widowed", Total: maritalStatusCounts.Widowed },
+    { Category: "Separated", Total: maritalStatusCounts.Separated },
+    { Category: "Divorced", Total: maritalStatusCounts.Divorced },
+    { Category: "Prefer not to Say", Total: maritalStatusCounts["Prefer not to Say"] },
   ];
 
   // Chart data - include all labels (so axis and labels are stable)
@@ -143,10 +162,17 @@ const UserGuestDemographics = ({ user, selectedYear, selectedMonth, formatMonth 
     fill: AGE_COLORS[i % AGE_COLORS.length]
   }));
 
+  // Prepare marital status data for horizontal bar chart
+  const maritalStatusData = maritalStatusLabels.map((label, i) => ({
+    name: label,
+    value: maritalStatusCounts[label] || 0,
+    fill: MARITAL_STATUS_COLORS[i % MARITAL_STATUS_COLORS.length]
+  })).filter(item => item.value > 0); // Only show statuses with data
+
   const exportGuestDemographics = () => {
     const wb = XLSX.utils.book_new();
 
-    // Remove relationship status from demographics data
+    // Include marital status in demographics data
     const demographicsData = [
       ["GUEST DEMOGRAPHICS REPORT"],
       [],
@@ -160,16 +186,17 @@ const UserGuestDemographics = ({ user, selectedYear, selectedMonth, formatMonth 
       ...summaryTableData.map(r => [r.Category, r.Total]),
       [],
       ["DETAILED BREAKDOWN"],
-      ["Gender", "Age Group", "Count"], // Removed "Status" column
+      ["Gender", "Age Group", "Marital Status", "Count"],
       ...guestDemographics.map(demo => [
         demo.gender,
         demo.age_group,
+        demo.status,
         typeof demo.count === "string" ? parseInt(demo.count, 10) || 0 : demo.count
       ])
     ];
 
     const demographicsWorksheet = XLSX.utils.aoa_to_sheet(demographicsData);
-    demographicsWorksheet['!cols'] = [{ width: 20 }, { width: 25 }, { width: 12 }]; // Adjusted column widths
+    demographicsWorksheet['!cols'] = [{ width: 20 }, { width: 25 }, { width: 20 }, { width: 12 }];
     XLSX.utils.book_append_sheet(wb, demographicsWorksheet, "Guest Demographics");
 
     const nationalityData = [
@@ -224,7 +251,7 @@ const UserGuestDemographics = ({ user, selectedYear, selectedMonth, formatMonth 
         <div style={{ textAlign: "center", padding: 24 }}>Loading...</div>
       ) : (
         <>
-          {/* Charts row - responsive */}
+          {/* Charts row - responsive with 3 charts */}
           <div style={{
             display: "flex",
             flexWrap: "wrap",
@@ -233,7 +260,7 @@ const UserGuestDemographics = ({ user, selectedYear, selectedMonth, formatMonth 
             alignItems: "stretch",
             marginBottom: 16
           }}>
-            {/* Donut Chart */}
+            {/* Gender Donut Chart */}
             <div style={{ background: "#fff", borderRadius: 12, padding: 12, flex: "1 1 300px", minWidth: 280, maxWidth: 420, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                 <span role="img" aria-label="men-vs-women" style={{ fontSize: 20 }}>👥</span>
@@ -242,8 +269,7 @@ const UserGuestDemographics = ({ user, selectedYear, selectedMonth, formatMonth 
               <ResponsiveContainer width="100%" height={180}>
                 <PieChart>
                   <Pie
-                    data={[{ name: "Male", value: genderCounts.Male }, { name: "Female", value: genderCounts.Female }]
-                    }
+                    data={[{ name: "Male", value: genderCounts.Male }, { name: "Female", value: genderCounts.Female }]}
                     dataKey="value"
                     nameKey="name"
                     cx="50%"
@@ -269,7 +295,40 @@ const UserGuestDemographics = ({ user, selectedYear, selectedMonth, formatMonth 
               </div>
             </div>
 
-           {/* Age Groups Horizontal */}
+            {/* Marital Status Horizontal Bar Chart */}
+            <div style={{ background: "#fff", borderRadius: 12, padding: 12, flex: "1 1 420px", minWidth: 300, maxWidth: 640, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                <span role="img" aria-label="marital-status" style={{ fontSize: 20 }}>💍</span>
+                <span style={{ fontWeight: 600, fontSize: 16, color: "#263238" }}>Marital Status</span>
+              </div>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart 
+                  data={maritalStatusData} 
+                  layout="vertical" 
+                  margin={{ top: 8, right: 24, left: 12, bottom: 8 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" allowDecimals={false} />
+                  <YAxis 
+                    type="category" 
+                    dataKey="name" 
+                    width={160} 
+                    tick={{ fontSize: 13 }} 
+                  />
+                  <Bar dataKey="value" radius={[6,6,6,6]}>
+                    {maritalStatusData.map((entry, idx) => (
+                      <Cell key={`cell-marital-${idx}`} fill={MARITAL_STATUS_COLORS[idx % MARITAL_STATUS_COLORS.length]} />
+                    ))}
+                    <LabelList dataKey="value" position="right" formatter={v => v} />
+                  </Bar>
+                  <RechartsTooltip 
+                    formatter={(value) => [value, "Count"]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Age Groups Horizontal Bar Chart */}
             <div style={{ background: "#fff", borderRadius: 12, padding: 12, flex: "1 1 420px", minWidth: 300, maxWidth: 640, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                 <span role="img" aria-label="age-groups" style={{ fontSize: 20 }}>🎂</span>
@@ -322,7 +381,7 @@ const UserGuestDemographics = ({ user, selectedYear, selectedMonth, formatMonth 
             </div>
           </div>
           
-          {/* Detailed Table - removed relationship status column */}
+          {/* Detailed Table - with marital status column */}
           <div className="table-responsive" style={{ marginBottom: 20 }}>
             <table style={{
               width: "100%", borderCollapse: "collapse", backgroundColor: "#FFF",
@@ -332,6 +391,7 @@ const UserGuestDemographics = ({ user, selectedYear, selectedMonth, formatMonth 
                 <tr style={{ backgroundColor: "#00BCD4", color: "#FFF" }}>
                   <th style={{ padding: 12, textAlign: "left" }}>Gender</th>
                   <th style={{ padding: 12, textAlign: "left" }}>Age Group</th>
+                  <th style={{ padding: 12, textAlign: "left" }}>Marital Status</th>
                   <th style={{ padding: 12, textAlign: "left" }}>Count</th>
                 </tr>
               </thead>
@@ -343,6 +403,7 @@ const UserGuestDemographics = ({ user, selectedYear, selectedMonth, formatMonth 
                   }}>
                     <td style={{ padding: 12, color: "#37474F" }}>{demo.gender}</td>
                     <td style={{ padding: 12, color: "#37474F" }}>{demo.age_group}</td>
+                    <td style={{ padding: 12, color: "#37474F" }}>{demo.status}</td>
                     <td style={{ padding: 12, color: "#37474F" }}>{demo.count}</td>
                   </tr>
                 ))}
