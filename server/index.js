@@ -56,6 +56,9 @@
  */
 
 const express = require("express");
+const rateLimit = require("express-rate-limit");
+const helmet = require("helmet");
+const compression = require("compression");
 const cors = require("cors");
 const path = require("path");
 const pool = require("./db");
@@ -65,9 +68,50 @@ require('dotenv').config();
 
 const app = express();
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// Security headers
+app.use(helmet());
+
+// Compression
+app.use(compression());
+
+// CORS with limits
+app.use(cors({
+  origin: process.env.FRONTEND_URL,
+  credentials: true,
+  maxAge: 86400
+}));
+
+// Body parsing with size limits
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// Rate limiting per IP (prevent single source flooding)
+const submitLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 5, // 5 submissions per minute per IP
+  message: "Too many submissions from this IP. Please wait.",
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.path !== '/api/submissions/submit' // Only apply to submissions
+});
+
+app.use('/api/submissions/submit', submitLimiter);
+
+// Authentication rate limiting (prevent brute force)
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,
+  message: "Too many login attempts. Please try again later."
+});
+
+app.use('/api/auth/login', loginLimiter);
+
+// Request timeout (prevent hanging connections)
+app.use((req, res, next) => {
+  req.setTimeout(30000); // 30 seconds
+  res.setTimeout(30000);
+  next();
+});
 
 // Serve static files from the "uploads" folder
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));

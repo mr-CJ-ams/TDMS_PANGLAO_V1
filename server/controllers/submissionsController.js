@@ -61,66 +61,129 @@ exports.submit = async (req, res) => {
   const client = await pool.connect();
   try {
     const { user_id, month, year, days } = req.body;
-    if (!user_id || !month || !year || !days) {
+    if (!user_id || !month || !year || !Array.isArray(days)) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    const numberOfRooms = await SubmissionModel.getUserRoomCount(user_id);
-    
-    // Fetch current room names to store with submission
-    const roomNamesResult = await pool.query(
-      "SELECT room_names FROM users WHERE user_id = $1", 
-      [user_id]
+    // Pre-check duplicate submission
+    const check = await pool.query(
+      'SELECT submission_id FROM submissions WHERE user_id=$1 AND month=$2 AND year=$3 LIMIT 1',
+      [user_id, month, year]
     );
-    const roomNames = roomNamesResult.rows[0]?.room_names || 
-      Array.from({ length: numberOfRooms }, (_, i) => `Room ${i + 1}`);
+    if (check.rows.length > 0) {
+      return res.status(409).json({ error: 'Submission already exists for this month' });
+    }
 
-    const deadline = SubmissionModel.calculateDeadline(month, year);
-    const currentTime = SubmissionModel.getPhilippinesTime();
-    const isLate = currentTime > deadline;
-    const penaltyAmount = isLate ? 1500 : 0;
-
+    // compute totals & rates (read-only, outside tx)
     let totalCheckIns = 0, totalOvernight = 0, totalOccupied = 0;
-    days.forEach((day) => {
-      totalCheckIns += day.checkIns;
-      totalOvernight += day.overnight;
-      totalOccupied += day.occupied;
-    });
+    for (const d of days) {
+      totalCheckIns += Number(d.checkIns || 0);
+      totalOvernight += Number(d.overnight || 0);
+      totalOccupied += Number(d.occupied || 0);
+    }
+    const numberOfRooms = await SubmissionModel.getUserRoomCount(user_id);
+    const averageGuestNights = totalCheckIns ? (totalOvernight / totalCheckIns).toFixed(2) : 0;
+    const averageRoomOccupancyRate = numberOfRooms ? ((totalOccupied / (numberOfRooms * days.length)) * 100).toFixed(2) : 0;
+    const averageGuestsPerRoom = totalOccupied ? (totalOvernight / totalOccupied).toFixed(2) : 0;
 
-    const averageGuestNights = totalCheckIns > 0 ? (totalOvernight / totalCheckIns).toFixed(2) : 0;
-    const averageRoomOccupancyRate =
-      numberOfRooms > 0 ? ((totalOccupied / (numberOfRooms * days.length)) * 100).toFixed(2) : 0;
-    const averageGuestsPerRoom = totalOccupied > 0 ? (totalOvernight / totalOccupied).toFixed(2) : 0;
+    const MAX_ATTEMPTS = 3;
+    let attempt = 0;
+    let submissionId;
 
-    await client.query("BEGIN");
-    const submissionId = await SubmissionModel.createSubmission(client, {
-      user_id, month, year, deadline, currentTime, isLate, penaltyAmount,
-      averageGuestNights, averageRoomOccupancyRate, averageGuestsPerRoom, 
-      numberOfRooms, roomNames // Pass roomNames
-    });
+    while (attempt < MAX_ATTEMPTS) {
+      attempt++;
+      try {
+        await client.query('BEGIN ISOLATION LEVEL SERIALIZABLE');
 
-    for (const dayData of days) {
-      const metricId = await SubmissionModel.createDailyMetric(client, submissionId, dayData);
-      for (const guest of dayData.guests) {
-        await SubmissionModel.createGuest(client, metricId, guest);
+        // create submission
+        // Compute deadline / current time and penalty BEFORE creating the submission
+        const deadline = SubmissionModel.calculateDeadline(month, year);
+        const currentTime = SubmissionModel.getPhilippinesTime();
+        const isLate = currentTime > deadline;
+        const penaltyAmount = isLate ? 1500 : 0;
+
+        // Fetch room names from users table (fallback to default room names)
+        const roomNamesRes = await pool.query("SELECT room_names FROM users WHERE user_id = $1", [user_id]);
+        const roomNames = roomNamesRes.rows[0]?.room_names || Array.from({ length: numberOfRooms }, (_, i) => `Room ${i + 1}`);
+
+        // create submission - createSubmission returns the submission_id (number)
+        submissionId = await SubmissionModel.createSubmission(client, {
+          user_id, month, year, deadline, currentTime, isLate, penaltyAmount,
+          averageGuestNights, averageRoomOccupancyRate, averageGuestsPerRoom, numberOfRooms, roomNames
+        });
+
+        // Insert daily metrics (parameterized)
+        const dmValues = [];
+        const dmPlaceholders = [];
+        let idx = 1;
+        for (const d of days) {
+          dmValues.push(submissionId, Number(d.day || 0), Number(d.checkIns || 0), Number(d.overnight || 0), Number(d.occupied || 0));
+          dmPlaceholders.push(`($${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++})`);
+        }
+
+        let dayToMetricId = new Map();
+        if (dmPlaceholders.length > 0) {
+          const dmRes = await client.query(
+            `INSERT INTO daily_metrics (submission_id, day, check_ins, overnight, occupied)
+             VALUES ${dmPlaceholders.join(', ')}
+             RETURNING metric_id, day`,
+            dmValues
+          );
+          dmRes.rows.forEach(r => dayToMetricId.set(Number(r.day), r.metric_id));
+        }
+
+        // Insert guests parameterized by metric_id
+        const guestsPlaceholders = [];
+        const guestsValues = [];
+        idx = 1;
+        for (const d of days) {
+          const metricId = dayToMetricId.get(Number(d.day));
+          if (!metricId) continue;
+
+          for (const guest of (d.guests || [])) {
+            guestsValues.push(metricId, guest.roomNumber || null, guest.gender || null, guest.age || null, guest.status || null, guest.nationality || null, guest.isCheckIn ? true : false);
+            guestsPlaceholders.push(`($${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++})`);
+          }
+        }
+
+        if (guestsPlaceholders.length > 0) {
+          await client.query(
+            `INSERT INTO guests (metric_id, room_number, gender, age, status, nationality, is_check_in)
+             VALUES ${guestsPlaceholders.join(', ')}`,
+            guestsValues
+          );
+        }
+
+        await client.query('COMMIT');
+
+        // success
+        return res.status(201).json({
+          success: true,
+          submission_id: submissionId,
+          averageGuestNights,
+          averageRoomOccupancyRate,
+          averageGuestsPerRoom,
+        });
+      } catch (err) {
+        await client.query('ROLLBACK');
+        // retry on serialization/deadlock only
+        if (err.code === '40001' || err.code === '40P01') {
+          const backoff = Math.min(2000, Math.pow(2, attempt) * 200);
+          console.warn(`tx retry attempt ${attempt} due to ${err.code}, sleeping ${backoff}ms`);
+          await new Promise(r => setTimeout(r, backoff));
+          continue;
+        }
+        console.error('Submission error:', err);
+        return res.status(500).json({ error: 'Failed to save submission' });
       }
     }
 
-    await client.query("COMMIT");
-    res.status(201).json({
-      message: "Submission saved successfully",
-      submissionId,
-      isLate,
-      penaltyAmount,
-      averageGuestNights,
-      averageRoomOccupancyRate,
-      averageGuestsPerRoom,
-      days: req.body.days,
-    });
+    // if all attempts failed
+    return res.status(409).json({ error: 'Submission conflict. Please retry.' });
+
   } catch (err) {
-    await client.query("ROLLBACK");
-    console.error("Submission error:", err);
-    res.status(500).json({ error: "Failed to save submission" });
+    console.error('Submit outer error:', err);
+    return res.status(500).json({ error: 'Unexpected server error' });
   } finally {
     client.release();
   }

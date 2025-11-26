@@ -63,7 +63,12 @@ const isProduction =
   (process.env.DATABASE_URL && process.env.DATABASE_URL.includes("sslmode=require"));
 
 const poolConfig = {
-  connectionString: process.env.DATABASE_URL
+  connectionString: process.env.DATABASE_URL,
+  max: 50,              // Increase from default 10 to 50
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+  statement_timeout: 30000, // Prevent long-running queries
+  application_name: 'tdms_app'
 };
 
 if (isProduction) {
@@ -83,6 +88,13 @@ const pool = new Pool(poolConfig);
   }
 })();
 
-pool.on("error", (err) => console.error("Unexpected idle client error:", err));
+// Add connection monitoring
+pool.on('error', (err) => {
+  console.error('❌ Unexpected idle client error:', err);
+});
+
+pool.on('connect', () => {
+  console.log('✅ New connection established');
+});
 
 module.exports = pool;

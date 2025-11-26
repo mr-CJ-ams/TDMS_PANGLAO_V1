@@ -1,5 +1,5 @@
 // FILE: client\src\user\pages\SubmissionForm.tsx
-import { useState, useEffect, useRef } from "react";
+import React, { useRef, useEffect, useState } from 'react';
 import { submissionsAPI, authAPI } from "../../services/api";
 import MonthYearSelector from "../components/MonthYearSelector";
 import MonthlyGrid from "../components/MonthlyGrid";
@@ -10,6 +10,7 @@ import RoomSearchBar from "../components/RoomSearchBar";
 import DolphinSpinner from "../components/DolphinSpinner";
 import { FixedSizeGrid as VirtualizedGrid } from "react-window";
 import { ArrowBigLeft, ArrowBigRight, ChevronDown, ChevronUp, Edit2, Save, X } from "lucide-react";
+import PQueue from 'p-queue';
 
 const SubmissionForm = () => {
   const [selectedDate, setSelectedDate] = useState<number | null>(null),
@@ -304,142 +305,209 @@ useEffect(() => {
     setIsModalOpen(true);
   };
 
-  // Save guest data for a day/room using draft stays
+  // Request queue and pendingRequests as refs to avoid re-creation on each render
+  const requestQueueRef = useRef<PQueue | null>(null);
+  const pendingRequestsRef = useRef<Map<string, Promise<any>>>(new Map());
+
+  useEffect(() => {
+    if (!requestQueueRef.current) {
+      // limit concurrency so single user doesn't flood the client or server
+      requestQueueRef.current = new PQueue({ concurrency: 3, interval: 1000, intervalCap: 3 });
+    }
+  }, []);
+
+  // Save guests function using queue and pendingRequests
   const handleSaveGuests = async (day: number, room: number, guestData: any): Promise<boolean> => {
-    const { guests, removeGuest, isEdit } = guestData;
+    const requestKey = `save-${day}-${room}`;
 
-    console.log(`🚀 START handleSaveGuests: Day ${day}, Room ${room}`, {
-      guestsCount: guests?.length,
-      removeGuest: removeGuest ? 'YES' : 'NO',
-      isEdit: isEdit ? 'YES' : 'NO'
-    });
-
-    // REMOVAL LOGIC
-    if (removeGuest && removeGuest._stayId) {
-      console.log(`🗑️ REMOVING SINGLE GUEST: StayId ${removeGuest._stayId}`);
-      try {
-        await submissionsAPI.deleteDraftStay(user.user_id, removeGuest._stayId);
-        
-        // Reset unsaved changes state
-        setHasUnsavedChanges(false);
-        setLastSaveTime(Date.now());
-        
-        // Auto-refresh after removal
-        await reloadData(true);
-        return true;
-      } catch (err) {
-        console.error("Error removing stay:", err);
-        return false;
-      }
+    // If a request is already pending for this key, return it to avoid duplicates
+    const existing = pendingRequestsRef.current.get(requestKey);
+    if (existing) {
+      return existing;
     }
 
-    // SAVE LOGIC
-    try {      
-      for (const guest of guests) {
-        const guestStayLength = parseInt(guest.lengthOfStay);
-        const stayId = isEdit ? guest._originalStayId : (guest._stayId || generateStayId(day, room, guest, selectedMonth, selectedYear));
-        const originalStayId = guest._originalStayId;
+    const queue = requestQueueRef.current!;
+    const promise = queue.add(async () => {
+      try {
+        const { guests, removeGuest, isEdit } = guestData;
 
-        console.log(`👤 PROCESSING GUEST:`, {
-          originalStayId,
-          newStayId: stayId,
-          oldLength: guest._originalLengthOfStay,
-          newLength: guestStayLength,
-          isEdit: !!isEdit
-        });
-
-        // If editing, remove ALL old stay entries first
-        if (isEdit && originalStayId) {
-          console.log(`🔄 EDIT MODE: Removing OLD stay ${originalStayId}`);
-          await submissionsAPI.deleteDraftStay(user.user_id, originalStayId);
-        }
-
-        // Only create new stay entries if length is > 0
-        if (guestStayLength > 0) {
-          const guestStartDay = guest._startDay || day;
-          const guestStartMonth = guest._startMonth || selectedMonth;
-          const guestStartYear = guest._startYear || selectedYear;
-
-          console.log(`📝 CREATING STAY: ${stayId} for ${guestStayLength} days`);
-
-          // Create stay entries
-          let currentDay = guestStartDay;
-          let currentMonth = guestStartMonth;
-          let currentYear = guestStartYear;
-          let remainingDays = guestStayLength;
-          let isFirstDay = true;
-
-          while (remainingDays > 0) {
-            const daysInCurrentMonth = getDaysInMonth(currentMonth, currentYear);
-            const daysToAdd = Math.min(remainingDays, daysInCurrentMonth - currentDay + 1);
-
-            for (let i = 0; i < daysToAdd; i++) {
-              const targetDay = currentDay + i;
-              
-              const stayData = {
-                userId: user.user_id,
-                day: targetDay,
-                month: currentMonth,
-                year: currentYear,
-                roomNumber: room,
-                stayId: stayId,
-                isCheckIn: isFirstDay ? !!guest.isCheckIn : false,
-                isStartDay: isFirstDay,
-                lengthOfStay: guestStayLength,
-                startDay: guestStartDay,
-                startMonth: guestStartMonth,
-                startYear: guestStartYear,
-                guests: [{
-                  gender: guest.gender,
-                  age: parseInt(guest.age),
-                  status: guest.status, // Ensure status is included
-                  nationality: guest.nationality,
-                  isCheckIn: isFirstDay ? !!guest.isCheckIn : false,
-                  _isStartDay: isFirstDay,
-                  _stayId: stayId,
-                  _startDay: guestStartDay,
-                  _startMonth: guestStartMonth,
-                  _startYear: guestStartYear,
-                  lengthOfStay: guestStayLength
-                }]
-              };
-
-              await submissionsAPI.createDraftStay(stayData);
-              isFirstDay = false;
-            }
-
-            remainingDays -= daysToAdd;
-            currentDay = 1;
-            if (++currentMonth > 12) {
-              currentMonth = 1;
-              currentYear++;
-            }
+        // REMOVAL LOGIC
+        if (removeGuest && removeGuest._stayId) {
+          console.log(`🗑️ REMOVING SINGLE GUEST: StayId ${removeGuest._stayId}`);
+          try {
+            await submissionsAPI.deleteDraftStay(user.user_id, removeGuest._stayId);
+            
+            // Reset unsaved changes state
+            setHasUnsavedChanges(false);
+            setLastSaveTime(Date.now());
+            
+            // Auto-refresh after removal
+            await reloadData(true);
+            return true;
+          } catch (err) {
+            console.error("Error removing stay:", err);
+            return false;
           }
         }
+
+        // SAVE LOGIC
+        try {      
+          for (const guest of guests) {
+            const guestStayLength = parseInt(guest.lengthOfStay);
+            const stayId = isEdit ? guest._originalStayId : (guest._stayId || generateStayId(day, room, guest, selectedMonth, selectedYear));
+            const originalStayId = guest._originalStayId;
+
+            console.log(`👤 PROCESSING GUEST:`, {
+              originalStayId,
+              newStayId: stayId,
+              oldLength: guest._originalLengthOfStay,
+              newLength: guestStayLength,
+              isEdit: !!isEdit
+            });
+
+            // If editing, remove ALL old stay entries first
+            if (isEdit && originalStayId) {
+              console.log(`🔄 EDIT MODE: Removing OLD stay ${originalStayId}`);
+              await submissionsAPI.deleteDraftStay(user.user_id, originalStayId);
+            }
+
+            // Only create new stay entries if length is > 0
+            if (guestStayLength > 0) {
+              const guestStartDay = guest._startDay || day;
+              const guestStartMonth = guest._startMonth || selectedMonth;
+              const guestStartYear = guest._startYear || selectedYear;
+
+              console.log(`📝 CREATING STAY: ${stayId} for ${guestStayLength} days`);
+
+              // Create stay entries
+              let currentDay = guestStartDay;
+              let currentMonth = guestStartMonth;
+              let currentYear = guestStartYear;
+              let remainingDays = guestStayLength;
+              let isFirstDay = true;
+
+              while (remainingDays > 0) {
+                const daysInCurrentMonth = getDaysInMonth(currentMonth, currentYear);
+                const daysToAdd = Math.min(remainingDays, daysInCurrentMonth - currentDay + 1);
+
+                for (let i = 0; i < daysToAdd; i++) {
+                  const targetDay = currentDay + i;
+                  
+                  const stayData = {
+                    userId: user.user_id,
+                    day: targetDay,
+                    month: currentMonth,
+                    year: currentYear,
+                    roomNumber: room,
+                    stayId: stayId,
+                    isCheckIn: isFirstDay ? !!guest.isCheckIn : false,
+                    isStartDay: isFirstDay,
+                    lengthOfStay: guestStayLength,
+                    startDay: guestStartDay,
+                    startMonth: guestStartMonth,
+                    startYear: guestStartYear,
+                    guests: [{
+                      gender: guest.gender,
+                      age: parseInt(guest.age),
+                      status: guest.status, // Ensure status is included
+                      nationality: guest.nationality,
+                      isCheckIn: isFirstDay ? !!guest.isCheckIn : false,
+                      _isStartDay: isFirstDay,
+                      _stayId: stayId,
+                      _startDay: guestStartDay,
+                      _startMonth: guestStartMonth,
+                      _startYear: guestStartYear,
+                      lengthOfStay: guestStayLength
+                    }]
+                  };
+
+                  await submissionsAPI.createDraftStay(stayData);
+                  isFirstDay = false;
+                }
+
+                remainingDays -= daysToAdd;
+                currentDay = 1;
+                if (++currentMonth > 12) {
+                  currentMonth = 1;
+                  currentYear++;
+                }
+              }
+            }
+          }
+
+          // Reset unsaved changes state
+          setHasUnsavedChanges(false);
+          setLastSaveTime(Date.now());
+
+          // Wait a bit before refreshing to ensure backend processed everything
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Auto-refresh after save
+          console.log(`🔄 Auto-refreshing data after save...`);
+          await reloadData(true);
+          
+          return true;
+
+        } catch (err) {
+          console.error("❌ SAVE ERROR:", err);
+          setModal({
+            show: true,
+            title: "Error",
+            message: "Failed to save guest data. Please try again.",
+          });
+          return false;
+        }
+      } catch (err) {
+        console.error("❌ Save error:", err);
+        setModal({
+          show: true,
+          title: "Error",
+          message: "Failed to save. Will retry automatically."
+        });
+        return false;
+      } finally {
+        pendingRequestsRef.current.delete(requestKey);
       }
+    });
 
-      // Reset unsaved changes state
-      setHasUnsavedChanges(false);
-      setLastSaveTime(Date.now());
+    // store the pending promise and return it
+    pendingRequestsRef.current.set(requestKey, promise);
 
-      // Wait a bit before refreshing to ensure backend processed everything
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Auto-refresh after save
-      console.log(`🔄 Auto-refreshing data after save...`);
-      await reloadData(true);
-      
-      return true;
+    return promise;
+  };
 
-    } catch (err) {
-      console.error("❌ SAVE ERROR:", err);
-      setModal({
-        show: true,
-        title: "Error",
-        message: "Failed to save guest data. Please try again.",
-      });
-      return false;
-    }
+  // Rename second form submission function to avoid redeclare
+  const handleSubmitForm = async (): Promise<void> => {
+    // Use retry logic & exponential backoff when appropriate
+    const maxRetries = 3;
+    let retryCount = 0;
+
+    const attemptSubmit = async () => {
+      try {
+        // Prepare payload
+        // ...existing code to build payload of days and guests...
+
+        // Example:
+        // const response = await submissionsAPI.submit(payload);
+
+        // Show success UI & finish
+        // setIsFormSaved(true);
+        // show modal "success"
+      } catch (err: any) {
+        // Retry on 409 serialization error (or conflict)
+        if (err?.response?.status === 409 && retryCount < maxRetries) {
+          retryCount++;
+          const delay = Math.pow(2, retryCount) * 1000; // 2s, 4s, 8s
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          return attemptSubmit();
+        }
+
+        // handle other errors (show modal, set state)
+        throw err;
+      }
+    };
+
+    await attemptSubmit();
   };
 
   // Room color

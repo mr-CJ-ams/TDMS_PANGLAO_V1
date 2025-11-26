@@ -31,7 +31,7 @@ CREATE TABLE public.daily_metrics (
     day integer NOT NULL,
     check_ins integer NOT NULL,
     overnight integer NOT NULL,
-    occupied integer NOT NULL
+    occupied integer DEFAULT 0 NOT NULL
 );
 
 
@@ -78,7 +78,9 @@ CREATE TABLE public.draft_stays (
     start_year integer NOT NULL,
     guests jsonb,
     created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP
+    updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    is_start_day boolean DEFAULT false,
+    last_updated timestamp with time zone DEFAULT CURRENT_TIMESTAMP
 );
 
 
@@ -145,6 +147,20 @@ ALTER SEQUENCE public.draft_submissions_draft_id_seq OWNED BY public.draft_submi
 
 
 --
+-- Name: email_verifications; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.email_verifications (
+    email character varying(255) NOT NULL,
+    token character varying(64),
+    expires_at timestamp without time zone,
+    verified boolean DEFAULT false
+);
+
+
+ALTER TABLE public.email_verifications OWNER TO postgres;
+
+--
 -- Name: guests; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -203,7 +219,8 @@ CREATE TABLE public.submissions (
     average_guests_per_room numeric(10,2),
     penalty boolean DEFAULT false,
     number_of_rooms integer,
-    receipt_number character varying(255)
+    receipt_number character varying(255),
+    room_names jsonb
 );
 
 
@@ -332,6 +349,51 @@ ALTER TABLE ONLY public.users ALTER COLUMN user_id SET DEFAULT nextval('public.u
 
 
 --
+-- Data for Name: daily_metrics; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+--
+-- Name: daily_metrics_metric_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.daily_metrics_metric_id_seq', 3213, true);
+
+
+--
+-- Name: draft_stays_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.draft_stays_id_seq', 13180, true);
+
+
+--
+-- Name: draft_submissions_draft_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.draft_submissions_draft_id_seq', 32253, true);
+
+
+--
+-- Name: guests_guest_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.guests_guest_id_seq', 4251, true);
+
+
+--
+-- Name: submissions_submission_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.submissions_submission_id_seq', 106, true);
+
+
+--
+-- Name: users_user_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.users_user_id_seq', 64, true);
+
+
+--
 -- Name: daily_metrics daily_metrics_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -348,11 +410,11 @@ ALTER TABLE ONLY public.draft_stays
 
 
 --
--- Name: draft_stays draft_stays_user_id_day_month_year_room_number_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: draft_stays draft_stays_user_id_day_month_year_room_number_stay_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.draft_stays
-    ADD CONSTRAINT draft_stays_user_id_day_month_year_room_number_key UNIQUE (user_id, day, month, year, room_number);
+    ADD CONSTRAINT draft_stays_user_id_day_month_year_room_number_stay_id_key UNIQUE (user_id, day, month, year, room_number, stay_id);
 
 
 --
@@ -372,6 +434,14 @@ ALTER TABLE ONLY public.draft_submissions
 
 
 --
+-- Name: email_verifications email_verifications_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.email_verifications
+    ADD CONSTRAINT email_verifications_pkey PRIMARY KEY (email);
+
+
+--
 -- Name: guests guests_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -388,6 +458,14 @@ ALTER TABLE ONLY public.submissions
 
 
 --
+-- Name: submissions unique_user_month_year; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.submissions
+    ADD CONSTRAINT unique_user_month_year UNIQUE (user_id, month, year);
+
+
+--
 -- Name: users users_email_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -401,6 +479,13 @@ ALTER TABLE ONLY public.users
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (user_id);
+
+
+--
+-- Name: idx_daily_metrics_submission_day; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_daily_metrics_submission_day ON public.daily_metrics USING btree (submission_id, day);
 
 
 --
@@ -429,6 +514,13 @@ CREATE INDEX idx_draft_stays_stay_info ON public.draft_stays USING btree (start_
 --
 
 CREATE INDEX idx_draft_stays_user_month_year ON public.draft_stays USING btree (user_id, month, year);
+
+
+--
+-- Name: idx_draft_stays_user_month_year_unique; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_draft_stays_user_month_year_unique ON public.draft_stays USING btree (user_id, month, year) WHERE (user_id IS NOT NULL);
 
 
 --
@@ -467,6 +559,13 @@ CREATE INDEX idx_guests_metric_id ON public.guests USING btree (metric_id);
 
 
 --
+-- Name: idx_guests_metric_room; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_guests_metric_room ON public.guests USING btree (metric_id, room_number);
+
+
+--
 -- Name: idx_submissions_month_year; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -485,6 +584,13 @@ CREATE INDEX idx_submissions_user ON public.submissions USING btree (user_id);
 --
 
 CREATE INDEX idx_submissions_user_month_year ON public.submissions USING btree (user_id, month, year);
+
+
+--
+-- Name: idx_submissions_user_month_year_unique; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_submissions_user_month_year_unique ON public.submissions USING btree (user_id, month, year) WHERE (user_id IS NOT NULL);
 
 
 --
@@ -538,10 +644,8 @@ ALTER TABLE ONLY public.submissions
 -- PostgreSQL database dump complete
 --
 
--- Add any missing columns to draft_stays if needed
-ALTER TABLE draft_stays 
-ADD COLUMN IF NOT EXISTS is_start_day BOOLEAN DEFAULT false,
-ADD COLUMN IF NOT EXISTS guests JSONB;
+
+
 
 INSERT INTO users (
     user_id,
