@@ -476,39 +476,7 @@ useEffect(() => {
     return promise;
   };
 
-  // Rename second form submission function to avoid redeclare
-  const handleSubmitForm = async (): Promise<void> => {
-    // Use retry logic & exponential backoff when appropriate
-    const maxRetries = 3;
-    let retryCount = 0;
 
-    const attemptSubmit = async () => {
-      try {
-        // Prepare payload
-        // ...existing code to build payload of days and guests...
-
-        // Example:
-        // const response = await submissionsAPI.submit(payload);
-
-        // Show success UI & finish
-        // setIsFormSaved(true);
-        // show modal "success"
-      } catch (err: any) {
-        // Retry on 409 serialization error (or conflict)
-        if (err?.response?.status === 409 && retryCount < maxRetries) {
-          retryCount++;
-          const delay = Math.pow(2, retryCount) * 1000; // 2s, 4s, 8s
-          await new Promise((resolve) => setTimeout(resolve, delay));
-          return attemptSubmit();
-        }
-
-        // handle other errors (show modal, set state)
-        throw err;
-      }
-    };
-
-    await attemptSubmit();
-  };
 
   // Room color
   const getRoomColor = (day: number, room: number) => {

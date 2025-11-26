@@ -88,11 +88,16 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 // Rate limiting per IP (prevent single source flooding)
 const submitLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 5, // 5 submissions per minute per IP
+  max: 100, // Increase from 5 to 100 submissions per minute per IP
   message: "Too many submissions from this IP. Please wait.",
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => req.path !== '/api/submissions/submit' // Only apply to submissions
+  skip: (req) => req.path !== '/api/submissions/submit',
+  // Trust proxy headers when behind Render's proxy
+  keyGenerator: (req, res) => {
+    // Use X-Forwarded-For if behind a proxy, otherwise use the connection IP
+    return req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+  }
 });
 
 app.use('/api/submissions/submit', submitLimiter);
@@ -100,7 +105,7 @@ app.use('/api/submissions/submit', submitLimiter);
 // Authentication rate limiting (prevent brute force)
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5,
+  max: 10, // Increase from 5 to 10 for better UX
   message: "Too many login attempts. Please try again later."
 });
 

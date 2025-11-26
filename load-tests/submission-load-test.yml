@@ -1,0 +1,147 @@
+config:
+  target: "http://localhost:5000"  # Your backend URL
+  phases:
+    # Phase 1: Ramp up over 2 minutes (50 requests/second = ~100 concurrent users)
+    - duration: 120
+      arrivalRate: 50
+      name: "Ramp up to 100"
+    
+    # Phase 2: Ramp up to 500 users (167 requests/second)
+    - duration: 120
+      arrivalRate: 167
+      name: "Ramp up to 500"
+    
+    # Phase 3: Ramp up to 1000 users (250 requests/second)
+    - duration: 120
+      arrivalRate: 250
+      name: "Ramp up to 1000"
+    
+    # Phase 4: Sustain at 1000 users for 5 minutes
+    - duration: 300
+      arrivalRate: 250  # Maintain 250 requests/second
+      name: "Sustain load at 1000"
+    
+    # Phase 5: Ramp down over 2 minutes
+    - duration: 120
+      arrivalRate: 50  # Wind down to 0
+      name: "Ramp down"
+
+  # Define variables (test user accounts)
+  variables:
+    testUserIds: []  # Will be populated by setup
+
+  # Custom functions for setup
+  processor: "./artillery-config.js"
+
+  # Performance thresholds
+  metrics:
+    histogram:
+      p95: 500
+      p99: 1000
+    errorsRate: 0.1
+
+scenarios:
+  - name: "Complete Submission Workflow"
+    flow:
+      # Step 1: User Login
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "testuser{{ $randomNumber(1, 1000) }}@loadtest.local"
+            password: "TestPassword123!"
+          capture:
+            json: "$.token"
+            as: "authToken"
+          expect:
+            - statusCode: 200
+
+      # Step 2: Check if already submitted
+      - get:
+          url: "/api/submissions/check-submission?user_id={{ $randomNumber(1, 1000) }}&month=11&year=2025"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+
+      # Step 3: Save draft stays (simulate 5 guests)
+      - loop:
+          - post:
+              url: "/api/submissions/draft-stays"
+              headers:
+                Authorization: "Bearer {{ authToken }}"
+              json:
+                userId: "{{ $randomNumber(1, 1000) }}"
+                day: "{{ $randomNumber(1, 28) }}"
+                month: 11
+                year: 2025
+                roomNumber: "{{ $randomNumber(1, 20) }}"
+                stayId: "G-{{ $randomNumber(100000, 999999) }}-{{ $randomNumber(100000, 999999) }}"
+                isCheckIn: true
+                isStartDay: true
+                lengthOfStay: "{{ $randomNumber(1, 7) }}"
+                startDay: "{{ $randomNumber(1, 20) }}"
+                startMonth: 11
+                startYear: 2025
+                guests:
+                  - gender: "{{ $randomChoice(['Male', 'Female']) }}"
+                    age: "{{ $randomNumber(18, 80) }}"
+                    status: "Single"
+                    nationality: "{{ $randomChoice(['Filipino', 'American', 'Chinese', 'Japanese', 'Korean']) }}"
+                    isCheckIn: true
+              expect:
+                - statusCode: 200
+        count: 5
+
+      # Step 4: Submit complete form
+      - post:
+          url: "/api/submissions/submit"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          json:
+            user_id: "{{ $randomNumber(1, 1000) }}"
+            month: 11
+            year: 2025
+            days: 
+              - day: 1
+                checkIns: "{{ $randomNumber(1, 10) }}"
+                overnight: "{{ $randomNumber(5, 15) }}"
+                occupied: "{{ $randomNumber(1, 8) }}"
+                guests:
+                  - roomNumber: "{{ $randomNumber(1, 20) }}"
+                    gender: "Male"
+                    age: 35
+                    status: "Single"
+                    nationality: "Filipino"
+                    isCheckIn: true
+              - day: 2
+                checkIns: "{{ $randomNumber(1, 10) }}"
+                overnight: "{{ $randomNumber(5, 15) }}"
+                occupied: "{{ $randomNumber(1, 8) }}"
+                guests:
+                  - roomNumber: "{{ $randomNumber(1, 20) }}"
+                    gender: "Female"
+                    age: 28
+                    status: "Single"
+                    nationality: "American"
+                    isCheckIn: true
+          expect:
+            - statusCode: 201
+
+      # Step 5: Fetch statistics
+      - get:
+          url: "/api/submissions/statistics/{{ $randomNumber(1, 1000) }}"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+
+      # Step 6: Fetch submission history
+      - get:
+          url: "/api/submissions/history/{{ $randomNumber(1, 1000) }}"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+
+      # Step 7: Think time (simulate user reading data)
+      - think: 2
