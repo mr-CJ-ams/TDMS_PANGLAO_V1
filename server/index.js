@@ -87,15 +87,17 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Rate limiting per IP (prevent single source flooding)
 const submitLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 100, // Increase from 5 to 100 submissions per minute per IP
+  windowMs: 60 * 1000,
+  max: process.env.NODE_ENV === 'production' ? 100 : 15000,  // 100 for prod, 15000 for testing
   message: "Too many submissions from this IP. Please wait.",
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => req.path !== '/api/submissions/submit',
-  // Trust proxy headers when behind Render's proxy
+  skip: (req) => {
+    // Skip rate limiting if TEST_MODE is enabled
+    if (process.env.TEST_MODE === 'true') return true;
+    return req.path !== '/api/submissions/submit';
+  },
   keyGenerator: (req, res) => {
-    // Use X-Forwarded-For if behind a proxy, otherwise use the connection IP
     return req.headers['x-forwarded-for'] || req.connection.remoteAddress;
   }
 });
@@ -105,8 +107,9 @@ app.use('/api/submissions/submit', submitLimiter);
 // Authentication rate limiting (prevent brute force)
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // Increase from 5 to 10 for better UX
-  message: "Too many login attempts. Please try again later."
+  max: process.env.NODE_ENV === 'production' ? 5 : 1000,  // 5 for prod, 1000 for testing
+  message: "Too many login attempts. Please try again later.",
+  skip: (req) => process.env.TEST_MODE === 'true'
 });
 
 app.use('/api/auth/login', loginLimiter);
