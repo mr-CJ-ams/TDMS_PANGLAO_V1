@@ -61,10 +61,8 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASSWORD
   },
-  // Improved settings for deliverability
-  tls: {
-    rejectUnauthorized: false // Allow self-signed certificates
-  },
+  // Remove these problematic settings:
+  // tls: { rejectUnauthorized: false },  // ❌ REMOVE
   connectionTimeout: 10000, // 10 seconds
   greetingTimeout: 10000,
   socketTimeout: 10000
@@ -89,18 +87,12 @@ const sendEmailNotification = (email, subject, message) => {
     subject: subject,
     text: message.replace(/<[^>]*>/g, ''), // Plain text version
     html: message,
-    // Improved headers for deliverability
     headers: {
       'X-Priority': '1',
       'X-Mailer': 'TDMS Node.js',
       'List-Unsubscribe': `<mailto:${process.env.EMAIL_FROM}?subject=Unsubscribe>`,
-    },
-    // DKIM signing (if available)
-    dkim: {
-      domainName: "panglaolgu.com",
-      keySelector: "default",
-      privateKey: "" // Your IT department can provide this
     }
+    // ❌ REMOVE the dkim section - Hostinger handles it automatically
   };
 
   return new Promise((resolve, reject) => {

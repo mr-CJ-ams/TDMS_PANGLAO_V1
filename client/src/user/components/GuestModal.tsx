@@ -459,6 +459,7 @@ const GuestModal = ({
                 type="button"
                 className="btn btn-light btn-sm"
                 onClick={handleExit}
+                disabled={disabled || saving}  // ✓ ADD saving state
                 style={{ border: "none", background: "transparent" }}
                 aria-label="Close"
               >
@@ -698,9 +699,9 @@ const GuestModal = ({
                   
                   {/* Action buttons - Only show for start day guests or unsaved guests */}
                  {showActionButtons(guest) && (
-                    <div className="d-flex justify-between align-items-center w-100 mt-2"> {/* Changed to justify-between and added w-100 */}
+                    <div className="d-flex justify-between align-items-center w-100 mt-2">
                       {!guest._saved || guest._editing ? (
-                        <div className="d-flex gap-2"> {/* Container for Save and Cancel buttons */}
+                        <div className="d-flex gap-2">
                           <button
                             className="btn btn-success btn-sm d-flex align-items-center gap-1"
                             onClick={() => handleSaveGuest(idx)}
@@ -724,7 +725,7 @@ const GuestModal = ({
                           <button
                             className="btn btn-secondary btn-sm d-flex align-items-center gap-1"
                             onClick={() => handleCancelEdit(idx)}
-                            disabled={disabled}
+                            disabled={disabled || saving}  // ✓ ADD saving state
                           >
                             <CancelIcon size={14} />
                             Cancel
@@ -737,7 +738,7 @@ const GuestModal = ({
                               <button
                                 className="btn btn-warning btn-sm d-flex align-items-center gap-1"
                                 onClick={() => handleEditGuest(idx)}
-                                disabled={disabled}
+                                disabled={disabled || saving}  // ✓ ADD saving state
                               >
                                 <Edit size={14} />
                                 Edit
@@ -745,7 +746,7 @@ const GuestModal = ({
                               <button
                                 className="btn btn-danger btn-sm d-flex align-items-center gap-1"
                                 onClick={() => handleSetLengthOfStayToOneAndDelete(idx)}
-                                disabled={disabled || processingOneDay === idx}
+                                disabled={disabled || processingOneDay === idx || saving}  // ✓ ADD saving state
                                 title="Remove Guest Entire Stay"
                               >
                                 {processingOneDay === idx ? (
@@ -786,7 +787,7 @@ const GuestModal = ({
             <button
               className="btn btn-success d-flex align-items-center justify-center gap-2 w-full"
               onClick={handleAddGuest}
-              disabled={disabled}
+              disabled={disabled || saving}  // ✓ ADD saving state
             >
               <PlusIcon size={16} /> Add Guest
             </button>
@@ -797,7 +798,7 @@ const GuestModal = ({
               <button
                 className="btn btn-secondary"
                 onClick={handleExit}
-                disabled={disabled}
+                disabled={disabled || saving}  // ✓ ADD saving state
               >
                 Close
               </button>
