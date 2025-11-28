@@ -389,6 +389,12 @@ const GuestModal = ({
     return guest._editing && isGuestEditable(guest);
   };
 
+  // NEW: Check if form controls should be disabled (not just readonly but non-interactive)
+  const shouldDisableFormControls = (guest) => {
+    // If guest is saved but not in editing mode, disable all form controls
+    return guest._saved && !guest._editing;
+  };
+
   // Format guest ID for display (shortened version)
   // const formatGuestId = (stayId: string) => {
   //   if (!stayId) return "No ID";
@@ -475,6 +481,7 @@ const GuestModal = ({
               // const checkOutDate = calculateCheckOutDate(guest);
               const checkOutButtonText = getCheckOutButtonText(guest, idx);
               const isCheckOutClickable = isCheckOutButtonClickable(guest);
+              const disableFormControls = shouldDisableFormControls(guest);
               
               return (
                 <div key={idx} className="mb-3 border rounded p-2">
@@ -503,20 +510,28 @@ const GuestModal = ({
                   <div className="d-flex gap-2">
                     <button
                       type="button"
-                      className={`btn ${guest.isCheckIn ? "btn-warning" : "btn-outline-warning"} flex-fill`}
+                      className={`btn ${guest.isCheckIn ? "btn-warning" : "btn-outline-warning"} flex-fill ${disableFormControls ? 'pe-none' : ''}`}
                       onClick={() => handleUpdateGuest(idx, "isCheckIn", "true")}
-                      disabled={disabled || !isGuestEditable(guest)}
-                      style={{ color: guest.isCheckIn ? "black" : "black" }}
+                      disabled={disabled || !isGuestEditable(guest) || disableFormControls}
+                      style={{ 
+                        color: guest.isCheckIn ? "black" : "black",
+                        cursor: disableFormControls ? 'not-allowed' : 'pointer',
+                        opacity: disableFormControls ? 0.6 : 1
+                      }}
                     >
                       New Arrival
                     </button>
 
                     <button
                       type="button"
-                      className={`btn ${!guest.isCheckIn ? "btn-primary" : "btn-outline-primary"} flex-fill`}
+                      className={`btn ${!guest.isCheckIn ? "btn-primary" : "btn-outline-primary"} flex-fill ${disableFormControls ? 'pe-none' : ''}`}
                       onClick={() => handleUpdateGuest(idx, "isCheckIn", "false")}
-                      disabled={disabled || !isGuestEditable(guest)}
-                      style={{ color: !guest.isCheckIn ? "white" : "black" }}
+                      disabled={disabled || !isGuestEditable(guest) || disableFormControls}
+                      style={{ 
+                        color: !guest.isCheckIn ? "white" : "black",
+                        cursor: disableFormControls ? 'not-allowed' : 'pointer',
+                        opacity: disableFormControls ? 0.6 : 1
+                      }}
                     >
                       Continuing Stay
                     </button>
@@ -528,10 +543,14 @@ const GuestModal = ({
                     <div className="col">
                       <label className="form-label">Gender</label>
                       <select
-                        className="form-control"
+                        className={`form-control ${disableFormControls ? 'pe-none' : ''}`}
                         value={guest.gender}
                         onChange={e => handleUpdateGuest(idx, "gender", e.target.value)}
-                        disabled={disabled || !isGuestEditable(guest)}
+                        disabled={disabled || !isGuestEditable(guest) || disableFormControls}
+                        style={{
+                          cursor: disableFormControls ? 'not-allowed' : 'pointer',
+                          opacity: disableFormControls ? 0.6 : 1
+                        }}
                       >
                         <option>Male</option>
                         <option>Female</option>
@@ -541,12 +560,16 @@ const GuestModal = ({
                       <label className="form-label">Age</label>
                       <input
                         type="number"
-                        className="form-control"
+                        className={`form-control ${disableFormControls ? 'pe-none' : ''}`}
                         placeholder="Age"
                         value={guest.age}
                         onChange={e => handleUpdateGuest(idx, "age", e.target.value)}
                         min="1"
-                        disabled={disabled || !isGuestEditable(guest)}
+                        disabled={disabled || !isGuestEditable(guest) || disableFormControls}
+                        style={{
+                          cursor: disableFormControls ? 'not-allowed' : 'pointer',
+                          opacity: disableFormControls ? 0.6 : 1
+                        }}
                       />
                     </div>
                   </div>
@@ -554,10 +577,14 @@ const GuestModal = ({
                     <div className="col">
                       <label className="form-label">Marital Status</label>
                       <select
-                        className="form-control"
+                        className={`form-control ${disableFormControls ? 'pe-none' : ''}`}
                         value={guest.status}
                         onChange={e => handleUpdateGuest(idx, "status", e.target.value)}
-                        disabled={disabled || !isGuestEditable(guest)}
+                        disabled={disabled || !isGuestEditable(guest) || disableFormControls}
+                        style={{
+                          cursor: disableFormControls ? 'not-allowed' : 'pointer',
+                          opacity: disableFormControls ? 0.6 : 1
+                        }}
                       >
                         <option value="Single">Single</option>
                         <option value="Married">Married</option>
@@ -570,10 +597,14 @@ const GuestModal = ({
                     <div className="col">
                       <label className="form-label">Nationality</label>
                       <select
-                        className="form-control"
+                        className={`form-control ${disableFormControls ? 'pe-none' : ''}`}
                         value={guest.nationality}
                         onChange={e => handleUpdateGuest(idx, "nationality", e.target.value)}
-                        disabled={disabled || !isGuestEditable(guest)}
+                        disabled={disabled || !isGuestEditable(guest) || disableFormControls}
+                        style={{
+                          cursor: disableFormControls ? 'not-allowed' : 'pointer',
+                          opacity: disableFormControls ? 0.6 : 1
+                        }}
                       >
                         {nationalities.map(n => (
                           <option key={n} value={n}>
@@ -598,13 +629,19 @@ const GuestModal = ({
                                 ? 'btn-outline-secondary' 
                                 : 'btn-outline-primary'
                               : 'btn-outline-secondary'
-                          }`}
+                          } ${disableFormControls ? 'pe-none' : ''}`}
                           onClick={() => isCheckOutClickable && toggleCheckOutDays(idx)}
-                          disabled={disabled || !isCheckOutClickable}
+                          disabled={disabled || !isCheckOutClickable || disableFormControls}
+                          style={{
+                            cursor: disableFormControls ? 'not-allowed' : (isCheckOutClickable ? 'pointer' : 'not-allowed'),
+                            opacity: disableFormControls ? 0.6 : 1
+                          }}
                           title={
-                            isCheckOutClickable 
-                              ? "Click to show/hide check-out dates" 
-                              : "Click Edit button to modify check-out date"
+                            disableFormControls 
+                              ? "Click Edit button to modify guest data" 
+                              : isCheckOutClickable 
+                                ? "Click to show/hide check-out dates" 
+                                : "Click Edit button to modify check-out date"
                           }
                         >
                           <Calendar size={16} />
