@@ -1,4 +1,14 @@
-# https://www.robotstxt.org/robotstxt.html
 User-agent: *
+Disallow: /api/
 Disallow: /login
 Disallow: /signup
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /user
+Disallow: /submissions
+Disallow: /profile
+
+# Allow only the homepage to be indexed
+Allow: /$
+
+Sitemap: https://panglaoitdms.com/sitemap.xml
