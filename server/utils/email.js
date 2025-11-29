@@ -2,80 +2,115 @@
  * email.js
  * 
  * Panglao Tourist Data Management System - Email Utility
- * 
- * =========================
- * Overview:
- * =========================
- * This file provides utility functions for sending email notifications within the Panglao TDMS backend.
- * It uses the nodemailer library to send emails via a configured email service (e.g., Gmail) and is used for notifications such as account approval, password resets, and other user communications.
- * 
- * =========================
- * Responsibilities:
- * =========================
- * - Email Notification: Sends emails to users for various events (e.g., registration, approval, password reset).
- * - Email Configuration: Sets up the nodemailer transporter using environment variables for security.
- * - Promise-based API: Exposes a promise-based function for sending emails, allowing for async/await usage in controllers.
- * 
- * =========================
- * Key Features:
- * =========================
- * - Uses nodemailer for reliable email delivery.
- * - Reads email credentials (user and password) from environment variables for security.
- * - Supports both plain text and HTML email content.
- * - Centralizes email logic for maintainability and reusability across controllers.
- * - Logs success or error information for debugging and monitoring.
- * 
- * =========================
- * Typical Usage:
- * =========================
- * - Imported and used in controllers (e.g., authController.js, adminController.js) to send notifications to users.
- * - Used for sending account approval, password reset, and other system-generated emails.
- * 
- * =========================
- * Developer Notes:
- * =========================
- * - Ensure EMAIL_USER and EMAIL_PASSWORD are set in the .env file.
- * - For Gmail, use an app-specific password if 2FA is enabled.
- * - Extend this file to add more specialized email templates or notification types as needed.
- * 
- * =========================
- * Related Files:
- * =========================
- * - controllers/authController.js   (calls sendEmailNotification for user-related emails)
- * - controllers/adminController.js  (calls sendEmailNotification for admin notifications)
- * - .env                           (stores email credentials)
- * 
- * =========================
- * Author: Carlojead Amaquin
- * Date: [2025-08-21] 
+ * Uses SendGrid or ZeptoMail API for reliable email delivery
  */
+
 require("dotenv").config({ path: require('path').resolve(__dirname, "../../.env") });
 const nodemailer = require("nodemailer");
+const sgTransport = require("nodemailer-sendgrid-transport");
+const axios = require("axios");
 
-// Improved email configuration with better authentication
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  secure: process.env.SMTP_PORT == 465, // true for 465, false for other ports
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD
-  },
-  // Remove these problematic settings:
-  // tls: { rejectUnauthorized: false },  // ❌ REMOVE
-  connectionTimeout: 10000, // 10 seconds
-  greetingTimeout: 10000,
-  socketTimeout: 10000
-});
+let transporter;
+
+// Initialize based on provider
+if (process.env.USE_ZEPTOMAIL === 'true') {
+  // ZeptoMail via HTTP API (fixed structure)
+  transporter = {
+    sendMail: async (mailOptions, callback) => {
+      try {
+        // Clean the API key - remove any existing "Zoho-enczapikey" prefix
+        const rawApiKey = process.env.ZEPTOMAIL_API_KEY.trim();
+        const cleanApiKey = rawApiKey.replace(/^Zoho-enczapikey\s+/i, '');
+        
+        console.log('🔑 Using ZeptoMail API Key (first 10 chars):', cleanApiKey.substring(0, 10) + '...');
+
+        // Prepare the email data according to ZeptoMail API spec
+        const emailData = {
+          from: {
+            address: mailOptions.from.address,
+            name: mailOptions.from.name
+          },
+          to: [
+            {
+              email_address: {
+                address: mailOptions.to
+              }
+            }
+          ],
+          subject: mailOptions.subject,
+          htmlbody: mailOptions.html,
+          textbody: mailOptions.text
+        };
+
+        console.log('📧 Sending ZeptoMail to:', mailOptions.to);
+
+        const response = await axios.post('https://api.zeptomail.com/v1.1/email', emailData, {
+          headers: {
+            'Authorization': `Zoho-enczapikey ${cleanApiKey}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 10000
+        });
+
+        console.log('✅ ZeptoMail API response:', response.data);
+
+        callback(null, {
+          messageId: response.data.id || response.data.data?.message_id,
+          response: response.data
+        });
+      } catch (error) {
+        console.error('❌ ZeptoMail API error details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          headers: error.response?.headers,
+          message: error.message
+        });
+        
+        // More specific error handling
+        if (error.response?.status === 401) {
+          console.error('🔐 Authentication failed - check your API key');
+        } else if (error.response?.status === 403) {
+          console.error('🚫 Permission denied - verify sender email is authorized');
+        } else if (error.response?.status === 500) {
+          console.error('⚡ Server error - check API key format and request structure');
+        }
+        
+        callback(error);
+      }
+    }
+  };
+} else {
+  // SendGrid (default)
+  transporter = nodemailer.createTransport(sgTransport({
+    auth: {
+      api_key: process.env.SENDGRID_API_KEY
+    }
+  }));
+}
 
 // Verify transporter on startup
-transporter.verify(function (error, success) {
-  if (error) {
-    console.error('❌ SMTP connection error:', error.message);
-  } else {
-    console.log('✅ SMTP server is ready to send emails');
+if (process.env.USE_ZEPTOMAIL === 'true') {
+  console.log('✅ ZeptoMail API is configured');
+  console.log('📧 From email:', process.env.EMAIL_FROM);
+  
+  // Test API key format
+  const rawApiKey = process.env.ZEPTOMAIL_API_KEY?.trim() || '';
+  const cleanApiKey = rawApiKey.replace(/^Zoho-enczapikey\s+/i, '');
+  
+  if (!cleanApiKey) {
+    console.error('❌ ZEPTOMAIL_API_KEY is empty or invalid');
+  } else if (rawApiKey !== cleanApiKey) {
+    console.log('⚠️  API key was cleaned (removed duplicate prefix)');
   }
-});
+} else {
+  transporter.verify(function (error, success) {
+    if (error) {
+      console.error('❌ SendGrid connection error:', error.message);
+    } else {
+      console.log('✅ SendGrid API is ready to send emails');
+    }
+  });
+}
 
 const sendEmailNotification = (email, subject, message) => {
   const mailOptions = {
@@ -85,23 +120,19 @@ const sendEmailNotification = (email, subject, message) => {
     },
     to: email,
     subject: subject,
-    text: message.replace(/<[^>]*>/g, ''), // Plain text version
-    html: message,
-    headers: {
-      'X-Priority': '1',
-      'X-Mailer': 'TDMS Node.js',
-      'List-Unsubscribe': `<mailto:${process.env.EMAIL_FROM}?subject=Unsubscribe>`,
-    }
-    // ❌ REMOVE the dkim section - Hostinger handles it automatically
+    text: message.replace(/<[^>]*>/g, ''),
+    html: message
   };
 
   return new Promise((resolve, reject) => {
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
-        console.error("❌ Error sending email:", error);
+        const provider = process.env.USE_ZEPTOMAIL === 'true' ? 'ZeptoMail' : 'SendGrid';
+        console.error(`❌ Error sending email via ${provider}:`, error.response?.data || error.message);
         reject(error);
       } else {
-        console.log("✅ Email sent successfully:", info.response);
+        const provider = process.env.USE_ZEPTOMAIL === 'true' ? 'ZeptoMail' : 'SendGrid';
+        console.log(`✅ Email sent via ${provider}:`, info.response);
         console.log("📧 Message ID:", info.messageId);
         resolve(info);
       }
