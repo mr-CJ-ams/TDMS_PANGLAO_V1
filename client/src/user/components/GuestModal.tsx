@@ -541,7 +541,7 @@ const GuestModal = ({
                   
                   <div className="row">
                     <div className="col">
-                      <label className="form-label">Gender</label>
+                      <label className="form-label">Sex</label>
                       <select
                         className={`form-control ${disableFormControls ? 'pe-none' : ''}`}
                         value={guest.gender}
@@ -557,7 +557,7 @@ const GuestModal = ({
                       </select>
                     </div>
                     <div className="col">
-                      <label className="form-label">Age</label>
+                      <label className="form-label">Age*</label>
                       <input
                         type="number"
                         className={`form-control ${disableFormControls ? 'pe-none' : ''}`}
