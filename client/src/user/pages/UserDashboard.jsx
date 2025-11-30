@@ -92,6 +92,27 @@ const UserDashboard = () => {
     })();
   }, []); // Remove token dependency since it's handled by interceptor
 
+  // Add this useEffect hook to handle browser back button globally
+  useEffect(() => {
+    const handlePopState = (event) => {
+      // When back button is clicked, go to home section
+      if (event.state?.section) {
+        handleSetActiveSection(event.state.section);
+      } else {
+        handleSetActiveSection("home");
+      }
+    };
+
+    // Push initial state
+    window.history.pushState({ section: activeSection }, "");
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
+
   const handleLogout = () => {
     sessionStorage.removeItem("token");
     sessionStorage.removeItem("user");
@@ -108,9 +129,12 @@ const UserDashboard = () => {
     }
   };
 
+  // Update handleSetActiveSection to push state
   const handleSetActiveSection = (section) => {
     setActiveSection(section);
     sessionStorage.setItem("activeSection", section);
+    // Push new history entry for browser back button
+    window.history.pushState({ section }, "");
   };
 
   return (

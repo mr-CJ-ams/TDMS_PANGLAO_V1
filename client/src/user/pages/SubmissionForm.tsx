@@ -874,6 +874,26 @@ const handleRemoveAllGuests = async (day: number, room: number): Promise<void> =
     }
   }, [selectedMonth, selectedYear, user]);
 
+  // Add this useEffect hook near the top of your component, after other useEffect hooks
+  useEffect(() => {
+    // Push a new history entry when SubmissionForm mounts
+    window.history.pushState({ page: "submission-form" }, "");
+
+    const handlePopState = (event) => {
+      // When back button is clicked, navigate to homepage
+      if (event.state?.page === "submission-form") {
+        sessionStorage.setItem("activeSection", "home");
+        window.history.back();
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
+
   return (
    <div className="container mt-5" style={{ position: 'relative' }}>
       {/* Loading Overlay */}
