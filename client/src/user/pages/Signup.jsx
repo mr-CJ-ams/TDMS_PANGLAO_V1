@@ -172,11 +172,7 @@ const Signup = () => {
     e.preventDefault();
     if (isSubmitting) return;
     
-    // Check if email is verified
-    if (!emailVerified) {
-      setSubmitError("Please verify your email address before completing registration");
-      return;
-    }
+    // Remove email verification check - allow signup without verification
     
     if (!formData.numberOfRooms || isNaN(formData.numberOfRooms) || parseInt(formData.numberOfRooms) <= 0) {
       setErrors(prev => ({ ...prev, numberOfRooms: "Please enter a valid positive number." })); return;
@@ -268,31 +264,6 @@ const Signup = () => {
                 </div>
               )}
             </div>
-            
-            {/* Email verification status */}
-            {formData.email && emailVerificationStatus === "unverified" && (
-              <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-amber-700">
-                    <Mail size={16} />
-                    <span className="text-sm">Email not verified</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleRequestVerification}
-                    className="text-sm text-amber-700 hover:text-amber-800 underline"
-                  >
-                    Verify Email
-                  </button>
-                </div>
-              </div>
-            )}
-            
-            {emailVerificationStatus === "checking" && (
-              <div className="mt-2 text-sm text-gray-500">
-                Checking email verification status...
-              </div>
-            )}
           </div>
 
           {/* Rest of the form fields */}
@@ -506,9 +477,9 @@ const Signup = () => {
           
           <button
             type="submit"
-            disabled={isSubmitting || !emailVerified}
+            disabled={isSubmitting}
             className={`w-full bg-gradient-to-r from-cyan-400 to-teal-500 text-white py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-opacity ${
-              isSubmitting || !emailVerified ? "opacity-75 cursor-not-allowed" : "hover:opacity-90"
+              isSubmitting ? "opacity-75 cursor-not-allowed" : "hover:opacity-90"
             }`}
           >
             {isSubmitting ? (
@@ -516,8 +487,6 @@ const Signup = () => {
                 <DolphinSpinner size="sm" />
                 Creating Account...
               </>
-            ) : !emailVerified ? (
-              "Verify Email First"
             ) : (
               "Create Account"
             )}

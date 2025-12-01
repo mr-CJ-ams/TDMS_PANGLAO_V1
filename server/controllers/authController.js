@@ -172,7 +172,7 @@ exports.checkEmailVerification = async (req, res) => {
   }
 };
 
-// Modified signup to require email verification
+// Modified signup to allow registration without email verification
 exports.signup = async (req, res) => {
   try {
     const {
@@ -180,15 +180,6 @@ exports.signup = async (req, res) => {
       company_name, company_address, accommodation_type, number_of_rooms,
       region, province, municipality, barangay, dateEstablished
     } = req.body;
-
-    // Check if email is verified
-    const isEmailVerified = await userModel.isEmailVerified(email);
-    if (!isEmailVerified) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Please verify your email address before completing registration" 
-      });
-    }
 
     const accommodation_code = accommodationCodes[accommodation_type] || "OTH";
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -203,16 +194,15 @@ exports.signup = async (req, res) => {
       is_approved
     });
 
-    // Send approval email if auto-approval is enabled
-    if (is_approved) {
-      const subject = "Your TDMS Account Has Been Approved";
+    // Send approval email ONLY if auto-approval is NOT enabled (user needs to wait for admin)
+    if (!is_approved) {
+      const subject = "Registration Received - Awaiting Approval";
       const loginUrl = `${process.env.FRONTEND_URL}/login`;
       const message = `
         Dear Valued User,<br><br>
-        We are pleased to inform you that your account registration for the Panglao Tourist Data Management System (TDMS) has been approved.<br><br>
-        You may now log in and access the system using the following link:<br>
-        <a href="${loginUrl}">Login Link</a><br><br>
-        If you have any questions or require assistance, please do not hesitate to contact our office.<br><br>
+        Thank you for registering with the Panglao Tourist Data Management System (TDMS).<br><br>
+        Your registration has been received and is currently under review by our administrators.<br>
+        We will notify you via email once your account has been approved.<br><br>
         Thank you for your interest in the TDMS.<br><br>
         Best regards,<br>
         Panglao Municipal Tourism Office
@@ -224,7 +214,7 @@ exports.signup = async (req, res) => {
       success: true,
       message: is_approved
         ? "Registration successful! You can now log in."
-        : "Registration successful! Waiting for admin approval.",
+        : "Registration successful! Your account is awaiting admin approval.",
       user,
     });
   } catch (err) {
