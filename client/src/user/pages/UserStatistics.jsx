@@ -63,6 +63,47 @@ import UserMonthlyMetrics from "../components/UserMonthlyMetrics";
 import UserGuestDemographics from "../components/UserGuestDemographics";
 import UserNationalityCounts from "../components/UserNationalityCounts";
 
+// Add this helper function before the component
+const calculateYAxisDomain = (data) => {
+  if (!data || data.length === 0) return [0, 10];
+  
+  const maxValue = Math.max(...data.map(d => d.total_check_ins || 0));
+  
+  if (maxValue === 0) return [0, 10];
+  
+  // Determine appropriate scale based on max value
+  let tickInterval;
+  let maxDomain;
+  
+  if (maxValue <= 10) {
+    tickInterval = 1;
+    maxDomain = 10;
+  } else if (maxValue <= 50) {
+    tickInterval = 5;
+    maxDomain = Math.ceil(maxValue / 5) * 5;
+  } else if (maxValue <= 100) {
+    tickInterval = 10;
+    maxDomain = Math.ceil(maxValue / 10) * 10;
+  } else if (maxValue <= 500) {
+    tickInterval = 50;
+    maxDomain = Math.ceil(maxValue / 50) * 50;
+  } else if (maxValue <= 1000) {
+    tickInterval = 100;
+    maxDomain = Math.ceil(maxValue / 100) * 100;
+  } else if (maxValue <= 5000) {
+    tickInterval = 500;
+    maxDomain = Math.ceil(maxValue / 500) * 500;
+  } else if (maxValue <= 10000) {
+    tickInterval = 1000;
+    maxDomain = Math.ceil(maxValue / 1000) * 1000;
+  } else {
+    tickInterval = 5000;
+    maxDomain = Math.ceil(maxValue / 5000) * 5000;
+  }
+  
+  return [0, maxDomain, tickInterval];
+};
+
 const UserStatistics = ({ user }) => {
   const [monthlyData, setMonthlyData] = useState([]);
   const [monthlyMetrics, setMonthlyMetrics] = useState([]);
@@ -247,7 +288,7 @@ const UserStatistics = ({ user }) => {
             <div className="w-full overflow-x-auto">
               <div
                 style={{
-                  minWidth: 700, // Ensures all months are visible and chart is not compressed
+                  minWidth: 700,
                   width: "100%",
                   maxWidth: "1200px",
                 }}
@@ -257,7 +298,6 @@ const UserStatistics = ({ user }) => {
                     data={filteredData}
                     margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                   >
-                    {/* Background gradient */}
                     <defs>
                       <linearGradient id="userGradient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#E0F7FA" stopOpacity={0.8} />
@@ -266,10 +306,8 @@ const UserStatistics = ({ user }) => {
                     </defs>
                     <rect x={0} y={0} width="100%" height="100%" fill="url(#userGradient)" />
 
-                    {/* Grid */}
                     <CartesianGrid strokeDasharray="3 3" stroke="#B0BEC5" strokeOpacity={0.5} />
 
-                    {/* X Axis */}
                     <XAxis
                       dataKey="month"
                       tickFormatter={formatMonth}
@@ -277,16 +315,21 @@ const UserStatistics = ({ user }) => {
                       axisLine={{ stroke: "#37474F", strokeWidth: 1 }}
                     />
 
-                    {/* Y Axis */}
+                    {/* ✅ UPDATED: Dynamic Y-Axis scaling */}
                     <YAxis
                       tick={{ fill: "#37474F", fontSize: 12, fontWeight: "bold" }}
                       axisLine={{ stroke: "#37474F", strokeWidth: 1 }}
+                      domain={[0, calculateYAxisDomain(filteredData)[1]]}
+                      ticks={Array.from(
+                        { length: Math.ceil(calculateYAxisDomain(filteredData)[1] / calculateYAxisDomain(filteredData)[2]) + 1 },
+                        (_, i) => i * calculateYAxisDomain(filteredData)[2]
+                      )}
+                      type="number"
+                      allowDecimals={false}
                     />
 
-                    {/* Tooltip */}
                     <Tooltip content={<CustomTooltip />} />
 
-                    {/* Legend */}
                     <Legend
                       wrapperStyle={{
                         paddingTop: "20px",
@@ -294,7 +337,6 @@ const UserStatistics = ({ user }) => {
                       }}
                     />
 
-                    {/* Line */}
                     <Line
                       type="monotone"
                       dataKey="total_check_ins"
