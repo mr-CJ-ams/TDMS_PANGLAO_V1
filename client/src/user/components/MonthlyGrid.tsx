@@ -2,6 +2,7 @@
 import React, { useMemo, useRef, useEffect } from "react"; // Added useEffect
 import { FixedSizeGrid as VirtualizedGrid } from "react-window";
 import useMediaQuery from "../hooks/useMediaQuery";
+import { Trash2, User } from "lucide-react";
 
 interface MonthlyGridProps {
   daysInMonth: number;
@@ -12,10 +13,11 @@ interface MonthlyGridProps {
   calculateDailyTotals: (day: number) => { checkIns: number; overnight: number; occupied: number };
   disabled: boolean;
   gridRef?: React.RefObject<VirtualizedGrid>;
+  occupiedRooms: any[]; // ✅ ADD THIS
 }
 
 const CELL_WIDTH = 70;
-const CELL_HEIGHT = 48;
+const CELL_HEIGHT = 55;
 const CELL_PADDING = 4;
 
 const MonthlyGrid = ({
@@ -26,7 +28,8 @@ const MonthlyGrid = ({
   getRoomColor,
   calculateDailyTotals,
   disabled,
-  gridRef
+  gridRef,
+  occupiedRooms // ✅ ADD THIS
 }: MonthlyGridProps) => {
   const rooms = useMemo(() => Array.from({ length: numberOfRooms }, (_, i) => i + 1), [numberOfRooms]);
   const days = useMemo(() => Array.from({ length: daysInMonth }, (_, i) => i + 1), [daysInMonth]);
@@ -155,12 +158,16 @@ const MonthlyGrid = ({
       );
     }
 
-    // Room cells
+    // Room cells - UPDATED to show guest count
     if (columnIndex < numberOfRooms) {
       const room = rooms[columnIndex];
       const day = days[rowIndex - 1];
       
-      // Add more detailed debugging for room cells
+      // ✅ NEW: Calculate guest count for this cell
+      const guestCount = occupiedRooms
+        .filter((entry) => entry.day === day && entry.room === room)
+        .reduce((total, entry) => total + (entry.guests?.length || 0), 0);
+      
       const isCellDisabled = disabled;
       
       return (
@@ -172,7 +179,7 @@ const MonthlyGrid = ({
                 onCellClick(day, room);
               }
             }}
-            className="btn w-100 d-flex align-items-center justify-content-center gap-2 px-2 py-1 border-0"
+            className="btn w-100 d-flex flex-column align-items-center justify-content-center gap-1 px-2 py-1 border-0"
             style={{
               backgroundColor: getRoomColor(day, room),
               borderRadius: 8,
@@ -188,11 +195,37 @@ const MonthlyGrid = ({
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
+              minHeight: "48px"
             }}
             disabled={isCellDisabled}
-            title={`${roomNames[columnIndex] || `Room ${room}`} - ${isCellDisabled ? 'Disabled' : 'Click to edit'}`}
+            title={`${roomNames[columnIndex] || `Room ${room}`} - ${guestCount} guest${guestCount !== 1 ? 's' : ''}`}
           >
-            {roomNames[columnIndex] || `Room ${room}`}
+            <span style={{ fontSize: "12px", fontWeight: "600" }}>
+              {roomNames[columnIndex] || `Room ${room}`}
+            </span>
+            {/* ✅ NEW: Guest count badge */}
+           <span style={{ 
+              fontSize: "11px", 
+              fontWeight: "bold",
+              backgroundColor: guestCount > 0 ? "rgba(0,0,0,0.15)" : "transparent",
+              padding: guestCount > 0 ? "2px 6px" : "0px",
+              borderRadius: "10px",
+              minWidth: "20px",
+              textAlign: "center",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "2px"
+            }}>
+              {guestCount > 0 ? (
+                <>
+                  <User size={11} style={{ color: "#000", fontWeight: "bold", strokeWidth: 3 }} />
+                  <span>{guestCount}</span>
+                </>
+              ) : (
+                "-"
+              )}
+            </span>
           </button>
         </div>
       );

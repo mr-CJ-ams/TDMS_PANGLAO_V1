@@ -1076,8 +1076,9 @@ const handleRemoveAllGuests = async (day: number, room: number): Promise<void> =
           onCellClick={handleCellClick}
           getRoomColor={getRoomColor}
           calculateDailyTotals={calculateDailyTotals}
-          disabled={getActualDisabledState()} // ← Updated
+          disabled={getActualDisabledState()}
           gridRef={mainGridRef}
+          occupiedRooms={occupiedRooms} // ✅ ADD THIS
         />
       </div>
       
