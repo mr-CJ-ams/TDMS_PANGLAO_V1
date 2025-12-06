@@ -68,6 +68,9 @@ require('dotenv').config();
 
 const app = express();
 
+// FIX: Trust proxy for rate limiting behind nginx
+app.set('trust proxy', 1);
+
 // Security headers
 app.use(helmet());
 

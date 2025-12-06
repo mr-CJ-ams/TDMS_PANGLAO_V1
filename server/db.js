@@ -64,8 +64,9 @@ const isProduction =
 
 const poolConfig = {
   connectionString: process.env.DATABASE_URL,
-  max: 300,  // INCREASE from 200 to 300 for 1000 users
-  idleTimeoutMillis: 30000,
+  max: 100,  // INCREASE from 200 to 300 for 1000 users
+  min: 10,
+  idleTimeoutMillis: 10000,
   connectionTimeoutMillis: 5000,  // INCREASE from 2000
   statement_timeout: 30000,
   application_name: 'tdms_app'

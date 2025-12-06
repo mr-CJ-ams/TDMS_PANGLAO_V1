@@ -17,7 +17,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'build',
-    sourcemap: true,
+    sourcemap: false, // Disable source maps for production
   },
   define: {
     global: 'globalThis',
@@ -26,4 +26,4 @@ export default defineConfig({
   esbuild: {
     loader: 'tsx',
   },
-}) 
+})
