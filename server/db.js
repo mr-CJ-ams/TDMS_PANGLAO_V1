@@ -54,7 +54,10 @@ const path = require("path");
 const { Pool } = require("pg");
 
 // ensure .env from project root is loaded when this module is required
-require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
+require("dotenv").config({ 
+  path: path.join(__dirname, "..", ".env"),
+  override: true  // FORCE .env to win over system variables
+});
 
 // treat SSL as required only in production or when explicitly requested
 const isProduction =
